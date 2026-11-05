@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>GOD FALL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#14122a">
+<meta name="apple-mobile-web-app-title" content="GOD FALL">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/app/favicon-48.png" sizes="48x48">
+<link rel="apple-touch-icon" href="assets/app/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="measure"></div>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <button id="pause" aria-label="일시정지"><i></i><i></i></button>
+
+  <!-- 로비: 위쪽 띠 + 화면 5개 + 아래 메뉴 -->
+  <div id="lobby">
+    <div id="screens"></div>
+    <div id="topbar"></div>
+    <nav id="nav"></nav>
+  </div>
+  <div id="forge" class="full"></div>
+  <div id="pop" class="modal2"></div>
+  <div id="gacha" class="full"></div>
+  <div id="toast"></div>
+
+  <div class="modal" id="mCard">
+    <div class="ribbon"><span id="cardTitle">신의 선물</span></div>
+    <p id="cardSub" class="csub">새로운 능력을 선택하세요!</p>
+    <div class="pcards" id="cards"></div>
+    <button id="bLearned" class="chip">얻은 능력</button>
+  </div>
+  <div class="modal2" id="mPause"></div>
+  <div class="modal2" id="mCont"></div>
+  <div class="full" id="mResult"></div>
+  <div class="full on" id="mTitle">
+    <div class="logo"><img src="assets/ui/logo.webp" alt="GOD FALL"></div>
+    <div class="tsub">올림포스가 무너졌다</div>
+    <div class="tgo" id="tgo">불러오는 중</div>
+  </div>
+
+  <button id="gear" aria-label="테스트 옵션">⚙</button>
+  <div id="tools">
+    <label><input type="checkbox" id="optZone"> 조이스틱 영역 표시</label>
+    <label><input type="checkbox" id="optHit"> 판정 표시</label>
+    <label><input type="checkbox" id="optGod"> 무적</label>
+    <label><input type="checkbox" id="optMute"> 소리 끄기</label>
+    <div id="tuner"></div>
+    <button id="tnReset">수치 초기화</button>
+  </div>
+</div>
+<script src="assets/god/all_meta.js"></script>
+<script src="assets/white_pack.js"></script>
+<script src="js/data.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/play.js"></script>
+<script src="js/render.js"></script>
+<script src="js/boss.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/debug.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>
