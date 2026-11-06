@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>GOD FALL 인트로 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c0818">
+<style>
+@font-face { font-family: Jua; src: url(Jua-Regular.ttf); font-display: block; }
+:root { --ink: #0c0818; --gold: #ffd98a; --dim: #b9b0d8; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--ink); overflow: hidden; font-family: Jua, sans-serif; color: #fff; user-select: none; -webkit-user-select: none; }
+#stage { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); overflow: hidden; touch-action: none; background: #000; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#bar { position: absolute; left: 0; right: 0; top: 0; padding: calc(env(safe-area-inset-top) + 10px) 12px 0; display: flex; gap: 8px; align-items: center; z-index: 3; pointer-events: none; }
+#bar > * { pointer-events: auto; }
+.tab { display: flex; background: rgba(10, 6, 24, .62); border-radius: 12px; padding: 3px; gap: 2px; }
+.tab button { font: inherit; font-size: 14px; color: var(--dim); background: none; border: 0; padding: 6px 12px; border-radius: 9px; }
+.tab button.on { background: var(--gold); color: #2a1640; }
+.sp { flex: 1; }
+.chip { font: inherit; font-size: 13px; color: #fff; background: rgba(10, 6, 24, .62); border: 1px solid rgba(255, 255, 255, .25); border-radius: 10px; padding: 6px 10px; }
+.chip.on { border-color: var(--gold); color: var(--gold); }
+#spec { position: absolute; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 52px); z-index: 3; background: rgba(8, 5, 20, .78); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; color: #e6e0ff; display: none; font-family: system-ui, sans-serif; pointer-events: none; }
+#spec.on { display: block; }
+#spec b { color: var(--gold); font-family: Jua, sans-serif; font-weight: normal; font-size: 14px; }
+#spec i { font-style: normal; color: #9ee6ff; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="bar">
+    <div class="tab" id="tabs"><button data-v="A" class="on">A 서사</button><button data-v="B">B 코믹</button></div>
+    <div class="sp"></div>
+    <button class="chip" id="bSpec">연출표</button>
+    <button class="chip" id="bAuto">자동</button>
+    <button class="chip" id="bSkip">건너뛰기</button>
+  </div>
+  <div id="spec"></div>
+</div>
+<script>
+'use strict';
+/* GOD FALL 인트로 시안 플레이어. 핍의 젤리광산 인트로(정지 그림 + 카메라 움직임 + 흔들림·번쩍임)를 바탕으로,
+   장면마다 '박자(beat)'를 시간에 맞춰 한 번씩 터뜨린다. 탭하면 다음 장면, 가만히 두면 카메라가 천천히 왕복한다.
+   게임에 넣을 때도 이 표(STORY)와 그리기 함수를 그대로 옮기면 된다. */
+const $ = id => document.getElementById(id);
+const stage = $('stage'), cv = $('c'), ctx = cv.getContext('2d');
+let W = 360, H = 780, S = 1, DPR = 1;
+
+/* ───── 이야기 표 ─────
+   z: 확대 [시작, 끝] · p: 이동 [[x,y] 시작, [x,y] 끝] (논리 px, 화면 폭 360 기준) · mv: 카메라 한 번 움직이는 시간(초)
+   in: 들어오는 방식(fade 서서히 / cut 바로 / drop 위로 쓸려 올라감) · amb: 계속 도는 효과 · beats: 시간에 맞춰 한 번 터지는 효과 */
+const STORY = {
+  A: { name: 'A 서사', cuts: [
+    { img: 'a1', cap: '구름 위 올림포스.\n신들의 잔치는 끝날 줄 몰랐다.', z: [1.2, 1.05], p: [[60, 70], [30, 30]], mv: 6, in: 'fade', amb: ['sparkle', 'rays'], beats: [{ t: .2, k: 'sfx', s: 'chime' }],
+      note: '천천히 뒤로 빠지며 전체를 보여 준다(1.14→1.02배). 금빛 반짝이와 햇살. 빈 의자 위 편지가 다음 장면의 복선.' },
+    { img: 'a2', cap: '그날 밤, 빛이 생기기 전부터 있던 것이\n눈을 떴다.', z: [1.14, 1.24], p: [[0, 90], [0, -10]], mv: 5, in: 'fade', amb: ['ember', 'rumble'],
+      beats: [{ t: .3, k: 'sfx', s: 'rumble' }, { t: 1.4, k: 'glow', x: .5, y: .43, r: 140, c: '#b070ff', d: 2.6 }, { t: 1.4, k: 'shake', a: 4, d: 1.2 }, { t: 1.4, k: 'sfx', s: 'eye' }, { t: 1.4, k: 'buzz', ms: 40 }],
+      note: '섬에서 아래 심연 쪽으로 카메라가 내려가며 다가간다. 1.4초에 눈이 보라빛으로 번쩍 + 낮은 울림·약한 흔들림.' },
+    { img: 'a3', cap: '어둠이 올림포스를 덮쳤다!', z: [1.32, 1.08], p: [[0, 0], [0, 0]], mv: .45, ease: 'out', in: 'cut', amb: ['dust', 'rumble'],
+      beats: [{ t: 0, k: 'flash', c: '#ffffff', d: .35 }, { t: .05, k: 'flash', c: '#a060ff', d: .7, a: .55 }, { t: 0, k: 'shake', a: 16, d: .8 }, { t: 0, k: 'burst', n: 34, x: .55, y: .3 }, { t: 0, k: 'sfx', s: 'boom' }, { t: 0, k: 'buzz', ms: 120 },
+        { t: 1.3, k: 'shake', a: 7, d: .5 }, { t: 1.3, k: 'burst', n: 14, x: .78, y: .2 }, { t: 1.3, k: 'sfx', s: 'crack' }, { t: 1.3, k: 'punch', z: .04, d: .3 }],
+      note: '가장 센 장면. 바로 잘라 들어오며(cut) 1.32배→1.08배로 0.45초 만에 튕겨 나온다. 흰 번쩍임→보라 번쩍임, 큰 흔들림(16px), 대리석 파편 폭발, 진동. 1.3초에 2차 붕괴.' },
+    { img: 'a4', cap: '권능을 잃은 신들은\n끝없는 심연으로 떨어졌다.', z: [1.26, 1.26], p: [[0, 90], [0, -90]], mv: 4.5, in: 'drop', amb: ['speedV', 'fall', 'rumble'],
+      beats: [{ t: 0, k: 'sfx', s: 'whoosh' }, { t: .1, k: 'shake', a: 3, d: 4 }],
+      note: '앞 장면이 위로 쓸려 올라가며(drop) 들어온다. 카메라가 계속 아래로 내려가 떨어지는 느낌, 위로 솟는 속도선과 파편, 잔잔한 흔들림.' },
+    { img: 'a5', cap: '…그리고 단 한 명,\n늦게 도착한 전령.', z: [1.04, 1.18], p: [[10, 10], [40, -20]], mv: 5, in: 'fade', amb: ['wind'],
+      beats: [{ t: .2, k: 'sfx', s: 'wind' }, { t: 1.6, k: 'punch', z: .03, d: .25 }, { t: 1.6, k: 'sfx', s: 'tick' }],
+      note: '정적. 바람 소리와 옆으로 흐르는 바람 입자. 헤르메스에게 천천히 다가가다 1.6초에 살짝 \'툭\' 당긴다(웃음 포인트).' },
+    { img: 'a6', cap: '헤르메스, 뛰어든다!', z: [1.0, 1.3], p: [[0, 0], [0, 30]], mv: 1.6, ease: 'in', in: 'cut', amb: ['speedR', 'rumble'], final: true,
+      beats: [{ t: 0, k: 'flash', c: '#ffffff', d: .25 }, { t: 0, k: 'sfx', s: 'dive' }, { t: 0, k: 'shake', a: 5, d: 1.6 }, { t: 0, k: 'buzz', ms: 60 }],
+      note: '바로 잘라 들어와 1.6초 동안 가속하며 다가간다(1.0→1.3배). 가운데로 빨려 드는 속도선. 탭하면 흰 번쩍임 후 로고가 쾅 떨어진다.' },
+  ] },
+  B: { name: 'B 코믹', cuts: [
+    { img: 'b1', cap: '전령 헤르메스는\n오늘도 늦었다.', z: [1.12, 1.12], p: [[50, 0], [-50, -10]], mv: 3.5, in: 'fade', amb: ['speedH', 'cloud'],
+      beats: [{ t: .1, k: 'sfx', s: 'whoosh' }, { t: 1.2, k: 'punch', z: .03, d: .2 }],
+      note: '옆으로 따라가며 달리는 느낌(가로 이동 + 가로 속도선 + 구름 입자).' },
+    { img: 'b2', cap: '급한 편지 한 통.\n「심연이 열린다. 모두 피하라.」', z: [1.0, 1.14], p: [[0, 20], [0, 0]], mv: 2.2, in: 'fade', amb: [],
+      beats: [{ t: 1.0, k: 'shake', a: 6, d: .35 }, { t: 1.0, k: 'bang', x: .7, y: .25 }, { t: 1.0, k: 'sfx', s: 'tick' }, { t: 1.0, k: 'punch', z: .05, d: .25 }],
+      note: '편지로 다가가다 1초에 \'!\' 표시가 튀어나오며 짧게 흔들린다(놀람).' },
+    { img: 'b3', cap: '도착했을 땐…\n이미 늦었다.', z: [1.12, 1.22], p: [[60, 0], [30, -20]], mv: 4, in: 'fade', amb: ['ember', 'rumble'],
+      beats: [{ t: .8, k: 'flash', c: '#a060ff', d: .6, a: .6 }, { t: .8, k: 'shake', a: 12, d: .8 }, { t: .8, k: 'burst', n: 26, x: .5, y: .3 }, { t: .8, k: 'sfx', s: 'boom' }, { t: .8, k: 'buzz', ms: 110 }],
+      note: '0.8초 동안 조용히 다가가다(뒤늦은 깨달음) 보라 번쩍임 + 큰 흔들림 + 파편.' },
+    { img: 'b4', cap: '신들은 권능을 잃고\n각자의 방식으로 떨어졌다.', z: [1.42, 1.42], p: [[0, 200], [0, -110]], mv: 5, in: 'drop', amb: ['speedV', 'fall'],
+      beats: [{ t: 0, k: 'sfx', s: 'whoosh' }, { t: 3.6, k: 'shake', a: 6, d: .5 }, { t: 3.6, k: 'sfx', s: 'chomp' }],
+      note: '위로 쓸려 내려가며 신들을 하나씩 훑는다. 끝(3.6초)에 아래 심연의 입이 보일 때 \'덥석\' 흔들림.' },
+    { img: 'b5', cap: '배달은 끝까지 한다.\n그게 전령이니까.', z: [1.02, 1.14], p: [[0, 0], [0, -16]], mv: 4, in: 'fade', amb: ['wind'],
+      beats: [{ t: .2, k: 'sfx', s: 'wind' }, { t: 1.3, k: 'punch', z: .05, d: .3 }, { t: 1.3, k: 'sfx', s: 'tick' }, { t: 1.3, k: 'burst', n: 10, x: .55, y: .4, gold: true }],
+      note: '모자를 눌러쓰는 순간(1.3초) 살짝 당기며 금빛 반짝임.' },
+    { img: 'a6', cap: '헤르메스, 뛰어든다!', z: [1.0, 1.3], p: [[0, 0], [0, 30]], mv: 1.6, ease: 'in', in: 'cut', amb: ['speedR', 'rumble'], final: true,
+      beats: [{ t: 0, k: 'flash', c: '#ffffff', d: .25 }, { t: 0, k: 'sfx', s: 'dive' }, { t: 0, k: 'shake', a: 5, d: 1.6 }, { t: 0, k: 'buzz', ms: 60 }],
+      note: 'A와 같은 마무리(다이브 → 로고).' },
+  ] },
+};
+
+/* ───── 그림 불러오기 ───── */
+const IMG = {};
+const load = n => new Promise(r => { const im = new Image(); im.onload = () => { IMG[n] = im; r(); }; im.onerror = () => r(); im.src = `img/${n}.jpg`; });
+const logo = new Image(); logo.src = 'img/logo.webp';
+
+/* ───── 소리(합성) ───── */
+let AC = null, muted = false;
+const ac = () => { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (AC && AC.state === 'suspended') AC.resume(); return AC; };
+function noise(d, f0, f1, v, type = 'lowpass') { const a = ac(); if (!a || muted) return; const n = a.createBufferSource(), b = a.createBuffer(1, a.sampleRate * d, a.sampleRate), x = b.getChannelData(0); for (let i = 0; i < x.length; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / x.length); n.buffer = b; const fl = a.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f0, a.currentTime); fl.frequency.exponentialRampToValueAtTime(f1, a.currentTime + d); const g = a.createGain(); g.gain.value = v; n.connect(fl).connect(g).connect(a.destination); n.start(); }
+function tone(f0, f1, d, v, type = 'sine', delay = 0) { const a = ac(); if (!a || muted) return; const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + delay; o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + d); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .05); }
+const SFX = {
+  chime() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 1.2, .05, 'sine', i * .12)); },
+  rumble() { noise(2.4, 180, 60, .5); },
+  eye() { tone(90, 50, 1.4, .25, 'sawtooth'); tone(520, 260, 1, .04, 'triangle'); },
+  boom() { noise(1.2, 900, 50, .9); tone(70, 30, .9, .5, 'sine'); },
+  crack() { noise(.5, 2500, 300, .35, 'bandpass'); },
+  whoosh() { noise(.7, 400, 2400, .35, 'bandpass'); },
+  wind() { noise(2.5, 600, 900, .12, 'bandpass'); },
+  tick() { tone(1400, 900, .12, .08, 'square'); },
+  chomp() { noise(.3, 600, 80, .7); tone(110, 50, .3, .3, 'square'); },
+  dive() { noise(1.4, 300, 3000, .4, 'bandpass'); },
+  slam() { noise(.9, 1200, 60, 1); tone(55, 28, 1.1, .6); [523, 659, 784].forEach((f, i) => tone(f, f, 1.4, .05, 'triangle', .15 + i * .07)); },
+  page() { noise(.25, 1200, 3000, .12, 'bandpass'); },
+};
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+/* ───── 상태 ───── */
+const IX = (x, y) => { const f = st.xf || { x0: 0, y0: 0, w: W, h: H }; return [f.x0 + x * f.w, f.y0 + y * f.h]; };   // 그림 안 위치(0~1) → 화면 위치
+const st = { v: 'A', i: 0, t: 0, prev: null, fired: new Set(), shake: [], flash: [], glow: [], punch: [], parts: [], bang: [], end: null, auto: false, idle: 0 };
+const cut = () => STORY[st.v].cuts[st.i];
+function setVersion(v) {
+  st.v = v; st.i = 0; st.t = 0; st.prev = null; st.end = null; st.fired = new Set(); st.shake = []; st.flash = []; st.glow = []; st.punch = []; st.parts = []; st.bang = [];
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  drawSpec();
+}
+function next() {
+  if (st.end) { if (st.end.t > 1.2) setVersion(st.v); return; }
+  if (st.prev && st.prev.k < .7) return;
+  const c = cut();
+  if (c.final) { st.end = { t: 0 }; SFX.slam(); buzz(140); st.flash.push({ t: 0, c: '#ffffff', d: .5, a: 1 }); st.shake.push({ t: 0, a: 14, d: .7 }); for (let i = 0; i < 40; i++) addDebris(W / 2, H * .38, true); return; }
+  SFX.page();
+  st.prev = { i: st.i, t: st.t, k: 0, mode: STORY[st.v].cuts[st.i + 1].in };
+  st.i++; st.t = 0; st.fired = new Set(); st.idle = 0; drawSpec();
+}
+
+/* ───── 효과 입자 ───── */
+const R = Math.random;
+function addDebris(x, y, gold) { const a = R() * Math.PI * 2, v = 120 + R() * 380; st.parts.push({ k: 'deb', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 120, r: 2 + R() * 6, rot: R() * 6, vr: (R() - .5) * 12, c: gold ? (R() < .5 ? '#ffd98a' : '#fff4d6') : (R() < .7 ? '#ece6f2' : '#d9b25a'), t: 0, life: .9 + R() * .8 }); }
+function amb(dt) {
+  const c = cut(); if (!c) return;
+  for (const a of c.amb) {
+    if (a === 'sparkle' && R() < dt * 14) st.parts.push({ k: 'spk', x: R() * W, y: H * (.15 + R() * .6), t: 0, life: 1.4 + R(), c: '#fff1c4' });
+    if (a === 'ember' && R() < dt * 16) st.parts.push({ k: 'emb', x: R() * W, y: H + 10, vx: (R() - .5) * 20, vy: -40 - R() * 60, t: 0, life: 4 + R() * 3, c: '#c58bff' });
+    if (a === 'dust' && R() < dt * 20) st.parts.push({ k: 'emb', x: R() * W, y: -10, vx: (R() - .5) * 40, vy: 60 + R() * 80, t: 0, life: 3, c: '#e9dcff' });
+    if (a === 'speedV' && R() < dt * 50) st.parts.push({ k: 'lineV', x: R() * W, y: H + 40, vy: -900 - R() * 600, l: 40 + R() * 90, t: 0, life: 1.4 });
+    if (a === 'speedH' && R() < dt * 40) st.parts.push({ k: 'lineH', x: W + 40, y: R() * H * .8, vx: -900 - R() * 500, l: 50 + R() * 100, t: 0, life: 1 });
+    if (a === 'speedR' && R() < dt * 60) { const an = R() * Math.PI * 2; st.parts.push({ k: 'lineR', an, d: 30 + R() * 40, v: 500 + R() * 600, l: 30 + R() * 70, t: 0, life: 1 }); }
+    if (a === 'fall' && R() < dt * 6) st.parts.push({ k: 'deb', x: R() * W, y: H + 20, vx: (R() - .5) * 30, vy: -500 - R() * 300, r: 2 + R() * 5, rot: R() * 6, vr: (R() - .5) * 6, c: '#ddd3ea', t: 0, life: 2, nog: true });
+    if (a === 'wind' && R() < dt * 18) st.parts.push({ k: 'lineH', x: W + 30, y: R() * H * .75, vx: -260 - R() * 160, l: 20 + R() * 40, t: 0, life: 2.4, soft: true });
+    if (a === 'cloud' && R() < dt * 2.5) st.parts.push({ k: 'cloud', x: W + 80, y: H * (.1 + R() * .7), vx: -500 - R() * 300, r: 40 + R() * 50, t: 0, life: 1.6 });
+  }
+}
+function fire(c, t0, t1) {
+  c.beats.forEach((b, n) => {
+    if (st.fired.has(n) || b.t > t1) return; st.fired.add(n);
+    if (b.k === 'shake') st.shake.push({ t: 0, a: b.a, d: b.d });
+    else if (b.k === 'flash') st.flash.push({ t: 0, c: b.c, d: b.d, a: b.a || 1 });
+    else if (b.k === 'glow') st.glow.push({ t: 0, ...b });
+    else if (b.k === 'punch') st.punch.push({ t: 0, z: b.z, d: b.d });
+    else if (b.k === 'burst') { const [x, y] = IX(b.x, b.y); for (let i = 0; i < b.n; i++) addDebris(x, y, b.gold); }
+    else if (b.k === 'bang') st.bang.push({ t: 0, ix: b.x, iy: b.y });
+    else if (b.k === 'sfx') SFX[b.s] && SFX[b.s]();
+    else if (b.k === 'buzz') buzz(b.ms);
+  });
+}
+
+/* ───── 그리기 ───── */
+const ease = (u, e) => e === 'out' ? 1 - Math.pow(1 - u, 3) : e === 'in' ? u * u : u * u * (3 - 2 * u);
+function cam(c, t) {
+  // 정한 시간(mv) 동안 시작→끝으로 움직이고, 그 뒤에는 끝 자리 근처에서 아주 천천히 숨 쉬듯 왕복한다(멈춘 느낌 방지)
+  const u = Math.min(1, t / c.mv), e = ease(u, c.ease), br = t > c.mv ? Math.sin((t - c.mv) * .7) * .012 : 0;
+  return { z: c.z[0] + (c.z[1] - c.z[0]) * e + br, x: c.p[0][0] + (c.p[1][0] - c.p[0][0]) * e, y: c.p[0][1] + (c.p[1][1] - c.p[0][1]) * e };
+}
+function drawCut(c, t, alpha, dy = 0) {
+  const im = IMG[c.img]; if (alpha <= 0) return;
+  const k = cam(c, t); let z = k.z; for (const p of st.punch) z += p.z * Math.sin(Math.min(1, p.t / p.d) * Math.PI);
+  ctx.save(); ctx.globalAlpha = alpha;
+  if (!im) { ctx.fillStyle = '#1a1230'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#8a80b0'; ctx.font = `16px Jua`; ctx.textAlign = 'center'; ctx.fillText(`그림 준비 중: ${c.img}`, W / 2, H / 2); ctx.restore(); return; }
+  const sc = Math.max(W / im.width, H / im.height) * z, w = im.width * sc, h = im.height * sc;
+  const mx = Math.max(0, (w - W) / 2), my = Math.max(0, (h - H) / 2), ox = Math.max(-mx, Math.min(mx, k.x)), oy = Math.max(-my, Math.min(my, k.y));
+  ctx.drawImage(im, (W - w) / 2 + ox, (H - h) / 2 + oy + dy, w, h);
+  if (c === cut()) st.xf = { x0: (W - w) / 2 + ox, y0: (H - h) / 2 + oy + dy, w, h };
+  ctx.restore();
+}
+function drawParts(dt) {
+  for (let i = st.parts.length - 1; i >= 0; i--) {
+    const p = st.parts[i]; p.t += dt; if (p.t > p.life) { st.parts.splice(i, 1); continue; }
+    const f = 1 - p.t / p.life;
+    ctx.save();
+    if (p.k === 'spk') { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.sin(p.t / p.life * Math.PI) * .9; ctx.fillStyle = p.c; const r = 1.5 + 2 * Math.sin(p.t * 6); ctx.beginPath(); ctx.moveTo(p.x, p.y - r * 2.4); ctx.lineTo(p.x + r * .6, p.y); ctx.lineTo(p.x, p.y + r * 2.4); ctx.lineTo(p.x - r * .6, p.y); ctx.closePath(); ctx.fill(); ctx.fillRect(p.x - r * 2.4, p.y - .6, r * 4.8, 1.2); }
+    else if (p.k === 'emb') { p.x += p.vx * dt; p.y += p.vy * dt; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, f * 2) * .8; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, 7); ctx.fill(); }
+    else if (p.k === 'deb') { p.x += p.vx * dt; p.y += p.vy * dt; if (!p.nog) p.vy += 900 * dt; p.rot += p.vr * dt; ctx.globalAlpha = Math.min(1, f * 3); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r * .7, p.r * 2, p.r * 1.4); ctx.fillStyle = 'rgba(40,20,60,.35)'; ctx.fillRect(-p.r, p.r * .2, p.r * 2, p.r * .5); }
+    else if (p.k === 'lineV') { p.y += p.vy * dt; ctx.globalAlpha = .55 * f; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke(); }
+    else if (p.k === 'lineH') { p.x += p.vx * dt; ctx.globalAlpha = (p.soft ? .3 : .55) * f; ctx.strokeStyle = '#fff'; ctx.lineWidth = p.soft ? 1.2 : 1.8; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.l, p.y); ctx.stroke(); }
+    else if (p.k === 'lineR') { p.d += p.v * dt; p.v *= 1 + dt * 2; const cx = W / 2, cy = H * .42, c = Math.cos(p.an), s = Math.sin(p.an); ctx.globalAlpha = .6 * Math.min(1, p.t * 4); ctx.strokeStyle = '#f2ecff'; ctx.lineWidth = 1.2 + p.d / 160; ctx.beginPath(); ctx.moveTo(cx + c * p.d, cy + s * p.d); ctx.lineTo(cx + c * (p.d + p.l), cy + s * (p.d + p.l)); ctx.stroke(); }
+    else if (p.k === 'cloud') { p.x += p.vx * dt; ctx.globalAlpha = .35 * f; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.arc(p.x + p.r * .9, p.y + p.r * .2, p.r * .7, 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
+}
+function caption(c, a, rise) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `24px Jua`; ctx.lineJoin = 'round';
+  const lines = c.cap.split('\n'), y0 = H - 150 - (lines.length - 1) * 17 + rise;
+  lines.forEach((l, k) => { ctx.lineWidth = 7; ctx.strokeStyle = '#1a0c2c'; ctx.strokeText(l, W / 2, y0 + k * 34); ctx.fillStyle = '#fff6e0'; ctx.fillText(l, W / 2, y0 + k * 34); });
+  ctx.restore();
+}
+function frameDraw(dt) {
+  const c = cut();
+  st.t += dt; st.idle += dt;
+  if (st.prev) { st.prev.t += dt; st.prev.k += dt / (st.prev.mode === 'cut' ? .08 : st.prev.mode === 'drop' ? .5 : .55); if (st.prev.k >= 1) st.prev = null; }
+  if (!st.end) { fire(c, st.t - dt, st.t); amb(dt); }
+  if (st.auto && !st.end && !st.prev && st.idle > Math.max(c.mv, 2.4) + 2.2) next();
+  // 흔들림 합
+  let sx = 0, sy = 0;
+  for (let i = st.shake.length - 1; i >= 0; i--) { const s = st.shake[i]; s.t += dt; if (s.t > s.d) { st.shake.splice(i, 1); continue; } const k = 1 - s.t / s.d; sx += Math.sin(s.t * 71 + i) * s.a * k; sy += Math.cos(s.t * 57 + i * 2) * s.a * k * .8; }
+  if (c && c.amb.includes('rumble') && !st.end) { sx += Math.sin(st.t * 43) * .9; sy += Math.cos(st.t * 37) * .9; }
+  st.punch = st.punch.filter(p => (p.t += dt) < p.d);
+  ctx.setTransform(DPR * S, 0, 0, DPR * S, 0, 0); ctx.fillStyle = '#0c0818'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(sx, sy);
+  const P = st.prev;
+  if (P && P.mode === 'drop') { const e = ease(Math.min(1, P.k), 'in'); drawCut(STORY[st.v].cuts[P.i], P.t, 1, -e * H); drawCut(c, st.t, 1, H - e * H); }
+  else { if (P) drawCut(STORY[st.v].cuts[P.i], P.t, 1); drawCut(c, st.t, P ? Math.min(1, P.k) : Math.min(1, st.t / .5 + (st.i === 0 ? 0 : 1))); }
+  // 눈빛 같은 빛 덩어리
+  for (let i = st.glow.length - 1; i >= 0; i--) { const g = st.glow[i]; g.t += dt; if (g.t > g.d) { st.glow.splice(i, 1); continue; } const k = Math.sin(g.t / g.d * Math.PI), [x, y] = IX(g.x, g.y), gr = ctx.createRadialGradient(x, y, 0, x, y, g.r * (1 + .2 * k)); gr.addColorStop(0, g.c + 'cc'); gr.addColorStop(1, g.c + '00'); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k; ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  drawParts(dt);
+  // '!' 놀람 표시
+  for (let i = st.bang.length - 1; i >= 0; i--) { const b = st.bang[i]; b.t += dt; if (b.t > 1.4) { st.bang.splice(i, 1); continue; } const s = b.t < .15 ? b.t / .15 * 1.3 : 1 + .3 * Math.max(0, 1 - (b.t - .15) / .2); ctx.save(); ctx.globalAlpha = Math.min(1, (1.4 - b.t) * 3); ctx.translate(...IX(b.ix, b.iy)); ctx.scale(s, s); ctx.rotate(-.15); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1a0c2c'; ctx.lineWidth = 5; ctx.beginPath(); for (let k = 0; k < 14; k++) { const r = k % 2 ? 18 : 30, a = k / 14 * Math.PI * 2; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.fillStyle = '#e8343c'; ctx.font = '34px Jua'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', 0, 2); ctx.restore(); }
+  ctx.restore();
+  // 영화 띠 + 자막
+  let g = ctx.createLinearGradient(0, 0, 0, 110); g.addColorStop(0, 'rgba(10,5,20,.8)'); g.addColorStop(1, 'rgba(10,5,20,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 110);
+  g = ctx.createLinearGradient(0, H - 290, 0, H); g.addColorStop(0, 'rgba(10,5,20,0)'); g.addColorStop(.45, 'rgba(10,5,20,.72)'); g.addColorStop(1, 'rgba(10,5,20,.92)'); ctx.fillStyle = g; ctx.fillRect(0, H - 290, W, 290);
+  if (!st.end) {
+    if (P) caption(STORY[st.v].cuts[P.i], 1 - Math.min(1, P.k * 2.2), 0);
+    const ct = Math.max(0, st.t - (P ? .2 : .15)), ca = Math.min(1, ct / .4); caption(c, ca, (1 - ca) * 12);
+    if (st.t > 1.6) { ctx.save(); ctx.globalAlpha = Math.min(1, (st.t - 1.6) / .6) * (.45 + .35 * Math.sin(performance.now() / 1000 * 3.2)); ctx.fillStyle = '#e8dcf0'; ctx.font = '14px Jua'; ctx.textAlign = 'center'; ctx.fillText(c.final ? '화면을 탭하면 시작' : '화면을 탭하면 다음으로', W / 2, H - 92); ctx.restore(); }
+    const n = STORY[st.v].cuts.length; for (let k = 0; k < n; k++) { ctx.beginPath(); ctx.arc(W / 2 + (k - (n - 1) / 2) * 16, H - 62, k === st.i ? 5 : 3.5, 0, 7); ctx.fillStyle = k === st.i ? '#fff' : 'rgba(255,255,255,.35)'; ctx.fill(); }
+  }
+  // 번쩍임
+  for (let i = st.flash.length - 1; i >= 0; i--) { const f = st.flash[i]; f.t += dt; if (f.t > f.d) { st.flash.splice(i, 1); continue; } ctx.save(); ctx.globalAlpha = f.a * (1 - f.t / f.d); ctx.fillStyle = f.c; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  // 마무리: 로고가 위에서 쾅 떨어지고 화면이 흔들린다
+  if (st.end) {
+    const E = st.end; E.t += dt;
+    ctx.save(); ctx.globalAlpha = Math.min(1, E.t * 3) * .82; ctx.fillStyle = '#0c0818'; ctx.fillRect(0, 0, W, H); ctx.restore();
+    const u = Math.min(1, E.t / .35), s = E.t < .35 ? 2.2 - 1.2 * u * u : 1 + .06 * Math.exp(-(E.t - .35) * 6) * Math.sin((E.t - .35) * 30);
+    if (logo.complete && logo.naturalWidth) { const lw = W * .86, lh = lw * logo.naturalHeight / logo.naturalWidth; ctx.save(); ctx.globalAlpha = Math.min(1, E.t * 4); ctx.translate(W / 2 + sx, H * .38 + sy); ctx.scale(s, s); ctx.drawImage(logo, -lw / 2, -lh / 2, lw, lh); ctx.restore(); }
+    drawParts(0);
+    if (E.t > 1.2) { ctx.save(); ctx.globalAlpha = Math.min(1, (E.t - 1.2) / .5) * (.5 + .35 * Math.sin(E.t * 3.2)); ctx.fillStyle = '#fff'; ctx.font = '18px Jua'; ctx.textAlign = 'center'; ctx.fillText('화면을 터치하세요', W / 2, H * .72); ctx.font = '13px Jua'; ctx.fillStyle = '#b9b0d8'; ctx.fillText('(시안: 한 번 더 탭하면 처음부터)', W / 2, H * .72 + 26); ctx.restore(); }
+  }
+}
+
+/* ───── 연출표(현재 장면의 단계 설명) ───── */
+function drawSpec() {
+  const c = cut(), n = STORY[st.v].cuts.length;
+  const tr = { fade: '서서히 겹침', cut: '바로 자름', drop: '위로 쓸려 올라감' }[c.in];
+  $('spec').innerHTML = `<b>${STORY[st.v].name} · ${st.i + 1}/${n}</b><br>카메라: <i>${c.z[0]}→${c.z[1]}배</i>, 이동 <i>(${c.p[0]})→(${c.p[1]})</i>, <i>${c.mv}초</i> · 들어오기: <i>${tr}</i><br>${c.note}`;
+}
+
+/* ───── 화면 맞춤·입력·루프 ───── */
+function fit() {
+  const vw = innerWidth, vh = innerHeight, sw = Math.min(vw, Math.round(vh * 10 / 16));
+  stage.style.width = sw + 'px'; DPR = Math.min(devicePixelRatio || 1, 2.5);
+  W = 360; S = sw / W; H = vh / S; cv.width = Math.round(sw * DPR); cv.height = Math.round(vh * DPR);
+}
+addEventListener('resize', fit); fit();
+stage.addEventListener('pointerdown', e => { if (e.target.closest('#bar')) return; ac(); next(); });
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { ac(); setVersion(b.dataset.v); } });
+$('bSpec').onclick = () => { $('spec').classList.toggle('on'); $('bSpec').classList.toggle('on'); };
+$('bAuto').onclick = () => { st.auto = !st.auto; $('bAuto').classList.toggle('on', st.auto); };
+$('bSkip').onclick = () => { ac(); const cs = STORY[st.v].cuts; st.i = cs.length - 1; st.prev = null; st.t = 9; st.fired = new Set(cs[st.i].beats.map((_, n) => n)); next(); };
+let last = performance.now();
+function loop(now) { requestAnimationFrame(loop); const dt = Math.min(.05, (now - last) / 1000); last = now; frameDraw(dt); }
+const q = new URLSearchParams(location.search); if (q.get('v')) setVersion(q.get('v')); else drawSpec();
+Promise.all([...new Set(Object.values(STORY).flatMap(s => s.cuts.map(c => c.img)))].map(load)).then(() => requestAnimationFrame(loop));
+window.__intro = { st, STORY, next, setVersion, frameDraw };
+</script>
+</body>
+</html>

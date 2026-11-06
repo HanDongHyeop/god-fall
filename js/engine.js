@@ -7,8 +7,11 @@ const PPT = {
   stick:  { left: 103, bottom: 121, knobR: 41 },
   zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },   // 조이스틱이 나타날 수 있는 x 범위(그대로)
   touch:  { x0: 0, x1: .56 },                            // 조이스틱을 잡을 수 있는 x 범위: 화면 가운데까지 넓힌다(2026-11-06)
-  attack: { right: 150, bottom: 91, r: 59 },
-  jump:   { innerR: 80, outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76] },
+  attack: { right: 162, bottom: 91, r: 59 },   // 2026-11-06: 살짝 왼쪽으로(150→162)
+  // 점프: 원래 모양(outer·innerEnd, 공격 중심 기준 각 -78°~10°, 반지름 78~136)을 그대로 두고
+  // 아래로 돌려(가운데 각 -34°→-12°) 넓히고(각 ×1.09) 키운다(반지름 80~152). 공격 오른쪽 아래를 눌러도 점프가 된다
+  jump:   { outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76], c0: -34, r0: 78, r1: 136, c: -12, k: 1.09, ri: 80, ro: 152,
+            hit: { a0: -96, a1: 62, rMax: 174 } },
 };
 const STICK_RADIUS_RATIO = 2.45, STICK_DEAD_PX = 6;
 /* 테스트용 키. 화면에 글자로 쓰지 않는다(나중에 바꿀 값) */
@@ -172,13 +175,17 @@ var layout = function () {
   ui.stickHome.x = PPT.stick.left * u; ui.stickHome.y = H - PPT.stick.bottom * u - view.safeB;
   ui.zone = { x0: W * PPT.touch.x0, x1: W * PPT.touch.x1, y0: H * PPT.zone.y0, y1: H * PPT.zone.y1, sx0: W * PPT.zone.x0, sx1: W * PPT.zone.x1 };
   const a = ui.attack; a.x = W - PPT.attack.right * u; a.y = H - PPT.attack.bottom * u - view.safeB; a.r = PPT.attack.r * u;
-  const j = PPT.jump, pts = j.outer.map(([x, y]) => [a.x + x * u, a.y + y * u]), p = new Path2D();
-  p.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) p.lineTo(pts[i][0], pts[i][1]);
-  p.arc(a.x, a.y, j.innerR * u, Math.atan2(j.outer[4][1], j.outer[4][0]), Math.atan2(j.innerEnd[1], j.innerEnd[0]), true);
+  const j = PPT.jump, D = Math.PI / 180, p = new Path2D();
+  const pol = ([x, y]) => { const t = j.c + (Math.atan2(y, x) / D - j.c0) * j.k, r = j.ri + (Math.hypot(x, y) - j.r0) * (j.ro - j.ri) / (j.r1 - j.r0); return [t * D, r]; };
+  const xy = ([t, r]) => [a.x + Math.cos(t) * r * u, a.y + Math.sin(t) * r * u], pts = j.outer.map(pol);
+  p.moveTo(...xy(pts[0]));
+  for (let i = 1; i < pts.length; i++) p.lineTo(...xy(pts[i]));
+  const tEnd = pts[4][0], tTop = pol(j.innerEnd)[0];
+  p.arc(a.x, a.y, j.ri * u, tEnd, tTop, true);
   p.closePath(); ui.jumpPath = p;
-  ui.jumpCenter = { x: a.x + 86 * u, y: a.y - 56 * u };
-  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: 168 * u, a0: -112 * Math.PI / 180, a1: 28 * Math.PI / 180 };
+  ui.jumpArc = { tb: tEnd, tt: Math.min(tTop, pts[0][0]), R: j.ro * 1.3 * u };   // 게이지는 아래 끝(tb)에서 위 끝(tt)으로 찬다
+  ui.jumpCenter = { x: xy(pol([86, -56]))[0], y: xy(pol([86, -56]))[1] }; ui.jumpTop = { x: xy(pts[0])[0], y: xy(pts[0])[1] };
+  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: j.hit.rMax * u, a0: j.hit.a0 * D, a1: j.hit.a1 * D };
   input.resetStickVisual();
 };
 
@@ -219,7 +226,8 @@ const input = {
   },
   up(e) { const p = this.ptr.get(e.pointerId); if (!p) return; this.ptr.delete(e.pointerId); if (p.role === 'stick') this.endStick(); else this.syncButtons(); },
   beginStick(id, x, y) {
-    const s = this.stick; s.id = id; s.ox = x; s.oy = y; s.dx = 0;
+    // 화면 맨 왼쪽 끝(16px 안)에 엄지를 대면 더 밀 자리가 없으므로, 시작점을 16px로 잡아 그 자리 그대로 왼쪽 입력이 되게 한다(2026-11-07)
+    const s = this.stick; s.id = id; s.ox = Math.max(x, 16); s.oy = y; s.dx = x - s.ox;
     const ax = clamp(x, ui.knobR + 3, Math.max(ui.knobR + 3, ui.zone.sx1)), ay = clamp(y, ui.knobR + 3, view.H - ui.knobR - 3 - view.safeB * .5);
     s.centerX = s.baseX = s.knobX = ax; s.centerY = s.baseY = s.knobY = ay; s.baseAlpha = .35; s.pop = 0;
   },
@@ -512,23 +520,30 @@ function drawButtons(dt) {
   ctx.save();
   const jk = 1 - .05 * btnAnim.j, jc = ui.jumpCenter;
   ctx.translate(jc.x, jc.y); ctx.scale(jk, jk); ctx.translate(-jc.x, -jc.y);
-  const jg = ctx.createLinearGradient(jc.x, jc.y - 70 * u, jc.x, jc.y + 70 * u);
-  if (!canJump) { jg.addColorStop(0, 'rgba(120,128,150,.72)'); jg.addColorStop(1, 'rgba(70,76,96,.72)'); }
-  else { jg.addColorStop(0, jOn ? 'rgba(170,232,255,.97)' : 'rgba(118,205,245,.8)'); jg.addColorStop(1, jOn ? 'rgba(70,160,235,.97)' : 'rgba(44,124,210,.8)'); }
-  ctx.fillStyle = jg; ctx.fill(ui.jumpPath);
-  ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.6, 2.4 * u); ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.stroke(ui.jumpPath);
-  const ax = jc.x + 3 * u, ay = jc.y - 6 * u, as = 16 * u;
-  ctx.lineCap = 'round'; ctx.lineWidth = 7 * u; ctx.strokeStyle = '#fff';
-  ctx.beginPath(); ctx.moveTo(ax - as, ay + as * .3); ctx.lineTo(ax, ay - as * .75); ctx.lineTo(ax + as, ay + as * .3); ctx.stroke();
-  // 점프 게이지 2칸
-  if (p) {
-    const bw = 24 * u, bh = 8 * u, gap = 4 * u, x0 = ax - bw - gap / 2, y0 = ay + as * .9;
-    for (let i = 0; i < 2; i++) {
-      const x = x0 + i * (bw + gap), f = clamp(p.gauge / T.gaugeCost - i, 0, 1);
-      ctx.fillStyle = 'rgba(10,20,45,.7)'; ctx.fillRect(x, y0, bw, bh);
-      ctx.fillStyle = f >= 1 ? '#eafaff' : '#8cc6e6'; ctx.fillRect(x, y0, bw * f, bh);
-    }
+  // 점프 버튼 자체가 게이지(2칸): 빈 칸은 어두운 남색, 차는 중인 칸은 옅은 파랑, 찬 칸은 진한 파랑. 아래 칸부터 위로 찬다
+  ctx.fillStyle = 'rgba(16,26,58,.74)'; ctx.fill(ui.jumpPath);
+  const J = ui.jumpArc, cells = 2, gf = p ? clamp(p.gauge / T.gaugeCost, 0, cells) : cells;
+  ctx.save(); ctx.clip(ui.jumpPath);
+  for (let i = 0; i < cells; i++) {
+    const f = clamp(gf - i, 0, 1); if (f <= 0) continue;
+    const s0 = J.tb + (J.tt - J.tb) * i / cells, s1 = J.tb + (J.tt - J.tb) * (i + f) / cells;
+    let fs;
+    if (f >= 1) { fs = ctx.createLinearGradient(jc.x, jc.y - 80 * u, jc.x, jc.y + 80 * u); fs.addColorStop(0, jOn ? 'rgba(170,232,255,.97)' : 'rgba(118,205,245,.86)'); fs.addColorStop(1, jOn ? 'rgba(70,160,235,.97)' : 'rgba(44,124,210,.86)'); }
+    else fs = 'rgba(96,150,200,.62)';
+    ctx.fillStyle = fs; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.arc(a.x, a.y, J.R, s0, s1, true); ctx.closePath(); ctx.fill();
+    if (f < 1) { ctx.strokeStyle = 'rgba(200,240,255,.9)'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + Math.cos(s1) * J.R, a.y + Math.sin(s1) * J.R); ctx.stroke(); }
   }
+  // 칸 나눔: 화살표를 가리지 않게 안쪽·바깥 가장자리에 짧은 홈만
+  const sm = (J.tb + J.tt) / 2, cs_ = Math.cos(sm), sn_ = Math.sin(sm), ri = PPT.jump.ri * u, ro = PPT.jump.ro * u; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(2, 3.2 * u); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(a.x + cs_ * (ri - 4 * u), a.y + sn_ * (ri - 4 * u)); ctx.lineTo(a.x + cs_ * (ri + 18 * u), a.y + sn_ * (ri + 18 * u));
+  ctx.moveTo(a.x + cs_ * (ro - 20 * u), a.y + sn_ * (ro - 20 * u)); ctx.lineTo(a.x + cs_ * (ro + 6 * u), a.y + sn_ * (ro + 6 * u)); ctx.stroke();
+  ctx.restore();
+  ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.6, 2.4 * u); ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.stroke(ui.jumpPath);
+  const ax = jc.x + 3 * u, ay = jc.y + 2 * u, as = 17 * u;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(ax - as, ay + as * .3); ctx.lineTo(ax, ay - as * .75); ctx.lineTo(ax + as, ay + as * .3);
+  ctx.lineWidth = 11 * u; ctx.strokeStyle = 'rgba(10,30,70,.35)'; ctx.stroke();
+  ctx.lineWidth = 7 * u; ctx.strokeStyle = canJump ? '#fff' : 'rgba(255,255,255,.55)';
+  ctx.beginPath(); ctx.moveTo(ax - as, ay + as * .3); ctx.lineTo(ax, ay - as * .75); ctx.lineTo(ax + as, ay + as * .3); ctx.stroke();
   ctx.restore();
   const ar = a.r * (1 - .06 * btnAnim.a), empty = p && p.ammo <= 0;
   const ag = ctx.createRadialGradient(a.x - ar * .3, a.y - ar * .4, ar * .1, a.x, a.y, ar);

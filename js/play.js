@@ -91,7 +91,10 @@ function pickKind(R, w) {
    수직굴은 지형을 아래로 밀어 만들므로 벽과 배경이 실제로 위로 지나간다. 자동 시험의 수동 진행에서는 __intro를 켰을 때만 쓴다 */
 const DESCENT = { first: 30, next: 12, settle: .45 };
 function beginWave(rows) {
-  const g = game; g.introRows = (window.__manual && !window.__intro) || window.__noIntro ? 0 : rows;
+  const g = game;
+  // 이전 보스전의 카메라 고정을 판마다 푼다. 다음 판 넘어갈 때만 풀면, 보스전 중 새 판을 시작할 때(디버그 판 이동 등) 카메라만 옛 보스방 바닥에 남는다
+  g.camLock = false; g.bossCam = undefined; g.boss = null;
+  g.introRows = (window.__manual && !window.__intro) || window.__noIntro ? 0 : rows;
   buildWave();
   if (g.introRows > 0) { g.state = 'descend'; g.landed = false; g.descT = DESCENT.settle; g.cine = 0; input.clearAll(); g.p.y = 30; $('pause').style.visibility = 'hidden'; if (g.banner) g.banner.life = Math.max(g.banner.life, g.introRows * TILE / T.maxFall + .5); }
   else g.state = 'play';

@@ -289,7 +289,7 @@ const UI = {
     const best = Math.max(0, ...res.map(rankOf)), lv = best >= 3 ? 'lg' : best >= 2 ? 'ep' : best >= 1 ? 'rr' : 'nm';
     const col = { nm: '#ffffff', rr: GRADES[1].color, ep: GRADES[2].color, lg: '#ffc640' }[lv], dur = { nm: 760, rr: 980, ep: 2000, lg: 2500 }[lv];
     el.style.setProperty('--gc', col);
-    el.innerHTML = `<div class="ga-stage ${lv}"><div class="ga-rays"></div><div class="ga-glow"></div><img class="ga-chest go-${lv}" src="${uiIcon(C.icon)}" alt=""><div class="ga-hint">${lv === 'ep' || lv === 'lg' ? '<b class="oL">무언가 대단한 것이…!</b>' : ''}</div></div>`;
+    el.innerHTML = `<div class="ga-stage lv-${lv}"><div class="ga-rays"></div><div class="ga-glow"></div><img class="ga-chest go-${lv}" src="${uiIcon(C.icon)}" alt=""><div class="ga-hint">${lv === 'ep' || lv === 'lg' ? '<b class="oL">무언가 대단한 것이…!</b>' : ''}</div></div>`;
     sfx.rumble(); (this._gaT || []).forEach(clearTimeout); this._gaT = [];
     // 두구두구: 튈 때마다 북소리가 빨라지고 높아진다
     if (lv === 'ep' || lv === 'lg') [180, 640, 1020, 1300, 1500, 1640, 1740, 1820].forEach((t, i) => this._gaT.push(setTimeout(() => { sfx.drum(i); if (i % 2 === 0) vibrate(18 + i * 4); }, t * dur / 2000)));
@@ -307,7 +307,7 @@ const UI = {
         if (r.type === 'shard') return `<div class="ga-it ${k >= 2 ? 'g2' : ''}" style="--g:${GOD_BY[r.god].rankCol};${d}">${fx}<div class="sc" style="background:${GOD_BY[r.god].rankCol};overflow:hidden"><img style="inset:0;width:100%;height:auto" src="assets/god/${r.god}/big_bare.webp" alt=""><b class="oL">${r.n}</b></div>${tag}<span class="ga-nm">${GOD_BY[r.god].name} 조각</span></div>`;
         return `<div class="ga-it" style="${d}"><div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(r.slot === 'weapon' ? 'w_' + Meta.s.god : r.slot + '_a')}" alt=""><b class="oL">${r.n}</b></div><span class="ga-nm">두루마리</span></div>`;
       }).join('');
-      el.innerHTML = `<div class="ga-flash ${lv}"></div><div class="ga-title oL">${lv === 'lg' ? '전설 획득!' : lv === 'ep' ? '에픽 획득!' : '획득!'}</div><div class="ga-grid ${lay}">${cells}</div><button class="btn gold" id="gaOk" style="width:calc(var(--u)*50);margin-top:calc(var(--u)*2)">확인</button>`;
+      el.innerHTML = `<div class="ga-flash lv-${lv}"></div><div class="ga-title oL">${lv === 'lg' ? '전설 획득!' : lv === 'ep' ? '에픽 획득!' : '획득!'}</div><div class="ga-grid ${lay}">${cells}</div><button class="btn gold" id="gaOk" style="width:calc(var(--u)*50);margin-top:calc(var(--u)*2)">확인</button>`;
       // 에픽 이상 칸은 나타나는 순간 불꽃이 튄다
       [...el.querySelectorAll('.ga-it.g2,.ga-it.g3')].forEach(c => this._gaT.push(setTimeout(() => { if (c.isConnected) sparkBurst(c, getComputedStyle(c).getPropertyValue('--g').trim() || '#fff', 16, 1.3); }, parseInt(c.style.animationDelay) + 180)));
       $('gaOk').onclick = () => { sfx.tap(); this._gaT.forEach(clearTimeout); el.classList.remove('on'); this.render(); };
