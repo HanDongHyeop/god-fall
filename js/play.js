@@ -109,7 +109,7 @@ function tickDescent(dt) {
   }
 }
 function buildWave() {
-  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w), rest = isRestWave(w), L = g.lv = dlv(w);
+  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w), rest = isRestWave(w), L = g.lv = dlv(w); g.lvM = Math.min(L, MOVE_L_CAP);
   g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
   const restKind = rest ? pickRestKind(R) : null;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
@@ -218,7 +218,7 @@ function buildWave() {
     if (w < 2 && g.chapter === 0) kind = 'mound';
     if (kind === 'spit' && w < 3 && g.chapter === 0) kind = 'mound';
     const rad = ENEMY[kind].r;
-    g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + L * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
+    g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + g.lvM * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   const p = g.p;
@@ -611,13 +611,13 @@ function updateEnemies(dt, jumpHeld) {
         // 뱉는 괴물: 부풀어 오른 뒤 쏜다(예고)
         e.shootT -= dt; e.swell = e.shootT < .45;
         if (e.shootT <= 0 && Math.abs(p.y - e.y) < 360) {
-          e.shootT = Math.max(1.3, 2.6 - g.lv * .08);
-          const dx = p.x - e.x, dy = p.y - e.y - 10, d = Math.hypot(dx, dy) || 1, v = Math.min(300, 150 + g.lv * 8);
+          e.shootT = Math.max(1.3, 2.6 - g.lvM * .08);
+          const dx = p.x - e.x, dy = p.y - e.y - 10, d = Math.hypot(dx, dy) || 1, v = Math.min(300, 150 + g.lvM * 8);
           g.ebul.push({ x: e.x, y: e.y - e.r, vx: dx / d * v, vy: dy / d * v, r: 6, dmg: Math.round(e.dmg * .8), t: 0, col: '#ff9a8a' }); e.pop = 1; sfx.spit();
         }
       }
     } else if (k === 'eye') {
-      const dx = p.x - e.x, dy = p.y - e.y, near = Math.hypot(dx, dy) < 280, sp = (56 + g.lv * 5) * spd;
+      const dx = p.x - e.x, dy = p.y - e.y, near = Math.hypot(dx, dy) < 280, sp = (56 + g.lvM * 5) * spd;
       if (near) { e.baseX += clamp(dx, -1, 1) * sp * dt; e.baseY += clamp(dy, -1, 1) * sp * .75 * dt; }
       e.x = e.baseX; e.y = e.baseY + Math.sin(tt * 4) * 5; e.face = Math.sign(dx) || 1;
     } else if (k === 'sac') {
@@ -628,16 +628,20 @@ function updateEnemies(dt, jumpHeld) {
       if (!e.still) { e.x = clamp(e.baseX + Math.sin(tt * 1.3 * spd) * 46, TILE + 14, WORLD_W - TILE - 14); e.y = e.baseY + Math.cos(tt * 1.7) * 12; }
       else { e.y = e.baseY + Math.sin(tt * 2) * 4; }
     } else if (k === 'leech') {
-      e.y += e.dir * (30 + g.lv * 4) * spd * dt;
+      e.y += e.dir * (30 + g.lvM * 4) * spd * dt;
       if (Math.abs(e.y - e.baseY) > 110) e.dir *= -1;
       e.face = e.wall;
     } else if (k === 'shade') {
       const dx = p.x - e.baseX, dy = p.y - e.baseY, d = Math.hypot(dx, dy);
-      if (d < 340) { const sp = (40 + g.lv * 4) * spd; e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }
+      // 그림자는 벽을 지나 쫓아오지만 자기 자리에서 SHADE.leash 넘게는 따라오지 않고 돌아간다(무리가 되어 끝까지 따라붙던 문제, bot_v21.py 측정)
+      if (e.homeY === undefined) { e.homeX = e.baseX; e.homeY = e.baseY; }
+      const far = Math.hypot(e.baseX - e.homeX, e.baseY - e.homeY) > SHADE.leash;
+      if (d < SHADE.sight && !far) { const sp = Math.min(SHADE.maxSpd, (40 + g.lvM * 4) * spd); e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }
+      else if (far || d >= SHADE.sight) { const hx = e.homeX - e.baseX, hy = e.homeY - e.baseY, hd = Math.hypot(hx, hy); if (hd > 4) { e.baseX += hx / hd * 70 * dt; e.baseY += hy / hd * 70 * dt; } }
       e.x = e.baseX + Math.sin(tt * 2.4) * 8; e.y = e.baseY; e.face = Math.sign(dx) || 1;
     } else if (k === 'bat') {
       if (e.sleep) {
-        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.lv * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.lv * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
+        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.lvM * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.lvM * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
       } else if (e.dashT > 0 && batDashTick(e, dt, spd)) { e.x += Math.sin(tt * 40) * .6; } else {
         e.x += e.vx * dt + Math.sin(tt * 12) * 1.2; e.y += e.vy * dt;
         if (e.x < TILE + 8 || e.x > WORLD_W - TILE - 8) e.vx *= -1;

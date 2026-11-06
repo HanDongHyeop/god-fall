@@ -242,8 +242,8 @@ function bossTick(dt) {
       const kind = b.def.minion || 'bat', n = b.phase === 2 ? 3 : 2, ground = kind === 'mound' || kind === 'tick' || kind === 'spit';
       for (let i = 0; i < n; i++) {
         const side = i % 2 ? 1 : -1, x = clamp(b.x + side * (b.w * .5 + 20 + i * 18), TILE + 16, WORLD_W - TILE - 16), y = ground ? floorY - ENEMY[kind].r : floorY - 90 - Math.random() * 170;
-        const e = mkEnemy(kind, x, y, { sleep: false, ph: Math.random() * 6, baseX: x, baseY: y, dir: side, spd: 40 + g.lv * 3, shootT: 1.5 });
-        if (kind === 'bat') { const d = Math.hypot(p.x - x, p.y - y) || 1, v = 150 + g.lv * 5; e.vx = (p.x - x) / d * v; e.vy = (p.y - y) / d * v; }
+        const e = mkEnemy(kind, x, y, { sleep: false, ph: Math.random() * 6, baseX: x, baseY: y, dir: side, spd: 40 + g.lvM * 3, shootT: 1.5 });
+        if (kind === 'bat') { const d = Math.hypot(p.x - x, p.y - y) || 1, v = 150 + g.lvM * 5; e.vx = (p.x - x) / d * v; e.vy = (p.y - y) / d * v; }
         e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * .6)); e.pop = 1; g.enemies.push(e); inkBurst(x, y, 10, ENEMY[kind].col, false);
       }
       sfx.spit(); b.sy = .86; bossSet('idle');

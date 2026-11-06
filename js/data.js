@@ -223,8 +223,12 @@ const chapterOf = w => Math.floor((w - 1) / STAGES), stageOf = w => (w - 1) % ST
 const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, name: (deep ? '심층 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
 /* 난이도 단계: 챕터 1~6은 예전 3판 구성과 같은 값(챕터 c의 첫 판 = 3c+1, 보스 = 3c+3)을 6판에 고르게 나눈다.
    심층(챕터 7~12)은 단계마다 DEEP_STEP씩 더 가파르다(tools/test/econ_v21.py 성장 시뮬레이션으로 정함) */
-/* ch = 챕터 하나에 오르는 단계, deep = 심층에서 그 배율. econ_v21.py로 정했다(2026-11-06): 하루 10판 기준 1~3챕터 첫날, 6챕터 약 3일, 9챕터 약 10일, 12챕터 약 4주 */
-const DIFF_STEP = { ch: 3.8, deep: 1.0 };
+/* ch = 챕터 하나에 오르는 단계, deep = 심층에서 그 배율. econ_v21.py로 정했다(2026-11-06, 봇으로 잰 '깊을수록 자주 맞는 정도' 반영):
+   하루 10판 기준 3챕터 1.5일, 6챕터 약 6일, 9챕터 약 12일, 12챕터 약 26일. 후반은 성장이 골드에 묶여 느려지므로 심층 기울기를 줄였다 */
+const DIFF_STEP = { ch: 3.4, deep: .6 };
+/* 몬스터 이동·탄 속도는 이 단계에서 멈춘다(6챕터 수준). 넘으면 그림자·외눈이 주인공(초당 235)보다 빨라져 피할 수 없다(bot_v21.py 측정, 2026-11-06) */
+const MOVE_L_CAP = 16;
+const SHADE = { sight: 300, leash: 360, maxSpd: 140 };   // 그림자: 알아채는 거리, 자기 자리에서 따라오는 한계, 최고 속도(주인공 235)
 const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : DIFF_STEP.deep, base = c < 6 ? c * DIFF_STEP.ch : 6 * DIFF_STEP.ch + (c - 6) * DIFF_STEP.ch * k; return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };
 /* ───── 난이도 곡선: 단계 L이 오를수록 적과 보스가 강해진다. DIFF는 판 번호를 받아 단계로 바꿔 쓴다 ───── */
 const DIFF_L = {

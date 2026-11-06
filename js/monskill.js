@@ -23,7 +23,7 @@ const skCol = e => (SKILL_DEF[e.sk] && SKILL_DEF[e.sk].col) || '#ff9a8a';
 function monShot(e, a, v, o = {}) {
   const g = game; g.ebul.push({ x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: o.r || 6, dmg: Math.round(e.dmg * .8), t: 0, col: o.col || skCol(e), g: o.g || 0, pool: o.pool, ghost: o.ghost });
 }
-const shotV = () => Math.min(250, 140 + game.lv * 5);
+const shotV = () => Math.min(250, 140 + game.lvM * 5);
 
 /* 매 프레임: 움직임 뒤, 충돌 앞 */
 function monSkillTick(e, dt) {
@@ -83,7 +83,7 @@ function batDashStart(e) {
 }
 function batDashTick(e, dt, spd) {
   e.dashT -= dt; if (e.dashT > 0) return true;
-  const v = (170 + game.lv * 9) * spd * (e.elite ? 2.1 : 1.8); e.vx = Math.cos(e.dashA) * v; e.vy = Math.sin(e.dashA) * v; e.dashT = 0; return false;
+  const v = (170 + game.lvM * 9) * spd * (e.elite ? 2.1 : 1.8); e.vx = Math.cos(e.dashA) * v; e.vy = Math.sin(e.dashA) * v; e.dashT = 0; return false;
 }
 /* 죽을 때 쓰는 능력. 보스가 쓰러지며 함께 죽는 몬스터는 쓰지 않는다 */
 function monDeath(e) {
