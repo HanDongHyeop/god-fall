@@ -34,7 +34,14 @@ const UI = {
     $('bLearned').onclick = () => this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">얻은 능력</div><button class="x" data-close>✕</button>${learnedHTML()}</div>`);
     setInterval(() => { if ($('lobby').classList.contains('on')) { Meta.tick(); this.refreshTop(); } }, 5000);
     // 타이틀: 첫 터치에서 오디오를 깨우고 로비로
-    const go = () => { sfx.init(); sfx.card(); $('mTitle').classList.remove('on'); $('lobby').classList.add('on'); sfx.bgmFor && sfx.bgmFor('lobby'); GODS.forEach(g => { if (Meta.godLv(g.id)) loadGod(g.id); }); loadChapterMon(); };
+    const enter = () => { $('mTitle').classList.remove('on'); $('lobby').classList.add('on'); sfx.bgmFor && sfx.bgmFor('lobby'); GODS.forEach(g => { if (Meta.godLv(g.id)) loadGod(g.id); }); loadChapterMon(); };
+    // 처음이면 인트로(js/intro.js)를 먼저 보여 준다. 한 번도 판을 안 한 사람은 인트로의 다이브가 그대로 챕터 1 낙하로 이어진다
+    const go = () => {
+      sfx.init(); sfx.card(); $('mTitle').onclick = null;
+      if (!Meta.s.introSeen && typeof Intro !== 'undefined') { const fresh = !Meta.s.seenTip; Intro.play(() => { Meta.s.introSeen = true; Meta.save(); enter(); if (fresh) { this.chapterView = 0; this.render(); this.start(); } }); return; }
+      enter();
+    };
+    if (!Meta.s.introSeen && typeof Intro !== 'undefined') Intro.preload();
     // 요청이 끝나지 않아도 15초 뒤에는 넘어갈 수 있다. 늦은 그림은 도착하는 대로 나타난다
     const wait0 = performance.now(), wait = setInterval(() => { const keys = Object.keys(IMG), done = keys.filter(k => IMG[k].complete).length, ready = done >= keys.length * .85 || performance.now() - wait0 > 15000; $('tgo').textContent = ready ? '화면을 터치하세요' : `불러오는 중 ${Math.round(done / keys.length * 100)}%`; if (ready) { clearInterval(wait); $('mTitle').onclick = go; } }, 120);
     addEventListener('beforeunload', () => Meta.save());
@@ -330,7 +337,8 @@ const UI = {
     el.onclick = e => { const b = e.target.closest('[data-t]'); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); } };
   },
   settings() {
-    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">설정</div><button class="x" data-close>✕</button><div class="ip-acts"><button class="btn blue" id="stMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button></div><div class="ip-acts"><button class="btn red" id="stReset">처음부터 다시</button></div><div class="note">GOD FALL 개발판. 저장은 이 브라우저에 됩니다.</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">설정</div><button class="x" data-close>✕</button><div class="ip-acts"><button class="btn blue" id="stMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button></div><div class="ip-acts"><button class="btn blue" id="stIntro">인트로 다시 보기</button></div><div class="ip-acts"><button class="btn red" id="stReset">처음부터 다시</button></div><div class="note">GOD FALL 개발판. 저장은 이 브라우저에 됩니다.</div></div>`);
+    $('stIntro').onclick = () => { this.closePop(); Intro.play(() => {}); };
     $('stMute').onclick = e => { sfx.setMute(!sfx.muted); e.target.textContent = `소리 ${sfx.muted ? '켜기' : '끄기'}`; };
     $('stReset').onclick = e => { if (e.target.dataset.k) { Meta.reset(); this.closePop(); this.go('battle'); this.toast('처음부터 시작합니다'); } else { e.target.dataset.k = 1; e.target.textContent = '한 번 더 누르면 지워집니다'; } };
   },
