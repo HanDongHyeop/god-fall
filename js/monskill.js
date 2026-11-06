@@ -5,7 +5,7 @@
 /* 웨이브를 만든 뒤: 이 챕터에서 능력을 갖는 종에게 능력을 붙이고, 일부는 강화 개체로 만든다 */
 function decorateWave(R) {
   // 챕터 안 판 1·2 → 웨이브 1·2 값, 판 4·5 → 웨이브 3 값. 심층(챕터 7~12)은 능력 개체가 더 많고 강화 개체가 1.8배
-  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = [0, 1, 1, 2, 2, 2][stageOf(g.wave) - 1], easy = g.chapter === 0 ? .5 : 1;
+  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = [0, 1, 1, 2, 2, 2][stageOf(g.wave) - 1], easy = chapterOf(g.wave) === 0 ? 0 : 1;
   const rate = Math.min(.95, MON_SKILL_RATE[wi] * easy * (g.deep ? 1.25 : 1)), er = ELITE.rate[wi] * easy * (g.deep ? 1.8 : 1);
   for (const e of g.enemies) {
     const sk = tbl[e.kind]; if (!sk || e.still) continue;   // 가시 장벽(멈춘 성게)은 그대로 둔다

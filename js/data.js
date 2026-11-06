@@ -145,7 +145,7 @@ const MON_SKILL = {
   b5: { spit: 'lob', mound: 'split', sac: 'ring', leech: 'drip', eye: 'shot', bat: 'dash' },
   b6: { shade: 'blink', eye: 'laser', urchin: 'spike', bat: 'dash', spit: 'fan', mound: 'burn' },
 };
-const MON_SKILL_RATE = [.3, .6, .9];          // 챕터 안 웨이브 1·2·3에서 능력을 가진 개체 비율(챕터 1은 절반)
+const MON_SKILL_RATE = [.3, .6, .9];          // 챕터 안 웨이브 1·2·3에서 능력을 가진 개체 비율. 챕터 1은 기본 행동만 익히는 챕터라 능력이 없다(MON_SKILL.b1은 심층 챕터 7에서 쓴다)
 const ELITE = { rate: [0, .08, .16], hp: 2.4, size: 1.3, gem: 3 };
 /* 재사용 대기(초)와 강화 개체일 때 바뀌는 값 */
 const SKILL_DEF = {
@@ -228,13 +228,14 @@ const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOM
 const DIFF_STEP = { ch: 3.4, deep: .6 };
 /* 몬스터 이동·탄 속도는 이 단계에서 멈춘다(6챕터 수준). 넘으면 그림자·외눈이 주인공(초당 235)보다 빨라져 피할 수 없다(bot_v21.py 측정, 2026-11-06) */
 const MOVE_L_CAP = 16;
+const FIRST_BOSS = { hp: .75, tempo: .85 };   // 챕터 1 보스만
 const SHADE = { sight: 300, leash: 360, maxSpd: 140 };   // 그림자: 알아채는 거리, 자기 자리에서 따라오는 한계, 최고 속도(주인공 235)
 const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : DIFF_STEP.deep, base = c < 6 ? c * DIFF_STEP.ch : 6 * DIFF_STEP.ch + (c - 6) * DIFF_STEP.ch * k; return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };
 /* ───── 난이도 곡선: 단계 L이 오를수록 적과 보스가 강해진다. DIFF는 판 번호를 받아 단계로 바꿔 쓴다 ───── */
 const DIFF_L = {
   hp: L => (1 + .24 * (L - 1)) * Math.pow(1.045, L - 1),
-  // 2026-11-04 사용자 판단 "더 쉽게": 단계 1~5의 부담만 낮추고 단계 6부터는 그대로 둔다
-  dmg: L => (L < 6 ? .75 + .05 * (L - 1) : 1) * (1 + .11 * (L - 1)),
+  // 단계 1~5의 부담만 낮추고 단계 6부터는 그대로 둔다. 2026-11-06 봇 대조: 시작 장비로 1챕터를 못 깨서 .75 → .6에서 시작
+  dmg: L => (L < 6 ? .6 + .08 * (L - 1) : 1) * (1 + .11 * (L - 1)),
   speed: L => 1 + Math.min(.6, .05 * (L - 1)),
   spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게)
   rows: L => Math.round(Math.min(150, 80 + L * 5)),                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게

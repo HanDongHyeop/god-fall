@@ -14,6 +14,8 @@ function startBossIntro() {
   g.state = 'intro'; input.clearAll(); g.camLock = true; g.bossCam = Math.max(0, g.levelH + TILE - view.worldH); g.bullets = [];
   const floorY = g.floorRow * TILE;
   g.boss = { def: b, idx: g.biome.boss, alive: true, x: WORLD_W / 2, y: floorY + b.h + 20, w: b.w, h: b.h, floorY, hp: DIFF.bossHp(g.wave) * b.hpMul, maxHp: DIFF.bossHp(g.wave) * b.hpMul, state: 'intro', t: 0, flash: 0, pop: 0, open: 0, barK: 0, cool: 1, phase: 1, vy: 0, vx: 0, sx: 1, sy: 1, dir: 1, last: '' };
+  // 첫 챕터 보스는 익히는 보스: 체력 0.75배, 공격 박자 0.85배(2026-11-06 봇 대조로 정함)
+  if (chapterOf(g.wave) === 0) { g.boss.hp = g.boss.maxHp = g.boss.maxHp * FIRST_BOSS.hp; g.boss.easy = FIRST_BOSS.tempo; }
   g.portal = { x: WORLD_W / 2, y: floorY - 34, r: 34, k: 0 };
   g.introT = 0; p.inv = 9;
   for (const e of g.enemies) e.alive = false; g.ebul = [];
@@ -91,7 +93,7 @@ function bossTick(dt) {
   b.sx = approachSnap(b.sx, 1, 10, dt); b.sy = approachSnap(b.sy, 1, 10, dt);
   if (!b.mini) { if (g.darkT > 0) g.darkT -= dt; g.dark = approachSnap(g.dark || 0, g.darkT > 0 ? 1 : 0, 3, dt, .01); }
   // moveK = 몸의 움직임, speedK = 공격 박자. 중간 보스는 움직임만 진짜 보스와 같고 공격은 느리다
-  const moveK = (b.phase === 2 ? 1.22 : 1) * Math.min(1.4, DIFF.speed(g.wave)), speedK = moveK * (b.mini ? MINI.tempo : 1), floorY = b.floorY, topY = g.arenaTop * TILE + 40;
+  const moveK = (b.phase === 2 ? 1.22 : 1) * Math.min(1.4, DIFF.speed(g.wave)), speedK = moveK * (b.mini ? MINI.tempo : 1) * (b.easy || 1), floorY = b.floorY, topY = g.arenaTop * TILE + 40;
   const hh = b.drawH || b.h;
   if (b.state === 'intro') {
     g.introT += dt; const t = g.introT; g.cine = approachSnap(g.cine, t < 3.45 ? 1 : 0, 8, dt);
