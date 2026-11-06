@@ -60,13 +60,15 @@ const UI = {
 
   /* ───── 전투 ───── */
   r_battle() {
-    const v = this.chapterView, B = BIOMES[v], open = Meta.chapterOpen(v), s = Meta.s, el = $('s_battle');
+    const v = this.chapterView, CI = chapterInfo(v), open = Meta.chapterOpen(v), s = Meta.s, el = $('s_battle'), best = s.cleared[v] ? STAGES : s.best[v] || 0;
     el.className = 'screen on battle';
-    el.innerHTML = `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${B.name}</div><div class="ch-sub oL">${B.sub}</div><div class="ch-best oL">최고 기록: 웨이브 ${s.best[v] || 0}</div>
-      <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'}" src="assets/ui/isle${v + 1}.webp" alt=""><button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === BIOMES.length - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${BIOMES[v - 1].name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">3웨이브마다 보스가 나타납니다</div></div>`;
+    // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
+    const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
+    el.innerHTML = `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>
+      <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`;
     el.onclick = e => {
-      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, BIOMES.length - 1); this.r_battle(); return; }
+      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
       if (e.target.closest('#bStart')) this.start();
     };
   },
@@ -85,7 +87,7 @@ const UI = {
     g.state = 'pause'; input.clearAll(); sfx.tap();
     const st = g.st, p = g.p;
     const el = $('mPause'); el.classList.add('on');
-    el.innerHTML = `<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">일시정지</div><div class="ip-st">능력치</div><div class="ip-sk"><div>공격력 ${p.atk} · 체력 ${p.hp}/${p.maxHp} · 탄창 ${p.maxAmmo}</div><div>웨이브 ${g.wave} · 처치 ${g.kills} · 파편 ${p.shards}</div></div><div class="ip-st">얻은 능력</div>${learnedHTML()}<div class="ip-acts"><button class="btn red" id="pQuit">포기</button><button class="btn gray" id="pMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button><button class="btn green" id="pGo">계속</button></div></div>`;
+    el.innerHTML = `<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">일시정지</div><div class="ip-st">능력치</div><div class="ip-sk"><div>공격력 ${p.atk} · 체력 ${p.hp}/${p.maxHp} · 탄창 ${p.maxAmmo}</div><div>챕터 ${chapterOf(g.wave) + 1} · ${stageOf(g.wave)}/${STAGES}판 · 처치 ${g.kills} · 파편 ${p.shards}</div></div><div class="ip-st">얻은 능력</div>${learnedHTML()}<div class="ip-acts"><button class="btn red" id="pQuit">포기</button><button class="btn gray" id="pMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button><button class="btn green" id="pGo">계속</button></div></div>`;
     $('pGo').onclick = () => { el.classList.remove('on'); g.state = 'play'; input.blockUntil = performance.now() + 120; };
     $('pMute').onclick = e => { sfx.setMute(!sfx.muted); e.target.textContent = `소리 ${sfx.muted ? '켜기' : '끄기'}`; };
     $('pQuit').onclick = () => { el.classList.remove('on'); finishRun(true); };
@@ -109,8 +111,8 @@ const UI = {
     const items = rw.drops.map(it => `<div class="it" style="${gradeVars(it.g)}"><img src="${itemIconSrc(it)}" alt=""></div>`).join('');
     const sc = Object.keys(rw.scrolls).map(k => `<div class="cu"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" style="inset:auto;left:-6%;top:-6%;width:44%;height:44%" src="${uiIcon(k === 'weapon' ? 'w_' + Meta.s.god : k + '_a')}" alt=""><b class="oL">${rw.scrolls[k]}</b></div>`).join('');
     const el = $('mResult'); el.classList.add('on');
-    el.innerHTML = `<div class="rs-t oL" style="color:${r.bosses ? '#ffd24a' : '#ff6a78'}">${r.bosses ? '심연을 뚫었다' : '심연에 떨어졌다'}</div>
-      <div class="rs-g"><div><b class="oL">${rw.cleared}</b>통과 웨이브</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.combo}</b>최대 콤보</div></div>
+    el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? `챕터 ${r.chapter + 1} 클리어!` : '심연에 떨어졌다'}</div>
+      <div class="rs-g"><div><b class="oL">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>통과한 판</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.combo}</b>최대 콤보</div></div>
       <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${REWARD.gemFirstClear}</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
       <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
     $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
@@ -278,20 +280,40 @@ const UI = {
     const C = CHESTS.find(x => x.id === id);
     this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">${C.name} 확률</div><button class="x" data-close>✕</button><div class="rates">${[0, 1, 2].filter(i => C.rate[i] > 0).map(i => `<div class="r" style="--c:${GRADES[i].color}"><span>${GRADES[i].name}</span><span>${(C.rate[i] * 100).toFixed(0)}%</span></div>`).join('')}<div class="r" style="--c:#8a7a7a"><span>${GRADES[MYTH].name}</span><span>획득 불가</span></div></div><div class="note" style="color:#fff">${C.note}${C.pity ? ` ${C.pity}회 안에 에픽 1개가 확정됩니다.` : ''}</div><div class="note">신화 등급은 뽑기로 나오지 않습니다. 대장간에서 같은 부위 에픽 3개를 합성해 만듭니다. 무기는 신 전용이며 같은 신의 무기끼리 합성합니다. ${C.slots.includes('weapon') ? `${C.featured ? '이번 회차 신이 아닐 때 ' : ''}신 1명당 무기 확률은 레어 25%, 에픽 15%, 전설 10%입니다.` : ''}</div></div>`);
   },
+  /* 뽑기 결과(2026-11-06): 가장 좋은 결과에 따라 상자 연출이 달라진다. 일반 = 짧게 흔들림, 희귀 = 파란 빛,
+     에픽 = 두구두구(점점 세게 세 번 튀고 보라 빛이 새어 나옴), 전설 조각 = 금빛 햇살까지. 화면을 누르면 바로 결과로 넘어간다.
+     결과 칸은 개수에 따라 1개 = 크게 가운데, 2~3개 = 한 줄, 4~6개 = 3칸씩, 그 이상 = 5칸씩. 좋은 것부터 앞에 둔다 */
   reveal(id, res) {
     const C = id === 'god' ? GOD_CHEST : CHESTS.find(x => x.id === id), el = $('gacha'); el.classList.add('on');
-    el.innerHTML = `<img class="ga-chest shake" src="${uiIcon(C.icon)}" alt="">`; sfx.rumble();
+    const rankOf = r => r.type === 'item' ? r.item.g : r.type === 'shard' ? { '레어': 1, '에픽': 2, '전설': 3 }[GOD_BY[r.god].rank] - (id === 'god' ? 0 : 1) : -1;
+    const best = Math.max(0, ...res.map(rankOf)), lv = best >= 3 ? 'lg' : best >= 2 ? 'ep' : best >= 1 ? 'rr' : 'nm';
+    const col = { nm: '#ffffff', rr: GRADES[1].color, ep: GRADES[2].color, lg: '#ffc640' }[lv], dur = { nm: 760, rr: 980, ep: 2000, lg: 2500 }[lv];
+    el.style.setProperty('--gc', col);
+    el.innerHTML = `<div class="ga-stage ${lv}"><div class="ga-rays"></div><div class="ga-glow"></div><img class="ga-chest go-${lv}" src="${uiIcon(C.icon)}" alt=""><div class="ga-hint">${lv === 'ep' || lv === 'lg' ? '<b class="oL">무언가 대단한 것이…!</b>' : ''}</div></div>`;
+    sfx.rumble(); (this._gaT || []).forEach(clearTimeout); this._gaT = [];
+    // 두구두구: 튈 때마다 북소리가 빨라지고 높아진다
+    if (lv === 'ep' || lv === 'lg') [180, 640, 1020, 1300, 1500, 1640, 1740, 1820].forEach((t, i) => this._gaT.push(setTimeout(() => { sfx.drum(i); if (i % 2 === 0) vibrate(18 + i * 4); }, t * dur / 2000)));
+    let shown = false;
     const show = () => {
-      sfx.bigBoom(); sfx.reward();
-      const cells = res.map((r, i) => {
-        if (r.type === 'item') { const it = r.item; return `<div class="ga-it ${it.g >= 2 ? 'ep' : ''}" style="--g:${GRADES[it.g].glow};animation-delay:${i * 45}ms"><div class="it" style="${gradeVars(it.g)}"><img src="${itemIconSrc(it)}" alt=""></div></div>`; }
-        if (r.type === 'shard') return `<div class="ga-it" style="animation-delay:${i * 45}ms"><div class="sc" style="background:${GOD_BY[r.god].rankCol};overflow:hidden"><img style="inset:0;width:100%;height:auto" src="assets/god/${r.god}/big_bare.webp" alt=""><b class="oL">${r.n}</b></div></div>`;
-        return `<div class="ga-it" style="animation-delay:${i * 45}ms"><div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(r.slot === 'weapon' ? 'w_' + Meta.s.god : r.slot + '_a')}" alt=""><b class="oL">${r.n}</b></div></div>`;
+      if (shown) return; shown = true; this._gaT.forEach(clearTimeout); this._gaT = []; el.onclick = null;
+      sfx.bigBoom(); sfx.reward(); if (lv === 'ep' || lv === 'lg') { sfx.cardUp(lv === 'lg' ? 3 : 2); vibrate(80); }
+      const order = res.map((r, i) => ({ r, i, k: rankOf(r) })).sort((a, b) => b.k - a.k || a.i - b.i).map(o => o.r), n = order.length;
+      const lay = n === 1 ? 'n1' : n <= 3 ? 'n3' : n <= 6 ? 'n6' : 'n10';
+      const cells = order.map((r, i) => {
+        const d = `animation-delay:${120 + i * (n > 6 ? 55 : 110)}ms`, k = rankOf(r);
+        const tag = k >= 2 ? `<i class="ga-tag oL" style="--c:${r.type === 'item' ? GRADES[r.item.g].color : GOD_BY[r.god].rankCol}">${r.type === 'item' ? GRADES[r.item.g].name : GOD_BY[r.god].rank}</i>` : '';
+        const fx = k >= 2 ? `<i class="ga-sun"></i>` : '';
+        if (r.type === 'item') { const it = r.item; return `<div class="ga-it g${it.g}" style="--g:${GRADES[it.g].glow};${d}">${fx}<div class="it" style="${gradeVars(it.g)}"><img src="${itemIconSrc(it)}" alt=""></div>${tag}<span class="ga-nm">${GEAR[it.d].name}</span></div>`; }
+        if (r.type === 'shard') return `<div class="ga-it ${k >= 2 ? 'g2' : ''}" style="--g:${GOD_BY[r.god].rankCol};${d}">${fx}<div class="sc" style="background:${GOD_BY[r.god].rankCol};overflow:hidden"><img style="inset:0;width:100%;height:auto" src="assets/god/${r.god}/big_bare.webp" alt=""><b class="oL">${r.n}</b></div>${tag}<span class="ga-nm">${GOD_BY[r.god].name} 조각</span></div>`;
+        return `<div class="ga-it" style="${d}"><div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(r.slot === 'weapon' ? 'w_' + Meta.s.god : r.slot + '_a')}" alt=""><b class="oL">${r.n}</b></div><span class="ga-nm">두루마리</span></div>`;
       }).join('');
-      el.innerHTML = `<div class="ga-flash"></div><div class="ga-title oL">획득!</div><div class="ga-grid ${res.length <= 2 ? 'few' : ''}">${cells}</div><button class="btn gold" id="gaOk" style="width:calc(var(--u)*50);margin-top:calc(var(--u)*2)">확인</button>`;
-      $('gaOk').onclick = () => { sfx.tap(); el.classList.remove('on'); this.render(); };
+      el.innerHTML = `<div class="ga-flash ${lv}"></div><div class="ga-title oL">${lv === 'lg' ? '전설 획득!' : lv === 'ep' ? '에픽 획득!' : '획득!'}</div><div class="ga-grid ${lay}">${cells}</div><button class="btn gold" id="gaOk" style="width:calc(var(--u)*50);margin-top:calc(var(--u)*2)">확인</button>`;
+      // 에픽 이상 칸은 나타나는 순간 불꽃이 튄다
+      [...el.querySelectorAll('.ga-it.g2,.ga-it.g3')].forEach(c => this._gaT.push(setTimeout(() => { if (c.isConnected) sparkBurst(c, getComputedStyle(c).getPropertyValue('--g').trim() || '#fff', 16, 1.3); }, parseInt(c.style.animationDelay) + 180)));
+      $('gaOk').onclick = () => { sfx.tap(); this._gaT.forEach(clearTimeout); el.classList.remove('on'); this.render(); };
     };
-    setTimeout(show, 720);
+    this._gaT.push(setTimeout(show, dur));
+    el.onclick = e => { if (!shown && !e.target.closest('#gaOk')) show(); };
   },
 
   /* ───── 임무 ───── */

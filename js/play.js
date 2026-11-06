@@ -25,9 +25,11 @@ const bimg = n => IMG[game.biome.id + '_' + n];
 
 /* ───── 런 상태 ───── */
 /* 챕터는 시작 웨이브(1 + 챕터×3)로 이미 반영되어 있다. 여기서 또 더하면 맵이 어긋난다 */
-const biomeOf = w => BIOMES[Math.floor((w - 1) / 3) % BIOMES.length];
-const sectorOf = w => Math.floor((w - 1) / 3) + 1;
-const isBossWave = w => w % 3 === 0;
+// 판 구성은 data.js의 STAGES·STAGE_PLAN. 챕터 c의 s번째 판 = 통산 c*6 + s
+const biomeOf = w => BIOMES[chapterOf(w) % BIOMES.length];
+const sectorOf = w => chapterOf(w) + 1;
+const isBossWave = w => STAGE_PLAN[stageOf(w) - 1] === 'boss';
+const isRestWave = w => STAGE_PLAN[stageOf(w) - 1] === 'rest';
 const vibrate = n => { try { if (navigator.vibrate) navigator.vibrate(n); } catch (e) {} };
 
 function runStats() {
@@ -57,7 +59,7 @@ function startRun(opt = {}) {
   g.p = newPlayer();
   const p = g.p; p.god = g.godId; p.atk = st.atk; p.maxHp = p.hp = st.hp; p.maxAmmo = p.ammo = g.god_.ammo + st.ammo;
   p.gemMul = 1 + st.shardPct; p.reviveUsed = false; p.lastStand = !!st.lastStand; p.olive = false; p.shots = 0; p.feastN = 0;
-  g.wave = opt.wave || (1 + g.chapter * 3); g.startWave = g.wave; g.cards = new Set(); g.cardList = []; g.choiceBonus = 0; g.kills = 0; g.maxCombo = 0; g.shardTotal = 0; g.bosses = 0;
+  g.wave = opt.wave || (1 + g.chapter * STAGES); g.startWave = g.wave; g.clear = false; g.cards = new Set(); g.cardList = []; g.choiceBonus = 0; g.kills = 0; g.maxCombo = 0; g.shardTotal = 0; g.bosses = 0;
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
@@ -107,17 +109,19 @@ function tickDescent(dt) {
   }
 }
 function buildWave() {
-  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w);
-  g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false;
+  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w), rest = isRestWave(w), L = g.lv = dlv(w);
+  g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
+  const restKind = rest ? pickRestKind(R) : null;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
   g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.dark = 0; g.darkT = 0;
   // 맨 아래 바닥은 조작 버튼에 가리지 않게 화면 위쪽으로 올린다(아래 pad칸은 땅)
-  const pad = 3, arenaRows = boss ? Math.ceil(view.worldH / TILE) - pad : 0, rows = DIFF.rows(w) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
+  // 휴식 판은 짧다(황금 낙하만 길다). 바닥은 휴식 물건이 화면 안에 보이도록 보스방처럼 넓게 비운다
+  const pad = 3, arenaRows = boss || rest ? Math.ceil(view.worldH / TILE) - pad : 0, rows = (rest ? (restKind === 'gold' ? 64 : 26) : DIFF.rows(w)) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
   lvl.rows = rows; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
   g.levelH = (rows - 1) * TILE;
   const tileHp = Math.round(20 * DIFF.hp(w));
   for (let r = 0; r < rows; r++) { lvl.set(0, r, HARD); lvl.set(COLS - 1, r, HARD); }
-  const lastRow = boss ? F - arenaRows - 2 : F - 8;
+  const lastRow = boss || rest ? F - arenaRows - 2 : F - 8;
   const put = (c, r, t) => { if (c > 0 && c < COLS - 1 && r > 7 + sh && r < lastRow) { lvl.set(c, r, t); if (t === BREAK) lvl.hp[r * COLS + c] = tileHp; } };
   const landings = [];
   let r = 11 + sh;
@@ -130,8 +134,8 @@ function buildWave() {
       for (let i = 0; i < len; i++) for (let t = 0; t < th; t++) put(side ? COLS - 2 - i : 1 + i, r + t, HARD);
       const c = side ? COLS - 2 - Math.floor(len / 2) : 1 + Math.floor(len / 2);
       if (len >= 2) landings.push([side ? COLS - 1 - len : 1, side ? COLS - 2 : len, r]);
-      if (R() < .16) g.jars.push({ x: (c + .5) * TILE, y: r * TILE - 14, r: 13, alive: true });
-      if (R() < DIFF.spike(w)) { const k = side ? COLS - 2 : 1; for (let q = 0; q < len && q < 2; q++) { const cc = side ? k - q : k + q; if (lvl.at(cc, r) === HARD) lvl.set(cc, r, SPIKE); } }
+      if (R() < (restKind === 'gold' ? .85 : rest ? .4 : .16)) g.jars.push({ x: (c + .5) * TILE, y: r * TILE - 14, r: 13, alive: true });
+      if (!rest && R() < DIFF.spike(w)) { const k = side ? COLS - 2 : 1; for (let q = 0; q < len && q < 2; q++) { const cc = side ? k - q : k + q; if (lvl.at(cc, r) === HARD) lvl.set(cc, r, SPIKE); } }
     } else if (roll < .58) { // 부서지는 블록 뭉치
       const c0 = 1 + Math.floor(R() * (COLS - 4)), ww = 1 + Math.floor(R() * 3), hh = 1 + Math.floor(R() * 2);
       for (let i = 0; i < ww; i++) for (let t = 0; t < hh; t++) put(c0 + i, r + t, BREAK);
@@ -148,7 +152,7 @@ function buildWave() {
   }
   // 샛길 문: 벽에 난 입구와 그 앞 턱
   const nDoors = (R() < DOOR.chance ? 1 : 0) + (has('member') ? 1 : 0);
-  if (!boss) for (let i = 0; i < nDoors; i++) {
+  if (!boss && !rest) for (let i = 0; i < nDoors; i++) {
     const rowD = Math.floor(sh + 11 + (lastRow - sh - 11) * (DOOR.from + (DOOR.to - DOOR.from) * (nDoors > 1 ? (i + R() * .7) / nDoors : R()))), side = R() < .5 ? 0 : 1;
     const c1 = side ? COLS - 2 : 1, c2 = side ? COLS - 3 : 2, c3 = side ? COLS - 4 : 3;
     for (let rr = rowD - 3; rr <= rowD; rr++) for (const cc of [c1, c2, c3]) lvl.set(cc, rr, EMPTY);
@@ -175,9 +179,12 @@ function buildWave() {
   for (let rr = F; rr < rows; rr++) for (let c = 0; c < COLS; c++) lvl.set(c, rr, HARD);
   g.portal = null;
   if (boss) { g.arenaTop = F + 1 - arenaRows; buildArena(F, g.arenaTop); }
+  else if (rest) { g.arenaTop = F + 1 - arenaRows; setupRest(restKind, F); }
   else g.portal = { x: WORLD_W / 2, y: F * TILE - 34, r: 34 };
+  // 황금 낙하: 발판마다 항아리, 공중에는 파편 덩어리(통과 발판 위)
+  if (restKind === 'gold') for (const [c0, c1, rr] of landings) for (let c = c0; c <= c1; c += 2) if (!lvl.at(c, rr - 1)) g.jars.push({ x: (c + .5) * TILE, y: rr * TILE - 14, r: 13, alive: true });
   // 공중 적: 다운웰처럼 촘촘하게
-  const spacing = DIFF.spacing(w), endY = (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
+  const spacing = DIFF.spacing(w), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
   const free = (x, y) => lvl.at(Math.floor(x / TILE), Math.floor(y / TILE)) === EMPTY;
   for (let y = 380 + sh * TILE; y < endY; y += spacing * (.55 + R() * .9)) {
     const roll = R();
@@ -186,7 +193,7 @@ function buildWave() {
       for (let i = 0; i < n; i++) { const x = clamp(cx + (R() - .5) * 110, TILE + 12, WORLD_W - TILE - 12), yy = y + R() * 70; if (free(x, yy)) g.enemies.push(mkEnemy('bat', x, yy, { sleep: true, ph: R() * 6 })); }
       y += 40; continue;
     }
-    if (roll < .13 + Math.min(.12, w * .012)) { // 가시 장벽: 한 줄에 틈 하나
+    if (roll < .13 + Math.min(.12, L * .012)) { // 가시 장벽: 한 줄에 틈 하나
       const gap = 1 + Math.floor(R() * (COLS - 3));
       for (let c = 1; c < COLS - 1; c += 2) { if (c === gap || c === gap + 1) continue; const x = (c + .5) * TILE; if (free(x, y)) g.enemies.push(mkEnemy('urchin', x, y, { baseX: x, baseY: y, ph: R() * 6, still: true })); }
       y += 70; continue;
@@ -199,7 +206,7 @@ function buildWave() {
     else g.enemies.push(mkEnemy(kind, x, y, { baseX: x, baseY: y, ph: R() * 6 }));
   }
   // 땅 위 적과 장식
-  const walkChance = Math.min(.82, .5 + w * .035);
+  const walkChance = rest ? -1 : Math.min(.82, .5 + L * .035);
   for (const [c0, c1, rr] of landings) {
     const dc = c0 + Math.floor(R() * (c1 - c0 + 1));
     if (R() < .22 && lvl.at(dc, rr) !== EMPTY && lvl.at(dc, rr) !== SPIKE && lvl.at(dc, rr - 1) === EMPTY) g.decor.push({ x: (dc + .5) * TILE, y: rr * TILE, n: R() < .5 ? 'o_decor' : 'o_decor2' });
@@ -211,7 +218,7 @@ function buildWave() {
     if (w < 2 && g.chapter === 0) kind = 'mound';
     if (kind === 'spit' && w < 3 && g.chapter === 0) kind = 'mound';
     const rad = ENEMY[kind].r;
-    g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + w * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
+    g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + L * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   const p = g.p;
@@ -219,7 +226,8 @@ function buildWave() {
   if (g.st.waveHeal) healBy(p.maxHp * g.st.waveHeal);
   g.cam = 0; g.dust = [];
   for (let i = 0; i < 28; i++) g.dust.push({ x: R() * WORLD_W, y: R() * view.worldH, z: .35 + R() * .6, r: .8 + R() * 1.6 });
-  g.banner = { t: 0, life: 1.9, a: `구역 ${sectorOf(w)} · ${g.biome.name}`, b: boss ? '보스 웨이브' : `웨이브 ${((w - 1) % 3) + 1} / 3` };
+  const ci = chapterInfo(chapterOf(w)), st = stageOf(w);
+  g.banner = { t: 0, life: 1.9, a: `챕터 ${chapterOf(w) + 1} · ${ci.name}`, b: boss ? `${st} / ${STAGES} · 보스` : rest ? `${st} / ${STAGES} · 휴식 · ${REST_TITLE[restKind]}` : `${st} / ${STAGES} 판` };
   sfx.bgmFor && sfx.bgmFor(boss ? 'wave' : 'wave', g.biome.id);
 }
 function healBy(n, overflow = false) {
@@ -354,7 +362,7 @@ function revive() {
 function finishRun(gaveUp) {
   const g = game;
   g.state = 'result';
-  const r = { wave: g.wave, startWave: g.startWave, kills: g.kills, bosses: g.bosses, combo: g.maxCombo, chapter: g.chapter, shards: g.shardTotal, gaveUp };
+  const r = { wave: g.wave, startWave: g.startWave, kills: g.kills, bosses: g.bosses, combo: g.maxCombo, chapter: g.chapter, shards: g.shardTotal, gaveUp, clear: !!g.clear };
   const reward = Meta.settle(r);
   UI.showResult(r, reward);
 }
@@ -539,6 +547,8 @@ function tick(dt) {
   if (p.gemT > 0) { p.gemT -= dt; if (p.gemT <= 0) { p.high = false; p.gemChain = 0; } }
   // 샛길
   if (attackTap && !nearItem) { const d = doorNear(); if (d) { if (g.room) exitRoom(); else enterRoom(d); return; } }
+  // 휴식 판: 룰렛 돌리기·샘 마시기
+  if (g.rest) { if (attackTap && !nearItem) { const t = restNear(); if (t) useRest(t); } restTick(dt); }
   // 크로노스의 모래시계: 적·보스·적 탄만 느려진다
   const edt = has('kronos') ? dt * .75 : dt;
   if (g.room) { roomTick(g.room.kind === 'mini' ? edt : dt); if (!g.room || g.state === 'dying') return; }
@@ -601,13 +611,13 @@ function updateEnemies(dt, jumpHeld) {
         // 뱉는 괴물: 부풀어 오른 뒤 쏜다(예고)
         e.shootT -= dt; e.swell = e.shootT < .45;
         if (e.shootT <= 0 && Math.abs(p.y - e.y) < 360) {
-          e.shootT = Math.max(1.3, 2.6 - g.wave * .08);
-          const dx = p.x - e.x, dy = p.y - e.y - 10, d = Math.hypot(dx, dy) || 1, v = 150 + g.wave * 8;
+          e.shootT = Math.max(1.3, 2.6 - g.lv * .08);
+          const dx = p.x - e.x, dy = p.y - e.y - 10, d = Math.hypot(dx, dy) || 1, v = Math.min(300, 150 + g.lv * 8);
           g.ebul.push({ x: e.x, y: e.y - e.r, vx: dx / d * v, vy: dy / d * v, r: 6, dmg: Math.round(e.dmg * .8), t: 0, col: '#ff9a8a' }); e.pop = 1; sfx.spit();
         }
       }
     } else if (k === 'eye') {
-      const dx = p.x - e.x, dy = p.y - e.y, near = Math.hypot(dx, dy) < 280, sp = (56 + g.wave * 5) * spd;
+      const dx = p.x - e.x, dy = p.y - e.y, near = Math.hypot(dx, dy) < 280, sp = (56 + g.lv * 5) * spd;
       if (near) { e.baseX += clamp(dx, -1, 1) * sp * dt; e.baseY += clamp(dy, -1, 1) * sp * .75 * dt; }
       e.x = e.baseX; e.y = e.baseY + Math.sin(tt * 4) * 5; e.face = Math.sign(dx) || 1;
     } else if (k === 'sac') {
@@ -618,16 +628,16 @@ function updateEnemies(dt, jumpHeld) {
       if (!e.still) { e.x = clamp(e.baseX + Math.sin(tt * 1.3 * spd) * 46, TILE + 14, WORLD_W - TILE - 14); e.y = e.baseY + Math.cos(tt * 1.7) * 12; }
       else { e.y = e.baseY + Math.sin(tt * 2) * 4; }
     } else if (k === 'leech') {
-      e.y += e.dir * (30 + g.wave * 4) * spd * dt;
+      e.y += e.dir * (30 + g.lv * 4) * spd * dt;
       if (Math.abs(e.y - e.baseY) > 110) e.dir *= -1;
       e.face = e.wall;
     } else if (k === 'shade') {
       const dx = p.x - e.baseX, dy = p.y - e.baseY, d = Math.hypot(dx, dy);
-      if (d < 340) { const sp = (40 + g.wave * 4) * spd; e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }
+      if (d < 340) { const sp = (40 + g.lv * 4) * spd; e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }
       e.x = e.baseX + Math.sin(tt * 2.4) * 8; e.y = e.baseY; e.face = Math.sign(dx) || 1;
     } else if (k === 'bat') {
       if (e.sleep) {
-        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.wave * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.wave * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
+        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.lv * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.lv * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
       } else if (e.dashT > 0 && batDashTick(e, dt, spd)) { e.x += Math.sin(tt * 40) * .6; } else {
         e.x += e.vx * dt + Math.sin(tt * 12) * 1.2; e.y += e.vy * dt;
         if (e.x < TILE + 8 || e.x > WORLD_W - TILE - 8) e.vx *= -1;
@@ -725,7 +735,14 @@ function updateBullets(dt) {
 function waveClear() {
   const g = game, p = g.p;
   if (has('interest')) { const n = Math.round(p.shards * .1); p.shards += n; popup(p.x, p.y - 30, `이자 +${n}`, '#ffe27a', true); }
-  sfx.reward(); openCards(g.wave % 3 === 0);
+  // 휴식 판은 카드 없이 다음 판으로, 보스 판은 챕터 클리어로 판이 끝난다
+  if (isRestWave(g.wave)) { nextWave(); return; }
+  if (isBossWave(g.wave)) { chapterClear(); return; }
+  sfx.reward(); openCards(false);
+}
+function chapterClear() {
+  const g = game; g.clear = true; g.wave++; input.clearAll(); sfx.reward();
+  finishRun(false);
 }
 function nextWave() {
   const g = game; g.wave++; beginWave(DESCENT.next); input.blockUntil = performance.now() + 150; g.camLock = false; g.bossCam = undefined; g.timeScale = 1;

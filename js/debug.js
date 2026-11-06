@@ -32,7 +32,7 @@
   };
   /* 함정 문(중간 보스) 바로 들어가기 */
   const startMiniAt = chapter => {
-    startAt(chapter, 1 + chapter * 3); game.state = 'play'; game.cine = 0; document.getElementById('pause').style.visibility = '';
+    startAt(chapter, 1 + chapter * STAGES); game.state = 'play'; game.cine = 0; document.getElementById('pause').style.visibility = '';
     enterRoom({ x: TILE, y: game.p.y, side: 0, kind: 'mini', fake: 'shop', used: false });
   };
   const lockGod = id => {
@@ -46,7 +46,7 @@
   const b = (act, text, cls = '', dis = false) => `<button data-a="${act}" class="${cls}" ${dis ? 'disabled' : ''}>${text}</button>`;
   function draw() {
     const s = Meta.s, g = game;
-    const where = inRun() ? `지금 판: 챕터 ${sectorOf(g.wave)} ${g.biome.name} · 웨이브 ${((g.wave - 1) % 3) + 1}/3${g.isBossWave ? ' (보스)' : ''} · 통산 웨이브 ${g.wave}${g.minis ? ' · 중간 보스' : ''} · 문 ${g.room ? '안' : (g.doors || []).map(d => ROOM_LABEL[d.kind] || '중간 보스').join(', ') || '없음'} · 상태 ${resume || g.state}` : '판 밖(로비)';
+    const where = inRun() ? `지금 판: 챕터 ${sectorOf(g.wave)} ${g.biome.name} · ${stageOf(g.wave)}/${STAGES}판${g.isBossWave ? ' (보스)' : isRestWave(g.wave) ? ' (휴식)' : ''} · 통산 ${g.wave} · 난이도 단계 ${(g.lv || 0).toFixed(1)}${g.minis ? ' · 중간 보스' : ''} · 문 ${g.room ? '안' : (g.doors || []).map(d => ROOM_LABEL[d.kind] || '중간 보스').join(', ') || '없음'} · 상태 ${resume || g.state}` : '판 밖(로비)';
     const gods = GODS.map(G => {
       const l = Meta.godLv(G.id), i = Meta.godInfo(G.id);
       return `<div class="dr"><span>${G.name} (${G.rank}) · ${l ? 'Lv.' + l : '잠김'} · 조각 ${i.shard}${s.god === G.id ? ' · 출전 중' : ''}</span>${l ? b('lock:' + G.id, '잠금', 'no') : b('unlock:' + G.id, '해금', 'on')}${b('lv-:' + G.id, 'Lv -', '', l <= 1)}${b('lv+:' + G.id, 'Lv +', '', !l || l >= GOD_LV_MAX)}${b('sel:' + G.id, '출전', s.god === G.id ? 'on' : '', !l)}${b('sh+:' + G.id, '조각 +50')}${b('sh0:' + G.id, '조각 0')}</div><div class="dr"><span>${G.weapon}: ${(() => { const w = Meta.item(Meta.weaponOf(G.id)); return w ? GRADES[w.g].name + ' Lv.' + Meta.weaponLvOf(G.id) : '없음'; })()}</span>${b('wg-:' + G.id, '무기 등급 -', '', !l)}${b('wg+:' + G.id, '무기 등급 +', '', !l)}${b(`wl:${G.id}:-10`, 'Lv -10', '', !l)}${b(`wl:${G.id}:10`, 'Lv +10', '', !l)}${b(`giveW:${G.id}:1`, '가방에 희귀')}</div>`;
@@ -55,9 +55,9 @@
     panel.innerHTML = `<div class="dh"><span>디버그</span><button data-a="close" aria-label="닫기">✕</button></div><div class="db">
       <div class="now">${where}<br>골드 ${s.gold} · 보석 ${s.gem} · 에너지 ${s.energy}</div>
       <div class="now">모든 신 보너스: 공격력 +${(Meta.accountBonus().atk * 100).toFixed(1)}% · 체력 +${(Meta.accountBonus().hp * 100).toFixed(1)}%</div>
-      <h5>전투</h5><div class="dr">${b('god', god ? '무적 켜짐 (피 안 닳음)' : '무적 꺼짐', god ? 'on' : 'no')}${b('next', '다음 웨이브', '', !inRun())}${b('kill', '죽기 (이어하기 시험)', '', !inRun())}</div>
+      <h5>전투</h5><div class="dr">${b('god', god ? '무적 켜짐 (피 안 닳음)' : '무적 꺼짐', god ? 'on' : 'no')}${b('next', '다음 판', '', !inRun())}${b('kill', '죽기 (이어하기 시험)', '', !inRun())}</div>
       <h5>맵 바로 시작 (에너지 안 씀)</h5>
-      ${BIOMES.map((B, c) => `<div class="dr"><span>챕터 ${c + 1} · ${B.name} <small style="opacity:.6">(통산 웨이브 ${1 + c * 3}~${3 + c * 3})</small></span>${b(`go:${c}:${1 + c * 3}`, '웨이브 1')}${b(`go:${c}:${2 + c * 3}`, '웨이브 2')}${b(`go:${c}:${3 + c * 3}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
+      ${Array.from({ length: CHAPTERS }, (_, c) => `<div class="dr"><span>챕터 ${c + 1} · ${chapterInfo(c).name}</span>${b(`go:${c}:${1 + c * STAGES}`, '1판')}${b(`go:${c}:${3 + c * STAGES}`, '휴식')}${b(`go:${c}:${5 + c * STAGES}`, '5판')}${b(`go:${c}:${6 + c * STAGES}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
       <div class="dr">${b('chOpen', '챕터 전부 열기')}${b('chLock', '챕터 잠그기')}</div>
       <h5>재화</h5><div class="dr">${b('gold+', '골드 +10만')}${b('gem+', '보석 +1만')}${b('en', '에너지 채우기')}${b('sc+', '스크롤 전부 +100')}${b('cur0', '재화 전부 0', 'no')}</div>
       <h5>캐릭터</h5>${gods}

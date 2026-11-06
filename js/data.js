@@ -107,7 +107,7 @@ const TALENTS = [
    slots = 나올 수 있는 부위, scroll = 뽑을 때마다 함께 주는 두루마리 [확률, 최소, 최대], shard = 신 조각 [확률, 개수],
    featured = 회차마다 바뀌는 '이번 신'의 무기·조각 확률이 오른다 */
 const CHESTS = [
-  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: [.8, .2, 0], slots: ['amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [1, 1, 3], shard: [0, 0], free: 4 * 3600, tint: '#2e5f8e',
+  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: [.8, .2, 0], slots: ['amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [1, 1, 3], shard: [0, 0], free: 8 * 3600, tint: '#2e5f8e',
     desc: '방어구·장신구와 강화 두루마리. 무기는 나오지 않습니다', note: '고급·희귀 방어구와 장신구가 나오고, 뽑을 때마다 강화 두루마리 1~3장을 함께 줍니다.' },
   { id: 'obsidian', name: '흑요석 상자', icon: 'chest_obsidian', cur: 'gem', one: 150, ten: 1350, rate: [.51, .37, .12], slots: ['weapon', 'amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [.3, 1, 2], shard: [.25, 6], free: 24 * 3600, pity: 10, tint: '#4a2670',
     desc: '모든 부위 장비와 신의 조각. 10회 안에 에픽 확정', note: '6부위 장비가 모두 나옵니다. 25% 확률로 신의 조각 6개를 함께 줍니다.' },
@@ -195,24 +195,59 @@ const MINI = { power: .4, tempo: .55, hp: .55, minShots: 24,
     { n: 2, scale: .384, weights: { blink: 3, laser: 1 } },
   ] };
 
-/* ───── 난이도 곡선: 웨이브가 오를수록 적과 보스가 강해진다 ───── */
-const DIFF = {
-  hp: w => (1 + .24 * (w - 1)) * Math.pow(1.045, w - 1),
-  // 2026-11-04 사용자 판단 "더 쉽게": 웨이브 1~5의 부담만 낮추고 웨이브 6부터는 그대로 둔다
-  dmg: w => (w < 6 ? .75 + .05 * (w - 1) : 1) * (1 + .11 * (w - 1)),
-  speed: w => 1 + Math.min(.6, .05 * (w - 1)),
-  spacing: w => Math.max(74, 148 - w * 8 + Math.max(0, 6 - w) * 6),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게)
-  rows: w => Math.min(170, 92 + w * 6),
-  bossHp: w => 900 * DIFF.hp(w) * (w <= 3 ? .7 : w <= 6 ? .85 : 1),
-  spike: w => w < 6 ? .08 + w * .05 : Math.min(.5, .18 + w * .04),
+/* ───── 판 구성(2026-11-06 v21) ─────
+   챕터 = 6판: 전투 → 전투 → 휴식 → 전투 → 전투 → 보스. 보스를 잡으면 챕터 클리어로 판이 끝난다(궁수의 전설 2처럼 챕터 단위).
+   예전에는 3판마다 보스였다(사용자: 보스가 너무 빨리 나온다). 휴식 판 = 행운의 룰렛·님프의 샘·황금 낙하(rest.js).
+   챕터 12개: 1~6은 맵 6종, 7~12는 같은 맵의 '심층'(더 어둡고, 능력·강화 몬스터가 많고, 더 단단하다).
+   g.wave = 통산 판 번호(챕터 c의 s번째 판 = c*6 + s). 난이도는 판 번호가 아니라 난이도 단계 dlv로 잰다 */
+const STAGES = 6, STAGE_PLAN = ['fight', 'fight', 'rest', 'fight', 'fight', 'boss'];
+const CHAPTERS = 12;
+/* 휴식 판(rest.js): 어떤 휴식이 나올지와 룰렛 칸(w = 무게). 카드 칸은 희귀부터 사다리로 오른다 */
+const REST = {
+  pick: { wheel: .45, nymph: .3, gold: .25 },
+  wheel: [
+    { id: 'shard', name: '파편 주머니', icon: 'r_ruby', col: '#d8344e', w: 3, apply: p => { const n = 120 + game.chapter * 30; p.shards += n; game.shardTotal += n; } },
+    { id: 'heal', name: '체력 40% 회복', icon: 'c_ambrosia', col: '#2f9e48', w: 2, apply: p => healBy(p.maxHp * .4) },
+    { id: 'atk', name: '공격력 +8%', icon: 'c_heavy', col: '#d8572a', w: 2, apply: p => { p.atk = Math.round(p.atk * 1.08); } },
+    { id: 'hp', name: '최대 체력 +20', icon: 'c_giant', col: '#b8306e', w: 2, apply: p => { p.maxHp += 20; p.hp += 20; } },
+    { id: 'ammo', name: '탄창 +2', icon: 'c_mag', col: '#2f6fd8', w: 1.5, apply: p => { p.maxAmmo += 2; p.ammo = p.maxAmmo; } },
+    { id: 'card', name: '신의 선물', icon: 'c_olympus', col: '#9038d8', w: 1 },
+  ],
+  nymph: [
+    { id: 'heal', name: '회복의 샘', sub: '체력 60% 회복', icon: 'c_ambrosia', col: '#37b24d', glow: 'rgba(120,255,160,.45)', apply: p => healBy(p.maxHp * .6) },
+    { id: 'power', name: '힘의 샘', sub: '공격력 +10%', icon: 'c_heavy', col: '#e0603a', glow: 'rgba(255,140,90,.45)', apply: p => { p.atk = Math.round(p.atk * 1.1); } },
+  ],
 };
-/* 판 보상은 '이번 판에 통과한 웨이브·처치·보스'로만 계산한다. 시작 웨이브 번호만으로는 아무것도 받지 못한다.
-   깊은 웨이브일수록 한 칸의 값이 크고, 높은 챕터일수록 스크롤이 많다(높은 챕터를 깨는 편이 이득). */
+const DEEP_SUB = ['무너진 신전 아래, 더 깊은 곳', '강바닥 아래의 강', '사슬이 끊어진 감옥', '눈물마저 얼어 버린 밑바닥', '썩은 뿌리가 엉킨 땅속', '어둠보다 오래된 어둠'];
+const chapterOf = w => Math.floor((w - 1) / STAGES), stageOf = w => (w - 1) % STAGES + 1;
+const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, name: (deep ? '심층 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
+/* 난이도 단계: 챕터 1~6은 예전 3판 구성과 같은 값(챕터 c의 첫 판 = 3c+1, 보스 = 3c+3)을 6판에 고르게 나눈다.
+   심층(챕터 7~12)은 단계마다 DEEP_STEP씩 더 가파르다(tools/test/econ_v21.py 성장 시뮬레이션으로 정함) */
+/* ch = 챕터 하나에 오르는 단계, deep = 심층에서 그 배율. econ_v21.py로 정했다(2026-11-06): 하루 10판 기준 1~3챕터 첫날, 6챕터 약 3일, 9챕터 약 10일, 12챕터 약 4주 */
+const DIFF_STEP = { ch: 3.8, deep: 1.0 };
+const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : DIFF_STEP.deep, base = c < 6 ? c * DIFF_STEP.ch : 6 * DIFF_STEP.ch + (c - 6) * DIFF_STEP.ch * k; return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };
+/* ───── 난이도 곡선: 단계 L이 오를수록 적과 보스가 강해진다. DIFF는 판 번호를 받아 단계로 바꿔 쓴다 ───── */
+const DIFF_L = {
+  hp: L => (1 + .24 * (L - 1)) * Math.pow(1.045, L - 1),
+  // 2026-11-04 사용자 판단 "더 쉽게": 단계 1~5의 부담만 낮추고 단계 6부터는 그대로 둔다
+  dmg: L => (L < 6 ? .75 + .05 * (L - 1) : 1) * (1 + .11 * (L - 1)),
+  speed: L => 1 + Math.min(.6, .05 * (L - 1)),
+  spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게)
+  rows: L => Math.round(Math.min(150, 80 + L * 5)),                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게
+  bossHp: L => 900 * DIFF_L.hp(L) * (L <= 3 ? .7 : L <= 6 ? .85 : 1),
+  spike: L => L < 6 ? .08 + L * .05 : Math.min(.5, .18 + L * .04),
+};
+const DIFF = {};
+for (const k in DIFF_L) DIFF[k] = w => DIFF_L[k](dlv(w));
+/* 판 보상은 '이번 판에 통과한 판·처치·보스'로만 계산한다. 시작 판 번호만으로는 아무것도 받지 못한다.
+   깊은 판일수록 한 칸의 값이 크고, 높은 챕터일수록 스크롤이 많다(높은 챕터를 깨는 편이 이득). 값은 난이도 단계 L 기준 */
 const REWARD = {
-  waveGold: w => 16 + 3 * w, bossGold: w => 100 + 5 * w, killGold: 1.5,
+  waveGold: w => 16 + 3 * dlv(w), bossGold: w => 100 + 5 * dlv(w), killGold: 1.5,
   scrollPerWave: 1, scrollPerBoss: 3, scrollChapter: .25, scrollMax: 16,
-  gearEveryWaves: 2, gearMax: 5,
-  gemPerBoss: 10, gemFirstClear: 100,   // 같은 보스를 되풀이해 보석을 모으지 못하게 한다. 챕터 첫 클리어에 몰아 준다
+  // 2026-11-06 econ_v21 시뮬레이션: 판마다 장비가 최대 5개라 합성으로 에픽이 쏟아졌다 → 궁전2처럼 판당 1~2개, 보스 처치 시 +1
+  gearEveryWaves: 3, gearMax: 3, gearEpicBoss: .03, gearRare: .15, gearRareBoss: .08,
+  gemPerBoss: 10, gemFirstClear: 50,    // 같은 보스를 되풀이해 보석을 모으지 못하게 한다. 챕터 첫 클리어에 몰아 준다
+  startGold: 2000, startGem: 150,       // 시작 보석 900 → 150: 첫날 전 부위 에픽이 되는 것을 막는다
 };
 
 /* ───── 카드 등급: 궁수의 전설 2와 같은 4단계(초록·파랑·보라·주황 금빛) ───── */

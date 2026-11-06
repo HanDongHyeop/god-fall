@@ -333,16 +333,17 @@ function drawHUD() {
   if (flash > 0) { ctx.globalAlpha = flash * .55; ctx.fillStyle = '#7dffa8'; ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f, bh - 4 * s); ctx.globalAlpha = flash; ctx.strokeStyle = '#8dffb0'; ctx.lineWidth = 2.6 * s; rr(left - 1 * s, top - 1 * s, bw + 2 * s, bh + 2 * s, 7 * s); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   textOut(`${hpShown} / ${p.maxHp}`, left + bw / 2, top + bh / 2 + .5 * s, '#fff', 2.6);
-  // 웨이브 표시: 구역 안의 3칸. 마지막은 보스
-  const wv = (g.wave - 1) % 3, pipX = W * .635, pipY = top + 8 * s, gap = 21 * s;
-  for (let i = 0; i < 3; i++) {
-    const x = pipX + (i - 1) * gap, done = i < wv, cur = i === wv, isB = i === 2;
-    ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.beginPath(); ctx.arc(x, pipY, 8.5 * s, 0, 7); ctx.fill();
-    if (isB) { const sk = IMG.ui_skull; if (ok(sk)) ctx.drawImage(sk, x - 7 * s, pipY - 7 * s, 14 * s, 14 * s); if (!cur) { ctx.fillStyle = 'rgba(10,8,20,.45)'; ctx.beginPath(); ctx.arc(x, pipY, 8.5 * s, 0, 7); ctx.fill(); } }
-    else { ctx.fillStyle = done ? '#ffd24a' : cur ? '#fff' : '#3c3650'; ctx.beginPath(); ctx.arc(x, pipY, 5 * s, 0, 7); ctx.fill(); }
-    if (cur) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x, pipY, 8.5 * s, 0, 7); ctx.stroke(); }
+  // 판 표시: 챕터 안의 6칸(전투·휴식·보스). 휴식 칸은 초록 잎, 마지막은 보스 해골
+  const wv = stageOf(g.wave) - 1, pipX = W * .635, pipY = top + 8 * s, gap = 14.5 * s, pr = 6.6 * s;
+  for (let i = 0; i < STAGES; i++) {
+    const x = pipX + (i - (STAGES - 1) / 2) * gap, done = i < wv, cur = i === wv, kind = STAGE_PLAN[i];
+    ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill();
+    if (kind === 'boss') { const sk = IMG.ui_skull; if (ok(sk)) ctx.drawImage(sk, x - pr * .85, pipY - pr * .85, pr * 1.7, pr * 1.7); if (!cur) { ctx.fillStyle = 'rgba(10,8,20,.45)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill(); } }
+    else if (kind === 'rest') { ctx.fillStyle = done ? '#7dffa8' : cur ? '#c8ffd8' : '#2f5040'; ctx.beginPath(); ctx.ellipse(x, pipY, pr * .42, pr * .62, .6, 0, 7); ctx.fill(); }
+    else { ctx.fillStyle = done ? '#ffd24a' : cur ? '#fff' : '#3c3650'; ctx.beginPath(); ctx.arc(x, pipY, pr * .55, 0, 7); ctx.fill(); }
+    if (cur) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1.8 * s; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.stroke(); }
   }
-  const pw = 62 * s, prog = g.room ? 1 : clamp(p.y / Math.max(1, (g.isBossWave ? g.arenaTop * TILE : g.floorRow * TILE)), 0, 1);
+  const pw = 80 * s, prog = g.room ? 1 : clamp(p.y / Math.max(1, (g.isBossWave ? g.arenaTop * TILE : g.floorRow * TILE)), 0, 1);
   if (!g.boss) { ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw, 4 * s); ctx.fillStyle = '#ffd24a'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw * prog, 4 * s); }
   // 파편
   const gx = W - 28 * s; ctx.font = `${15 * s}px ${FONT}`; ctx.textAlign = 'right';
@@ -397,6 +398,8 @@ function render(dt) {
   ctx.clearRect(0, 0, view.W, view.H);
   if (!g.p || !['play', 'descend', 'intro', 'bossdead', 'dying', 'continue', 'card', 'pause', 'result'].includes(g.state)) return;
   drawSky();
+  // 심층 챕터(7~12): 배경만 더 어둡고 붉게 가라앉힌다(몬스터·지형은 그대로 밝아 구분된다)
+  if (g.deep && !g.room) { ctx.fillStyle = 'rgba(14,2,10,.38)'; ctx.fillRect(0, 0, view.W, view.H); const q = ctx.createRadialGradient(view.W / 2, view.H * .45, view.H * .2, view.W / 2, view.H * .45, view.H * .75); q.addColorStop(0, 'rgba(120,0,30,0)'); q.addColorStop(1, 'rgba(90,0,24,.35)'); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
   ctx.save();
   if (g.shake > .05) ctx.translate((Math.random() - .5) * g.shake * view.s * .7, (Math.random() - .5) * g.shake * view.s * .7);
   ctx.translate(0, g.kick * view.s);
@@ -405,7 +408,7 @@ function render(dt) {
   // 중간 보스 방은 발판이 전투 공간이라 어두운 막 위에 그린다. 다른 방은 막이 앞쪽이다
   const miniRoom = g.room && g.room.kind === 'mini';
   if (miniRoom) drawRoomBack();
-  drawTiles(); drawDoors(); drawPortal(); if (!g.minis) drawBossBits();
+  drawTiles(); drawDoors(); drawRest(); drawPortal(); if (!g.minis) drawBossBits();
   if (g.room && !miniRoom) drawRoomBack();
   // 중간 보스는 발판과 어두운 막 앞에 그린다. 바닥 아래만 잘라 땅에서 올라오는 모습은 그대로 둔다
   if (g.minis) { ctx.save(); ctx.beginPath(); ctx.rect(0, -view.H, view.W, view.H + wy(g.room.floorY)); ctx.clip(); drawMinis(); ctx.restore(); drawBossBits(); }
@@ -417,7 +420,7 @@ function render(dt) {
   if (g.state !== 'dying' && g.state !== 'continue') drawHero();
   drawFx(); drawFx2();
   if (g.room) drawRoomFront();
-  drawDoorPrompt();
+  drawDoorPrompt(); drawRestPrompt();
   ctx.restore();
   // 전체 화면 효과. 어둠(첫 번째 어둠의 2단계): 주인공 둘레만 보인다
   if (g.dark > 0 && g.p) { const px = wx(g.p.x), py = wy(g.p.y), q = ctx.createRadialGradient(px, py, 70 * view.s, px, py, 170 * view.s); q.addColorStop(0, 'rgba(6,2,16,0)'); q.addColorStop(1, `rgba(6,2,16,${.9 * Math.min(1, g.dark)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }

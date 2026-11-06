@@ -109,6 +109,8 @@ const sfx = {
   cardTick() { if (this.limit('ct', 70)) this.tone('square', 1100, 900, .02, .05); },
   cardLock(t) { this.tone('square', 500 + t * 220, 760 + t * 300, .12, .16); this.noise(.08, .14, 5000); },
   cardOpen2() { this.noise(.1, .1, 3500); },
+  // 상자 두구두구: 갈수록 높고 빨라지는 북소리
+  drum(i) { this.tone('triangle', 90 + i * 14, 60 + i * 10, .12, .3); this.noise(.06, .18, 900 + i * 260); },
   // 등급이 오를 때: 단계가 높을수록 높고 길고 화려하다
   cardUp(s) { this.tone('triangle', 420 + s * 180, 900 + s * 320, .16 + s * .05, .22); this.tone('sine', 840 + s * 360, 1700 + s * 500, .1 + s * .06, .12); this.noise(.12 + s * .05, .1 + s * .04, 4200 + s * 900); if (s === 3) this.tone('square', 1320, 2640, .35, .08); },
   setMute(m) { this.muted = m; if (typeof Meta !== 'undefined') { Meta.s.opt.mute = m; Meta.save(); } if (this.bgmGain) this.bgmGain.gain.value = m ? 0 : .34; if (this.bgmEl) this.bgmEl.volume = m ? 0 : .34; },
@@ -503,7 +505,7 @@ function drawButtons(dt) {
   const a = ui.attack, u = view.u, p = game.p, aOn = input.attackHeld || input.keys.a, jOn = input.jumpHeld || input.keys.j;
   btnAnim.a = approachSnap(btnAnim.a, aOn ? 1 : 0, 30, dt); btnAnim.j = approachSnap(btnAnim.j, jOn ? 1 : 0, 30, dt);
   // 공격 버튼은 공중에서만 켜진다. 방 안 물건 앞과 문 앞에서는 쓸 수 있으니 켜 둔다
-  const armed = !p || !p.onGround || !!(game.room && roomItemNear()) || !!doorNear();
+  const armed = !p || !p.onGround || !!(game.room && roomItemNear()) || !!doorNear() || !!(game.rest && restNear());
   btnAnim.air = approachSnap(btnAnim.air, armed ? 1 : 0, 22, dt);
   const lit = btnAnim.air, fade = .38 + .62 * lit;
   const canJump = p && p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS;

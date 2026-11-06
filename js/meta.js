@@ -9,14 +9,14 @@ const Meta = {
     add('weapon_a', 0); add('armor_a', 0); add('boots_a', 0); add('amulet_a', 0); add('ring_a', 0); add('helm_a', 0);
     add('armor_a', 0); add('armor_a', 0); add('ring_b', 0);
     return {
-      v: 1, name: '올림포스 생존자', gold: 2000, gem: 900, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
+      v: 1, name: '올림포스 생존자', gold: REWARD.startGold, gem: REWARD.startGem, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
       equip: { weapon: 'u1', amulet: null, ring: null, helm: null, armor: null, boots: null },
       // 무기는 신마다 따로다. equip.weapon과 slotLv.weapon은 지금 출전한 신의 값이다
       weapons: { hermes: 'u1' }, weaponLv: { hermes: 1 },
       slotLv: { weapon: 1, amulet: 1, ring: 1, helm: 1, armor: 1, boots: 1 },
       scrolls: { weapon: 6, amulet: 6, ring: 6, helm: 6, armor: 6, boots: 6 },
       god: 'hermes', gods: { hermes: { own: true, level: 1, shard: 0 } }, talent: {},
-      chapter: 0, cleared: BIOMES.map(() => false), best: BIOMES.map(() => 0),
+      chapter: 0, cleared: Array(CHAPTERS).fill(false), best: Array(CHAPTERS).fill(0),
       chest: { god: { freeAt: 0, pity: 0 }, silver: { freeAt: 0, pity: 0 }, obsidian: { freeAt: 0, pity: 0 }, prism: { pity: 0 } },
       quest: { day: '', runs: 0, kills: 0, bosses: 0, combo: 0, claimed: {} }, total: { kills: 0, bosses: 0, runs: 0, bestWave: 0, bestCombo: 0, claimed: {} },
       opt: { mute: false, bgm: true }, seenTip: false,
@@ -35,7 +35,9 @@ const Meta = {
       for (const it of s.inv) if (GEAR[it.d].slot === 'weapon') it.god = it.uid === s.equip.weapon ? s.god : 'hermes';
       for (const g of GODS) if (s.gods[g.id] && s.gods[g.id].own) this.grantWeapon(g.id);
     }
-    BIOMES.forEach((_, i) => { s.cleared[i] = !!s.cleared[i]; s.best[i] = s.best[i] || 0; });
+    // 챕터가 6 → 12개로 늘었다. best는 예전엔 통산 웨이브, 지금은 그 챕터에서 넘은 판 수(0~6)
+    for (let i = 0; i < CHAPTERS; i++) { s.cleared[i] = !!s.cleared[i]; s.best[i] = s.cleared[i] ? STAGES : s.bestV === 2 ? Math.min(STAGES, s.best[i] || 0) : 0; }
+    s.bestV = 2;
     s.chest.god = s.chest.god || { freeAt: 0, pity: 0 };
     for (const g of Object.values(s.gods)) if (g.level === undefined) { const a = g.star || 0; g.level = 1 + (a >= 2) + (a >= 5) + (a >= 8); delete g.star; }
     for (const k of Object.keys(s.slotLv)) s.slotLv[k] = Math.min(LV_MAX, s.slotLv[k]);
@@ -209,14 +211,15 @@ const Meta = {
   quests() {
     const q = this.s.quest, t = this.s.total;
     return [
-      { id: 'd_run', daily: true, name: '오늘 웨이브 1개 통과', cur: q.runs, need: 1, gem: 30, gold: 200 },
-      { id: 'd_kill', daily: true, name: '오늘 괴물 100마리 처치', cur: q.kills, need: 100, gem: 40, gold: 300 },
-      { id: 'd_boss', daily: true, name: '오늘 보스 1체 처치', cur: q.bosses, need: 1, gem: 60, gold: 400 },
-      { id: 'd_combo', daily: true, name: '오늘 15 콤보 달성', cur: q.combo, need: 15, gem: 40, gold: 300 },
-      { id: 'a_w3', name: '웨이브 3 도달', cur: t.bestWave, need: 3, gem: 100, gold: 500 },
-      { id: 'a_w6', name: '웨이브 6 도달', cur: t.bestWave, need: 6, gem: 200, gold: 1000 },
-      { id: 'a_w9', name: '웨이브 9 도달', cur: t.bestWave, need: 9, gem: 300, gold: 2000 },
-      { id: 'a_w15', name: '웨이브 15 도달', cur: t.bestWave, need: 15, gem: 600, gold: 4000 },
+      { id: 'd_run', daily: true, name: '오늘 1판 통과', cur: q.runs, need: 1, gem: 15, gold: 200 },
+      { id: 'd_kill', daily: true, name: '오늘 괴물 100마리 처치', cur: q.kills, need: 100, gem: 25, gold: 300 },
+      { id: 'd_boss', daily: true, name: '오늘 보스 1체 처치', cur: q.bosses, need: 1, gem: 35, gold: 400 },
+      { id: 'd_combo', daily: true, name: '오늘 15 콤보 달성', cur: q.combo, need: 15, gem: 25, gold: 300 },
+      { id: 'a_w3', name: '챕터 1 클리어', cur: this.clearedN(), need: 1, gem: 100, gold: 500 },
+      { id: 'a_w6', name: '챕터 3 클리어', cur: this.clearedN(), need: 3, gem: 200, gold: 1000 },
+      { id: 'a_w9', name: '챕터 6 클리어', cur: this.clearedN(), need: 6, gem: 300, gold: 2000 },
+      { id: 'a_w15', name: '심층 챕터 9 클리어', cur: this.clearedN(), need: 9, gem: 600, gold: 4000 },
+      { id: 'a_w36', name: '심층 챕터 12 클리어', cur: this.clearedN(), need: 12, gem: 1000, gold: 8000 },
       { id: 'a_k1000', name: '누적 1000마리 처치', cur: t.kills, need: 1000, gem: 200, gold: 1500 },
       { id: 'a_c30', name: '30 콤보 달성', cur: t.bestCombo, need: 30, gem: 200, gold: 1500 },
     ];
@@ -233,7 +236,7 @@ const Meta = {
   /* 판 결과 반영. r = {wave, kills, bosses, combo, chapter} */
   /* 정산 없이 보상 크기만 계산한다. 무작위 없음. startWave가 없으면 그 챕터의 첫 웨이브로 본다 */
   runReward(r) {
-    const c = r.chapter || 0, start = r.startWave !== undefined ? r.startWave : 1 + c * 3, cleared = Math.max(0, r.wave - start), R_ = REWARD;
+    const c = r.chapter || 0, start = r.startWave !== undefined ? r.startWave : 1 + c * STAGES, cleared = Math.max(0, r.wave - start), R_ = REWARD;
     let gold = r.kills * R_.killGold, left = r.bosses;
     for (let w = start; w < r.wave; w++) gold += R_.waveGold(w);
     for (let w = start; left > 0; w++) if (isBossWave(w)) { gold += R_.bossGold(w); left--; }
@@ -251,18 +254,19 @@ const Meta = {
     for (let i = 0; i < nScroll; i++) { const sl = SLOTS[Math.floor(Math.random() * 6)].id; scrolls[sl] = (scrolls[sl] || 0) + 1; s.scrolls[sl]++; }
     // 웨이브마다 장비를 조금씩 떨어뜨린다. 보스를 잡으면 더 좋은 등급
     const keys = Object.keys(GEAR), nGear = R.nGear;
-    for (let i = 0; i < nGear; i++) { const g = Math.random() < .08 * r.bosses ? 2 : Math.random() < .25 + .1 * r.bosses ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
+    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses ? 2 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
     if (r.bosses) s.energy += ENERGY.clearBack;
     // 시작하자마자 포기한 판은 임무·기록에 넣지 않는다
     if (done) q.runs++;
     q.kills += r.kills; q.bosses += r.bosses; q.combo = Math.max(q.combo, r.combo);
     t.runs++; t.kills += r.kills; t.bosses += r.bosses; if (done) t.bestWave = Math.max(t.bestWave, r.wave); t.bestCombo = Math.max(t.bestCombo, r.combo);
-    if (done) s.best[r.chapter] = Math.max(s.best[r.chapter] || 0, r.wave);
+    if (done) s.best[r.chapter] = r.clear || r.bosses > 0 ? STAGES : Math.min(STAGES, Math.max(s.best[r.chapter] || 0, R.cleared));
     // 첫 보스를 잡으면 다음 챕터가 열린다
     if (r.bosses > 0) { s.cleared[r.chapter] = true; }
     this.save();
     return { gold, gem, scrolls, drops, cleared: R.cleared, first };
   },
-  chapterOpen(i) { return i === 0 || !!this.s.cleared[i - 1]; },
+  clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
+  chapterOpen(i) { return i === 0 || (i < CHAPTERS && !!this.s.cleared[i - 1]); },
 };
 Meta.load();

@@ -4,8 +4,9 @@
 
 /* 웨이브를 만든 뒤: 이 챕터에서 능력을 갖는 종에게 능력을 붙이고, 일부는 강화 개체로 만든다 */
 function decorateWave(R) {
-  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = (g.wave - 1) % 3, easy = g.chapter === 0 ? .5 : 1;
-  const rate = MON_SKILL_RATE[wi] * easy, er = ELITE.rate[wi] * easy;
+  // 챕터 안 판 1·2 → 웨이브 1·2 값, 판 4·5 → 웨이브 3 값. 심층(챕터 7~12)은 능력 개체가 더 많고 강화 개체가 1.8배
+  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = [0, 1, 1, 2, 2, 2][stageOf(g.wave) - 1], easy = g.chapter === 0 ? .5 : 1;
+  const rate = Math.min(.95, MON_SKILL_RATE[wi] * easy * (g.deep ? 1.25 : 1)), er = ELITE.rate[wi] * easy * (g.deep ? 1.8 : 1);
   for (const e of g.enemies) {
     const sk = tbl[e.kind]; if (!sk || e.still) continue;   // 가시 장벽(멈춘 성게)은 그대로 둔다
     if (R() >= rate) continue;
@@ -22,7 +23,7 @@ const skCol = e => (SKILL_DEF[e.sk] && SKILL_DEF[e.sk].col) || '#ff9a8a';
 function monShot(e, a, v, o = {}) {
   const g = game; g.ebul.push({ x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: o.r || 6, dmg: Math.round(e.dmg * .8), t: 0, col: o.col || skCol(e), g: o.g || 0, pool: o.pool, ghost: o.ghost });
 }
-const shotV = () => Math.min(250, 140 + game.wave * 5);
+const shotV = () => Math.min(250, 140 + game.lv * 5);
 
 /* 매 프레임: 움직임 뒤, 충돌 앞 */
 function monSkillTick(e, dt) {
@@ -82,7 +83,7 @@ function batDashStart(e) {
 }
 function batDashTick(e, dt, spd) {
   e.dashT -= dt; if (e.dashT > 0) return true;
-  const v = (170 + game.wave * 9) * spd * (e.elite ? 2.1 : 1.8); e.vx = Math.cos(e.dashA) * v; e.vy = Math.sin(e.dashA) * v; e.dashT = 0; return false;
+  const v = (170 + game.lv * 9) * spd * (e.elite ? 2.1 : 1.8); e.vx = Math.cos(e.dashA) * v; e.vy = Math.sin(e.dashA) * v; e.dashT = 0; return false;
 }
 /* 죽을 때 쓰는 능력. 보스가 쓰러지며 함께 죽는 몬스터는 쓰지 않는다 */
 function monDeath(e) {

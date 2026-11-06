@@ -16,7 +16,7 @@ function enterRoom(d) {
   refill(p);
   const room = g.room = { kind: d.kind, floorY, side, items: [], t: 0, exit: { x: side ? WORLD_W - TILE : TILE, y: floorY - 40, side, used: false }, crystal: null, title: ROOM_TITLE[d.fake || d.kind] };
   // 값은 이번 판에 내려온 깊이로 오른다. 파편은 판마다 새로 모으기 때문
-  const sec = sectorOf(g.wave - g.startWave + 1), disc = has('member') ? .9 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
+  const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .9 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
   const price = n => Math.round(n * disc);
   if (d.kind === 'mini') {
     startMini(room);
