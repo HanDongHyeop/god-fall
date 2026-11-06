@@ -34,7 +34,16 @@ const CARDS = [
   { id: 'chain', name: '번개 탄', tier: '영웅', desc: '맞은 적 근처로 번개가 옮겨 갑니다.', noMini: true, note: '보스와 중간 보스에게는 번개가 옮겨 가지 않습니다' },
   { id: 'orbit', name: '수호 구슬', tier: '영웅', desc: '몸 주위를 도는 구슬이 적을 때립니다.', noMini: true, note: '보스와 중간 보스는 때리지 않습니다' },
   { id: 'strike', name: '낙뢰', tier: '영웅', desc: '6번 공격할 때마다 가까운 적에게 벼락이 떨어집니다.', noMini: true, note: '보스와 중간 보스에게는 떨어지지 않습니다' },
-  { id: 'thanatos', name: '타나토스의 유예', tier: '신화', desc: '판마다 한 번, 죽는 순간 체력 30%로 되살아납니다.' },
+  // 2026-11-06 추가: 영웅 4장·전설 4장. 모두 보스와 중간 보스에게도 효과가 있다
+  { id: 'ares', name: '아레스의 창끝', tier: '영웅', desc: '치명타 확률 +20%, 치명타 피해 +50%.', apply: () => { game.st.crit += .2; game.st.critDmg += .5; } },
+  { id: 'nike', name: '니케의 월계관', tier: '영웅', desc: '지금 체력 30% 회복. 웨이브를 시작할 때마다 체력 15% 회복.', noMini: true, apply: p => { healBy(p.maxHp * .3); game.st.waveHeal = (game.st.waveHeal || 0) + .15; } },
+  { id: 'giant', name: '거인의 피', tier: '영웅', desc: '최대 체력 +40%. 체력이 모두 찹니다.', apply: p => { p.maxHp = Math.round(p.maxHp * 1.4); p.hp = p.maxHp; } },
+  { id: 'echo', name: '메아리 탄', tier: '영웅', desc: '3번 공격할 때마다 같은 공격이 한 번 더 나갑니다.' },
+  { id: 'thanatos', name: '타나토스의 유예', tier: '전설', desc: '판마다 한 번, 죽는 순간 체력 30%로 되살아납니다.' },
+  { id: 'olympus', name: '올림포스의 축복', tier: '전설', desc: '공격력 +40%, 최대 체력 +30%.', apply: p => { p.atk = Math.round(p.atk * 1.4); const n = Math.round(p.maxHp * .3); p.maxHp += n; p.hp += n; } },
+  { id: 'hydra', name: '히드라의 독니', tier: '전설', desc: '공격이 맞으면 작은 탄 2발로 갈라져 양옆 아래로 다시 날아갑니다.' },
+  { id: 'atlas', name: '아틀라스의 짐', tier: '전설', desc: '탄창 +4. 공중에서 0.6초마다 탄이 1발씩 저절로 찹니다.', apply: p => { p.maxAmmo += 4; p.ammo = p.maxAmmo; } },
+  { id: 'kronos', name: '크로노스의 모래시계', tier: '전설', desc: '적과 보스, 적의 탄이 25% 느려집니다.' },
 ];
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
 for (const c of CARDS) loadImg('c_' + c.id, `assets/card/${c.id}.webp`);
@@ -45,14 +54,18 @@ function applyCard(c) {
   g.cardList.push(c.id);
   if (c.apply) c.apply(g.p);
 }
-function grantRandomCard() { const pool = cardPool().filter(c => c.tier !== '일반'), c = pool[Math.floor(Math.random() * pool.length)]; if (c) { applyCard(c); popup(game.p.x, game.p.y - 50, c.name, TIER[c.tier].hi, true); } }
+const TIER_SEQ = ['일반', '희귀', '영웅', '전설'];
+/* 등급 사다리: from 등급에서 시작해 확률에 걸릴 때마다 한 칸 오른다 */
+function rollTier(boost, from = 0) { const up = boost ? CARD_UP.boost : CARD_UP.base; let t = from; while (t < 3 && Math.random() < up[t]) t++; return t; }
+/* pool에서 t등급 카드를 하나 뽑아 뺀다. 그 등급이 비었으면 한 칸씩 내려가며 찾고, 그래도 없으면 위로 찾는다 */
+function takeOfTier(pool, t) {
+  for (const k of [t, t - 1, t - 2, t - 3, t + 1, t + 2, t + 3]) { if (k < 0 || k > 3) continue; const ids = pool.map((c, i) => c.tier === TIER_SEQ[k] ? i : -1).filter(i => i >= 0); if (ids.length) return pool.splice(ids[Math.floor(Math.random() * ids.length)], 1)[0]; }
+  return null;
+}
+function grantRandomCard() { const pool = cardPool(), c = takeOfTier(pool, rollTier(false, 1)); if (c) { applyCard(c); popup(game.p.x, game.p.y - 50, c.name, TIER[c.tier].hi, true); } }
 function pickCards(boost, filter) {
   const n = 3 + game.choiceBonus, pool = filter ? cardPool().filter(filter) : cardPool(), out = [];
-  while (out.length < n && pool.length) {
-    let tot = 0; const wts = pool.map(c => { const w = TIER[c.tier].weight * (boost && c.tier !== '일반' ? 2.5 : 1); tot += w; return w; });
-    let r = Math.random() * tot, i = 0; for (; i < pool.length; i++) { r -= wts[i]; if (r <= 0) break; }
-    out.push(pool.splice(Math.min(i, pool.length - 1), 1)[0]);
-  }
+  while (out.length < n && pool.length) { const c = takeOfTier(pool, rollTier(boost)); if (!c) break; out.push(c); }
   return out;
 }
 const modal = { sel: 0, list: [], openedAt: 0, ready: false, timers: [] };
@@ -65,34 +78,57 @@ function openCards(boost, opt) {
   $('cardTitle').textContent = opt && opt.title || (boost ? '보스의 전리품' : '신의 선물');
   $('cardSub').textContent = opt && opt.sub || '새로운 능력을 선택하세요!';
   modal.list = pickCards(boost, opt && opt.filter); modal.sel = 0; modal.openedAt = performance.now(); modal.ready = false;
-  const seq = ['일반', '희귀', '영웅', '신화'];
+  /* 등급 승급 연출(궁수의 전설 2): 모두 일반(초록)으로 나와 아이콘이 돈다 → 단계마다 확률에 걸린 카드만 번쩍이며 한 등급 오른다.
+     걸리지 않은 카드는 그 등급에서 멈춘다. 높은 등급으로 오를수록 터짐·흔들림·빛이 커진다. 실제 결과는 뽑을 때 이미 정해져 있다 */
+  const ranks = modal.list.map(c => TIER_SEQ.indexOf(c.tier)), top = Math.max(0, ...ranks), STEP0 = 760, STEPN = 640;
   modal.list.forEach((c, i) => {
     const Tr = TIER[c.tier], b = document.createElement('button');
-    b.className = 'pcard'; b.dataset.card = c.id;
+    b.className = 'pcard'; b.dataset.card = c.id; b._tier = 0;
     b.style.setProperty('--c', TIER['일반'].col); b.style.setProperty('--d', Tr.dark); b.style.setProperty('--h', Tr.hi); b.style.setProperty('--fin', Tr.col);
-    b.innerHTML = `<div class="beam"></div><div class="flag"><div class="wing"></div><div class="tag">${c.tier}</div><div class="nm">${c.name}</div><div class="sp"></div><div class="ds">${c.desc}${c.note ? `<div class="nt">${c.note}</div>` : ''}</div></div><div class="tile"><img src="assets/card/${c.id}.webp" alt=""></div><div class="white"></div>`;
+    b.innerHTML = `<div class="rays"></div><div class="beam"></div><div class="flag"><div class="wing"></div><div class="tag">${c.tier}</div><div class="nm">${c.name}</div><div class="sp"></div><div class="ds">${c.desc}${c.note ? `<div class="nt">${c.note}</div>` : ''}</div></div><div class="tile"><img src="assets/card/${c.id}.webp" alt=""></div><div class="uring"></div><div class="white"></div>`;
     b.onclick = () => chooseCard(i);
     box.appendChild(b);
-    // 슬롯 회전: 아이콘이 빠르게 바뀌고 색이 등급까지 올라간다
-    const img = b.querySelector('.tile img'), ids = CARDS.map(x => x.id), stopAt = 620 + i * 170, tierIdx = seq.indexOf(c.tier);
-    const t0 = performance.now();
+    // 슬롯 회전: 멈출 때까지 지금 등급의 아이콘이 빠르게 바뀐다
+    const img = b.querySelector('.tile img');
     const iv = setInterval(() => {
-      const el = performance.now() - t0, prog = clamp(el / stopAt, 0, 1), now = seq[Math.min(tierIdx, Math.floor(prog * (tierIdx + 1.01)))];
-      b.style.setProperty('--c', TIER[now].col);
-      if (el >= stopAt) { clearInterval(iv); img.src = `assets/card/${c.id}.webp`; b.classList.add('lock'); sfx.cardLock(tierIdx); return; }
-      img.src = `assets/card/${ids[Math.floor(Math.random() * ids.length)]}.webp`; if (Math.floor(el / 90) !== b._k) { b._k = Math.floor(el / 90); sfx.cardTick(); }
+      if (b._locked) { clearInterval(iv); return; }
+      const now = CARDS.filter(x => x.tier === TIER_SEQ[b._tier]); img.src = `assets/card/${now[Math.floor(Math.random() * now.length)].id}.webp`;
+      const k = Math.floor(performance.now() / 90); if (k !== b._k) { b._k = k; sfx.cardTick(); }
     }, 60);
     modal.timers.push(iv);
-    modal.timers.push(setTimeout(() => { b.classList.add('open'); sfx.cardOpen2(); }, stopAt + 200));
-    modal.timers.push(setTimeout(() => { b.classList.add('done'); }, stopAt + 640));
   });
-  modal.timers.push(setTimeout(() => { modal.ready = true; root.classList.add('ready'); }, 620 + 170 * 2 + 700));
+  const cards = [...box.children];
+  // 단계 s(1..top): s등급까지 오를 카드는 승급, 이미 끝난 카드(s-1등급)는 멈춘다. 마지막에 남은 카드를 멈춘다
+  for (let s = 1; s <= top + 1; s++) modal.timers.push(setTimeout(() => {
+    let upN = 0;
+    cards.forEach((b, i) => { if (b._locked) return; if (ranks[i] >= s) { cardUp(b, s); upN++; } else lockCard(b, i); });
+    if (upN) cardStageFx(s);
+  }, STEP0 + (s - 1) * STEPN));
+  modal.timers.push(setTimeout(() => { modal.ready = true; root.classList.add('ready'); }, STEP0 + top * STEPN + 700));
+}
+/* 한 등급 승급: 칸이 튀고 흰 섬광, 고리가 퍼지고 불꽃이 튄다. 전설은 뒤에서 금빛 햇살이 돈다 */
+function cardUp(b, s) {
+  const T_ = TIER[TIER_SEQ[s]]; b._tier = s; b.style.setProperty('--c', T_.col); b.style.setProperty('--uc', T_.hi);
+  b.classList.remove('tup'); void b.offsetWidth; b.classList.add('tup', 'u' + s);
+  sparkBurst(b.querySelector('.tile'), T_.hi, 10 + s * 7, .9 + s * .35); sfx.cardUp(s);
+}
+function lockCard(b, i) {
+  const c = modal.list[i]; b._locked = true; b.querySelector('.tile img').src = `assets/card/${c.id}.webp`;
+  b.style.setProperty('--c', TIER[c.tier].col); b.classList.add('lock'); sfx.cardLock(TIER_SEQ.indexOf(c.tier));
+  modal.timers.push(setTimeout(() => { b.classList.add('open'); sfx.cardOpen2(); }, 200));
+  modal.timers.push(setTimeout(() => { b.classList.add('done'); }, 640));
+}
+/* 단계 전체 효과: 화면이 그 등급 색으로 번쩍이고 카드 줄이 흔들린다(영웅부터 크게) */
+function cardStageFx(s) {
+  const root = $('mCard'); root.style.setProperty('--sc', TIER[TIER_SEQ[s]].col);
+  root.classList.remove('stg1', 'stg2', 'stg3'); void root.offsetWidth; root.classList.add('stg' + s);
+  if (s >= 2) vibrate(s === 3 ? 90 : 40);
 }
 function chooseCard(i) {
   if (!modal.ready) { // 연출 중 누르면 바로 끝낸다
     if (performance.now() - modal.openedAt < 250) return;
     clearCardTimers();
-    [...$('cards').children].forEach((b, k) => { const c = modal.list[k]; b.classList.add('lock', 'open', 'done'); b.style.setProperty('--c', TIER[c.tier].col); b.querySelector('.tile img').src = `assets/card/${c.id}.webp`; });
+    [...$('cards').children].forEach((b, k) => { const c = modal.list[k], r = TIER_SEQ.indexOf(c.tier); b._locked = true; b._tier = r; if (r) b.classList.add('u' + r); b.classList.add('lock', 'open', 'done'); b.style.setProperty('--c', TIER[c.tier].col); b.querySelector('.tile img').src = `assets/card/${c.id}.webp`; });
     modal.ready = true; $('mCard').classList.add('ready'); return;
   }
   if (modal.picked) return; modal.picked = true;
@@ -109,7 +145,7 @@ function chooseCard(i) {
   }, 620);
 }
 /* 카드를 얻은 순간: 몸에서 빛기둥과 고리. 등급이 높을수록 조금씩 크다(더 높은 등급을 위해 여유를 남긴다) */
-const TIER_RANK = { '일반': 0, '희귀': 1, '영웅': 2, '신화': 3 };
+const TIER_RANK = { '일반': 0, '희귀': 1, '영웅': 2, '전설': 3 };
 function cardFx(c) {
   const g = game, p = g.p, r = TIER_RANK[c.tier], col = TIER[c.tier].col, hi = TIER[c.tier].hi;
   g.fx.push({ type: 'pillar', x: p.x, y: p.y, w: 30 + r * 10, col, t: 0, life: .55 + r * .08 });

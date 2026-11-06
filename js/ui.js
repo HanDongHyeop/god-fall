@@ -253,7 +253,7 @@ const UI = {
     const html = order.map(id => {
       const C = CHESTS.find(x => x.id === id), st = s.chest[id] || {}, ic = uiIcon('cur_' + C.cur), fr = C.free && (st.freeAt || 0) <= now;
       const left = C.free ? Math.max(0, (st.freeAt || 0) - now) : 0, tm = left ? `${Math.floor(left / 3600000)}시간 ${Math.floor(left / 60000) % 60}분 뒤 무료` : '';
-      const pity = C.pity ? `<span class="pity">에픽 확정까지 ${Math.max(1, C.pity - (st.pity || 0))}회</span>` : '';
+      const pity = (C.pity ? `<span class="pity">에픽 확정까지 ${Math.max(1, C.pity - (st.pity || 0))}회</span>` : '') + (C.featured ? (() => { const fg = GOD_BY[Meta.featuredGod()], l = Meta.featuredLeft(); return `<div class="feat"><img src="${uiIcon('w_' + fg.id)}" alt=""><span>이번 회차 <b style="color:${fg.rankCol}">${fg.name}</b> · ${Math.floor(l / 864e5)}일 ${Math.floor(l / 36e5) % 24}시간 남음</span></div>`; })() : '');
       return `<div class="chest" style="--t:${C.tint}"><div class="hd2 oL"><span>${C.name}</span><button class="info" data-rate="${id}">i</button></div><div class="bd"><img class="cimg" src="${uiIcon(C.icon)}" alt=""><div><div class="dsc">${C.desc}</div>${pity}${tm ? `<div class="pity" style="display:block;margin-top:calc(var(--u)*1)">${tm}</div>` : ''}</div></div><div class="acts">${fr ? `<button class="btn gold free" data-pull="${id}" data-n="1" data-free="1"><span>무료 1회</span></button>` : ''}<button class="btn green" data-pull="${id}" data-n="1"><span class="oL">1회 뽑기</span><span class="pr oL"><img src="${ic}" alt="">${fmt(C.one)}</span></button><button class="btn green" data-pull="${id}" data-n="10"><span class="oL">10회 뽑기</span><span class="pr oL"><img src="${ic}" alt="">${fmt(C.ten)}</span></button></div></div>`;
     }).join('');
     const GC = GOD_CHEST, gst = s.chest.god || {}, gfr = (gst.freeAt || 0) <= now, gleft = Math.max(0, (gst.freeAt || 0) - now), gic = uiIcon('cur_gem');
@@ -276,7 +276,7 @@ const UI = {
   },
   ratePop(id) {
     const C = CHESTS.find(x => x.id === id);
-    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">${C.name} 확률</div><button class="x" data-close>✕</button><div class="rates">${[0, 1, 2].filter(i => C.rate[i] > 0).map(i => `<div class="r" style="--c:${GRADES[i].color}"><span>${GRADES[i].name}</span><span>${(C.rate[i] * 100).toFixed(0)}%</span></div>`).join('')}<div class="r" style="--c:#8a7a7a"><span>${GRADES[MYTH].name}</span><span>획득 불가</span></div></div><div class="note">신화 등급은 뽑기로 나오지 않습니다. 대장간에서 같은 부위 에픽 3개를 합성해 만듭니다. 무기는 신 전용이며 같은 신의 무기끼리 합성합니다. 신 1명당 무기 확률은 레어 25%, 에픽 15%, 전설 10%입니다. ${C.pity ? `${C.pity}회 안에 에픽 1개가 확정됩니다.` : ''}</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">${C.name} 확률</div><button class="x" data-close>✕</button><div class="rates">${[0, 1, 2].filter(i => C.rate[i] > 0).map(i => `<div class="r" style="--c:${GRADES[i].color}"><span>${GRADES[i].name}</span><span>${(C.rate[i] * 100).toFixed(0)}%</span></div>`).join('')}<div class="r" style="--c:#8a7a7a"><span>${GRADES[MYTH].name}</span><span>획득 불가</span></div></div><div class="note" style="color:#fff">${C.note}${C.pity ? ` ${C.pity}회 안에 에픽 1개가 확정됩니다.` : ''}</div><div class="note">신화 등급은 뽑기로 나오지 않습니다. 대장간에서 같은 부위 에픽 3개를 합성해 만듭니다. 무기는 신 전용이며 같은 신의 무기끼리 합성합니다. ${C.slots.includes('weapon') ? `${C.featured ? '이번 회차 신이 아닐 때 ' : ''}신 1명당 무기 확률은 레어 25%, 에픽 15%, 전설 10%입니다.` : ''}</div></div>`);
   },
   reveal(id, res) {
     const C = id === 'god' ? GOD_CHEST : CHESTS.find(x => x.id === id), el = $('gacha'); el.classList.add('on');

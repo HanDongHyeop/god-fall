@@ -35,7 +35,7 @@ function drawCine() {
 }
 function bossImg(b, white) { const n = b.def.frames[b.open > .5 ? 1 : 0]; return IMG['m_' + n + (white ? '_w' : '')]; }
 function drawBoss() {
-  const g = game, b = g.boss, s = view.s, im = bossImg(b); if (!ok(im)) return;
+  const g = game, b = g.boss, s = view.s, im = bossImg(b); if (!ok(im) || b.hidden) return;
   const w = b.w * s, h = w * im.naturalHeight / im.naturalWidth, x = wx(b.x), y = wy(b.y);
   b.drawH = h / s;
   // 바닥 그림자: 높이 올라갈수록 작아진다
@@ -48,7 +48,8 @@ function drawBoss() {
   ctx.rotate(rock);
   ctx.scale(b.sx * (1 + breathe + pk), b.sy * (1 - breathe + pk));
   if (b.state === 'rage') ctx.translate((Math.random() - .5) * 4 * s, 0);
-  ctx.drawImage(im, -w / 2, -h, w, h);
+  ctx.globalAlpha = b.alpha === undefined ? 1 : b.alpha;
+  ctx.drawImage(im, -w / 2, -h, w, h); ctx.globalAlpha = 1;
   if (b.flash > 0) { const wi = bossImg(b, true); if (ok(wi)) { ctx.globalAlpha = .92; ctx.drawImage(wi, -w / 2, -h, w, h); ctx.globalAlpha = 1; } }
   ctx.restore();
 }
@@ -58,7 +59,7 @@ function drawBossBits() {
   const im = bossImg(b), s = view.s; if (!ok(im)) return; const w = 54 * s * (b.mini ? b.w / b.def.w0 : 1), h = w * im.naturalHeight / im.naturalWidth;
   for (const q of b.bits) { ctx.save(); ctx.translate(wx(q.x), wy(q.y)); ctx.rotate(q.a + Math.PI / 2); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore(); }
 }
-function bossHitTest(bu) { const b = game.boss, hh = b.drawH || b.h; return Math.abs(bu.x - b.x) < b.w * .42 + bu.r && bu.y > b.y - hh * .95 - bu.r && bu.y < b.y && b.y - hh * .4 < b.floorY + 4; }
+function bossHitTest(bu) { if (game.boss.hidden) return false; const b = game.boss, hh = b.drawH || b.h; return Math.abs(bu.x - b.x) < b.w * .42 + bu.r && bu.y > b.y - hh * .95 - bu.r && bu.y < b.y && b.y - hh * .4 < b.floorY + 4; }
 function hitBoss(dmg, crit, x, y) {
   const g = game, b = g.boss; if (!b || !b.alive || b.state === 'intro' || b.state === 'dead') return;
   const d = Math.round(dmg * (1 + (g.st.bossPct || 0)) * (b.open > .5 ? 1.25 : 1));
@@ -68,17 +69,19 @@ function hitBoss(dmg, crit, x, y) {
   chunks(x, y, 3, [b.def.col[0], b.def.col[1]], 200, 3.4);
   g.shake = Math.max(g.shake, crit ? 3.5 : 2); g.hitStop = Math.max(g.hitStop, 1 / 60); sfx.hit(); if (b.hitC % 3 === 0) sfx.bossHit();
   if (b.mini) { if (b.hp <= 0) miniDie(b); return; }
-  if (b.phase === 1 && b.hp < b.maxHp * .5) { b.phase = 2; if (['erupt', 'dive', 'sweep', 'split', 'laser'].includes(b.state)) b.pendRage = true; else bossSet('rage'); sfx.roar(); g.whiteout = .3; g.shake = 14; popup(WORLD_W / 2, g.cam + view.worldH * .3, '분노!', '#ff5068', true); }
+  if (b.phase === 1 && b.hp < b.maxHp * .5) { b.phase = 2; if (['erupt', 'dive', 'sweep', 'split', 'laser', 'inhale', 'spiral', 'toll', 'geyser', 'icicle', 'blink', 'spore'].includes(b.state)) b.pendRage = true; else bossSet('rage'); sfx.roar(); g.whiteout = .3; g.shake = 14; popup(WORLD_W / 2, g.cam + view.worldH * .3, '분노!', '#ff5068', true); }
   if (b.hp <= 0) bossDie();
 }
 function bossDie() {
-  const g = game, b = g.boss; g.bossDone = true; b.hp = 0; b.state = 'dead'; b.t = 0; g.state = 'bossdead'; g.timeScale = .28; g.bosses++; input.clearAll(); g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false);
+  const g = game, b = g.boss; g.bossDone = true; b.hp = 0; b.hidden = false; b.alpha = 1; g.darkT = 0; g.haz = []; b.state = 'dead'; b.t = 0; g.state = 'bossdead'; g.timeScale = .28; g.bosses++; input.clearAll(); g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false);
   sfx.roar(); g.whiteout = .6; g.shake = 18; vibrate(120);
 }
 function bossWarn(b, x0, x1, y0, y1, life) { b.path = { x0, x1, y0, y1 }; game.fx.push({ type: 'warn', x0, x1, y0, y1, x: 0, y: 0, t: 0, life }); }
 function bossSet(st) { const b = game.boss; if (st === 'idle' && b.pendRage) { st = 'rage'; b.pendRage = false; } b.state = st; b.t = 0; b.step = 0; }
 function pickAttack(b) {
-  const w = b.def.weights, pool = []; for (const k in w) { if (k === b.last && pool.length) continue; for (let i = 0; i < w[k]; i++) pool.push(k); }
+  const w = Object.assign({}, b.def.weights), pool = [];
+  if (b.phase === 2 && !b.mini && b.def.p2) for (const k in b.def.p2) w[k] = (w[k] || 0) + b.def.p2[k];
+  if (b.mini || game.darkT > 0) delete w.dark; for (const k in w) { if (k === b.last && pool.length) continue; for (let i = 0; i < w[k]; i++) pool.push(k); }
   const a = pool[Math.floor(Math.random() * pool.length)] || 'erupt'; b.last = a; return a;
 }
 function bossShot(x, y, vx, vy, b, gv = 0) { game.ebul.push({ x, y, vx, vy, g: gv, r: 7, dmg: Math.round(22 * DIFF.dmg(game.wave)), t: 0, col: b.def.col[2], ghost: true }); }
@@ -86,6 +89,7 @@ function bossTick(dt) {
   const g = game, b = g.boss, p = g.p; if (!b) return;
   b.t += dt; b.flash = Math.max(0, b.flash - dt); b.pop = Math.max(0, b.pop - dt * 8);
   b.sx = approachSnap(b.sx, 1, 10, dt); b.sy = approachSnap(b.sy, 1, 10, dt);
+  if (!b.mini) { if (g.darkT > 0) g.darkT -= dt; g.dark = approachSnap(g.dark || 0, g.darkT > 0 ? 1 : 0, 3, dt, .01); }
   // moveK = 몸의 움직임, speedK = 공격 박자. 중간 보스는 움직임만 진짜 보스와 같고 공격은 느리다
   const moveK = (b.phase === 2 ? 1.22 : 1) * Math.min(1.4, DIFF.speed(g.wave)), speedK = moveK * (b.mini ? MINI.tempo : 1), floorY = b.floorY, topY = g.arenaTop * TILE + 40;
   const hh = b.drawH || b.h;
@@ -122,7 +126,7 @@ function bossTick(dt) {
   }
   // 몸통 판정
   const feet = p.y + p.h / 2, topB = b.y - hh * .92, overX = Math.abs(p.x - b.x) < b.w * .42 + p.w / 2, overY = p.y + p.h / 2 > topB && p.y - p.h / 2 < b.y - 4;
-  if (overX && overY && b.y - hh * .5 < floorY) {
+  if (overX && overY && b.y - hh * .5 < floorY && !b.hidden) {
     if (p.vy > -40 && feet - topB < 26) {
       // 머리 밟기: 튕겨 오르기만 한다. 보스 체력은 줄지 않고 재장전도 없다(공격으로만 잡는다)
       p.vy = input.jumpHeld || input.keys.j ? -T.stompHoldV : -T.stompV; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.land(); g.shake = Math.max(g.shake, 4);
@@ -231,8 +235,138 @@ function bossTick(dt) {
     else if (b.t > .36) { b.t = 0; const n = b.mini ? 6 : 12, off = Math.random() * 3; for (let i = 0; i < n; i++) { if (i % 6 === 0) continue; const a = i / n * 6.283 + off, v = 170 * speedK; bossShot(b.x, b.y - hh * .5, Math.cos(a) * v, Math.sin(a) * v, b); } g.shake = 7; sfx.spit(); b.sy = .86; b.sx = 1.16; if (--b.n <= 0) bossSet('idle'); }
     return;
   }
-  if (s === 'summon') {
-    b.open = 1; if (b.t > .5) { for (let i = 0; i < 3; i++) { const x = TILE * 1.5 + Math.random() * (WORLD_W - TILE * 3), y = floorY - 80 - Math.random() * 200, e = mkEnemy('bat', x, y, { sleep: false, ph: Math.random() * 6 }); const d = Math.hypot(p.x - x, p.y - y) || 1, v = 150 + g.wave * 5; e.vx = (p.x - x) / d * v; e.vy = (p.y - y) / d * v; e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * .6)); g.enemies.push(e); inkBurst(x, y, 10, ENEMY.bat.col, false); } sfx.spit(); bossSet('idle'); }
+  if (s === 'summon' || s === 'brood') {
+    // 소환: 보스마다 부르는 몬스터가 다르다(땅 위 몬스터는 보스 양옆 바닥에서, 날아다니는 몬스터는 공중에서)
+    b.open = 1; b.sy = 1 + Math.min(.12, b.t * .3);
+    if (b.t > .55) {
+      const kind = b.def.minion || 'bat', n = b.phase === 2 ? 3 : 2, ground = kind === 'mound' || kind === 'tick' || kind === 'spit';
+      for (let i = 0; i < n; i++) {
+        const side = i % 2 ? 1 : -1, x = clamp(b.x + side * (b.w * .5 + 20 + i * 18), TILE + 16, WORLD_W - TILE - 16), y = ground ? floorY - ENEMY[kind].r : floorY - 90 - Math.random() * 170;
+        const e = mkEnemy(kind, x, y, { sleep: false, ph: Math.random() * 6, baseX: x, baseY: y, dir: side, spd: 40 + g.wave * 3, shootT: 1.5 });
+        if (kind === 'bat') { const d = Math.hypot(p.x - x, p.y - y) || 1, v = 150 + g.wave * 5; e.vx = (p.x - x) / d * v; e.vy = (p.y - y) / d * v; }
+        e.hp = e.maxHp = Math.max(1, Math.round(e.maxHp * .6)); e.pop = 1; g.enemies.push(e); inkBurst(x, y, 10, ENEMY[kind].col, false);
+      }
+      sfx.spit(); b.sy = .86; bossSet('idle');
+    }
+    return;
+  }
+  if (s === 'inhale') {
+    // 빨아들이기(심연의 입): 입 앞이 붉게 예고 → 바람이 입으로 몰려 주인공이 끌려간다(반대로 뛰면 버틴다) → 입에 닿으면 깨문다 → 삼킨 돌을 위로 뱉는다
+    const zone = b.w * .3, dur = (b.mini ? 1.2 : 1.7) / Math.max(.75, speedK), mouthY = b.y - hh * .45;
+    if (b.step === 0) { b.open = 1; b.step = 1; b.t = 0; sfx.rumble(); bossWarn(b, b.x - zone, b.x + zone, b.y - hh * .95, b.y, dur); }
+    else if (b.step === 1) {
+      b.sx = 1.04 + Math.sin(b.t * 30) * .03; b.sy = .97;
+      if (g.fx.length < 170 && Math.random() < dt * 40) { const side = Math.random() < .5 ? -1 : 1, y0 = mouthY + (Math.random() - .5) * 180; g.fx.push({ type: 'dot', x: b.x + side * (130 + Math.random() * 90), y: y0, vx: -side * 560, vy: (mouthY - y0) * 2.4, t: 0, life: .26, r: 2.2, col: 'rgba(255,255,255,.75)', g: 0 }); }
+      const dx = b.x - p.x;
+      if (b.t > .3 && Math.abs(dx) > 4) moveX(p, Math.sign(dx) * (b.mini ? 105 : 150) * clamp(1.2 - Math.abs(dx) / 400, .35, 1) * dt);
+      if (b.t > .3 && p.inv <= 0 && Math.abs(dx) < zone && p.y + p.h / 2 > b.y - hh * .95) { hurt(b.x, Math.round(30 * DIFF.dmg(g.wave))); p.vy = -560; b.sy = .8; sfx.bigBoom(); if (g.state === 'dying') return; }
+      if (b.t > dur) { b.step = 2; b.t = 0; const n = b.mini ? 3 : b.phase === 2 ? 7 : 5; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (i - (n - 1) / 2) * .32, v = 430 * speedK; bossShot(b.x, mouthY, Math.cos(a) * v, Math.sin(a) * v, b, 640); } g.shake = 9; sfx.spit(); b.sy = 1.16; }
+    } else if (b.t > .35) { b.open = 0; bossSet('idle'); }
+    return;
+  }
+  if (s === 'spiral') {
+    // 회전 탄막(망자의 종): 몸이 부풀며 예고 → 2~3갈래 탄이 돌면서 퍼진다. 갈래 사이로 돌아 들어가면 피한다
+    const cx = b.x, cy = b.y - hh * .5;
+    if (b.step === 0) {
+      b.open = 1; b.sy = 1 + Math.min(.12, b.t * .3); b.sx = b.sy;
+      if (!b.marked) { b.marked = true; g.fx.push({ type: 'mark', x: cx, y: cy, r: 34, col: b.def.col[2], t: 0, life: .55 / speedK }); }
+      if (b.t > .55 / speedK) { b.step = 1; b.t = 0; b.marked = false; b.spA = Math.random() * 6.28; b.spDir = Math.random() < .5 ? -1 : 1; b.shotT = 0; }
+    } else {
+      const arms = b.mini ? 2 : b.phase === 2 ? 3 : 2; b.spA += b.spDir * 2.3 * dt; b.shotT -= dt;
+      if (b.shotT <= 0) { b.shotT = .1 / Math.min(1.2, speedK); for (let i = 0; i < arms; i++) { const a = b.spA + i / arms * 6.283, v = 150 * speedK; bossShot(cx, cy, Math.cos(a) * v, Math.sin(a) * v, b); } sfx.spit(); }
+      if (b.t > (b.mini ? 1.5 : 2.3)) { b.open = 0; bossSet('idle'); }
+    }
+    return;
+  }
+  if (s === 'toll') {
+    // 종소리(망자의 종): 고리 탄이 3번 울려 퍼진다. 고리마다 틈이 하나 있고, 틈은 울릴 때마다 옆으로 옮겨 간다
+    const cx = b.x, cy = b.y - hh * .5;
+    if (b.step === 0) { b.open = 1; b.n = b.mini ? 2 : 3; b.k = 0; b.step = 1; b.t = .1; b.gap0 = Math.atan2(p.y - cy, p.x - cx); b.gapD = Math.random() < .5 ? -.75 : .75; sfx.rumble(); g.fx.push({ type: 'mark', x: cx, y: cy, r: 40, col: b.def.col[1], t: 0, life: .5 / speedK }); }
+    else if (b.t > .58 / speedK) {
+      b.t = 0; const n = b.mini ? 12 : 18, gap = b.gap0 + b.k * b.gapD, v = 135 * speedK;
+      // 틈 = 주인공 쪽 방향에서 시작해 울릴 때마다 옮겨 가는 3칸
+      for (let i = 0; i < n; i++) { if (i < 3) continue; const a = gap + (i - 1) / n * 6.283; bossShot(cx, cy, Math.cos(a) * v, Math.sin(a) * v, b); }
+      g.fx.push({ type: 'ring', x: cx, y: cy, r: 90, col: b.def.col[1], t: 0, life: .3 }); b.sy = .86; b.sx = 1.14; g.shake = 6; sfx.spit();
+      if (++b.k >= b.n) { b.open = 0; bossSet('idle'); }
+    }
+    return;
+  }
+  if (s === 'geyser') {
+    // 박동(티탄의 심장): 심장이 뛸 때마다 바닥 기둥 몇 줄이 붉게 예고되고 → 용암이 솟는다. 줄은 박동마다 엇갈린다
+    const H = b.mini ? 150 : 215, beat = (b.phase === 2 ? .78 : .95) / speedK, warnT = .6 / speedK;
+    if (b.step === 0) { b.n = b.mini ? 2 : b.phase === 2 ? 4 : 3; b.k = 0; b.step = 1; b.t = beat; b.open = 1; b.par = Math.random() < .5 ? 1 : 0; }
+    else if (b.step === 1 && b.t >= beat) {
+      b.t = 0; b.step = 2; b.fired = false; const par = (b.k + b.par) % 2; b.cols = [];
+      for (let c = 1; c < COLS - 1; c++) if (c % 2 === par) b.cols.push(c);
+      for (const c of b.cols) g.fx.push({ type: 'warn', x0: c * TILE + 2, x1: (c + 1) * TILE - 2, y0: floorY - H, y1: floorY, x: 0, y: 0, t: 0, life: warnT });
+      b.sx = 1.14; b.sy = 1.12; b.pop = 1; g.shake = Math.max(g.shake, 6); sfx.boom();
+    } else if (b.step === 2) {
+      if (b.t > warnT && !b.fired) { b.fired = true; for (const c of b.cols) g.fx.push({ type: 'beam', x0: c * TILE + 2, x1: (c + 1) * TILE - 2, y0: floorY - H, y1: floorY, x: 0, y: 0, t: 0, life: .32, col: '#ff8a3a' }); g.shake = Math.max(g.shake, 8); sfx.bigBoom(); }
+      if (b.fired && b.t < warnT + .32 && p.inv <= 0 && p.y + p.h / 2 > floorY - H) { const pc = Math.floor(p.x / TILE); if (b.cols.includes(pc)) { hurt(p.x, Math.round(24 * DIFF.dmg(g.wave))); p.vy = -460; if (g.state === 'dying') return; } }
+      if (b.t > warnT + .35) { if (++b.k >= b.n) { b.open = 0; bossSet('idle'); } else { b.step = 1; b.t = beat * .35; } }
+    }
+    return;
+  }
+  if (s === 'icicle') {
+    // 고드름 비(얼어붙은 왕): 천장에서 떨어질 줄이 가늘게 예고 → 고드름이 떨어진다. 발판 밑에 숨으면 막힌다
+    if (b.step === 0) { b.open = 1; b.vol = b.mini ? 1 : b.phase === 2 ? 2 : 1; b.step = 1; b.t = 0; b.sy = 1.12; sfx.rumble(); b.ice = null; }
+    if (b.step === 1 && !b.ice) {
+      const n = b.mini ? 4 : b.phase === 2 ? 8 : 6, xs = [];
+      if (Math.random() < .7) xs.push(clamp(p.x, TILE + 14, WORLD_W - TILE - 14));   // 한 줄은 주인공 머리 위
+      for (let k = 0; k < 60 && xs.length < n; k++) { const x = TILE + 14 + Math.random() * (WORLD_W - TILE * 2 - 28); if (xs.every(o => Math.abs(o - x) > 30)) xs.push(x); }
+      b.ice = xs; b.t = 0; for (const x of xs) g.fx.push({ type: 'warn', x0: x - 7, x1: x + 7, y0: g.cam, y1: floorY, x: 0, y: 0, t: 0, life: .75 / speedK });
+    } else if (b.step === 1 && b.t > .75 / speedK) {
+      // 천장(막힌 줄) 바로 아래에서 떨어진다
+      for (const x of b.ice) { const c = Math.floor(x / TILE); let r = Math.max(0, Math.floor(g.cam / TILE)); while (r < g.floorRow && lvl.at(c, r)) r++; g.ebul.push({ x, y: r * TILE + 4, vx: 0, vy: 380 * speedK, g: 900, r: 7, dmg: Math.round(22 * DIFF.dmg(g.wave)), t: 0, col: '#bfeaff', shape: 'ice' }); }
+      g.shake = Math.max(g.shake, 5); sfx.spit(); b.ice = null; b.t = 0;
+      if (--b.vol <= 0) b.step = 2;
+    } else if (b.step === 2 && b.t > .5) { b.open = 0; bossSet('idle'); }
+    return;
+  }
+  if (s === 'spore') {
+    // 포자(썩은 어머니): 떨어질 자리에 표식 → 포자가 포물선으로 날아가 터지고 독 장판이 남는다
+    const n = b.mini ? 2 : b.phase === 2 ? 5 : 3, T_ = 1.05 / Math.min(1.2, speedK), G = 700;
+    if (b.step === 0) {
+      b.open = 1; b.sy = 1 + Math.min(.14, b.t * .4);
+      if (b.t > .45 / speedK) {
+        b.step = 1; b.t = 0; const x0 = b.x, y0 = b.y - hh * .7;
+        for (let i = 0; i < n; i++) {
+          const tx = clamp(p.x + (i - (n - 1) / 2) * 70 + (Math.random() - .5) * 24, TILE + 16, WORLD_W - TILE - 16), c = Math.floor(tx / TILE);
+          let ty = floorY; for (let r = Math.max(0, Math.floor((p.y - 10) / TILE)); r <= g.floorRow; r++) { const t = lvl.at(c, r); if (t && t !== SPIKE) { ty = r * TILE; break; } }
+          g.ebul.push({ x: x0, y: y0, vx: (tx - x0) / T_, vy: (ty - 4 - y0) / T_ - .5 * G * T_, g: G, r: 8, dmg: Math.round(20 * DIFF.dmg(g.wave)), t: 0, col: '#c8e060', pool: 'poison', poolW: b.mini ? 52 : 70, poolT: b.phase === 2 ? 4 : 3 });
+          g.fx.push({ type: 'mark', x: tx, y: ty - 8, r: 22, col: '#c8e060', t: 0, life: T_ });
+        }
+        b.sy = .84; b.sx = 1.14; sfx.spit();
+      }
+    } else if (b.t > .5) { b.open = 0; bossSet('idle'); }
+    return;
+  }
+  if (s === 'blink') {
+    // 순간이동(첫 번째 어둠): 흐려져 사라짐 → 주인공 옆에 큰 보라 표식 → 그 자리에 나타나며 사방으로 탄이 터진다
+    if (b.step === 0) {
+      b.alpha = clamp(1 - b.t / .3, 0, 1);
+      if (b.t > .3) {
+        b.hidden = true; b.step = 1; b.t = 0; const side = p.x < WORLD_W / 2 ? 1 : -1;
+        b.dest = { x: clamp(p.x + side * (b.w * .5 + 40), TILE + b.w * .42, WORLD_W - TILE - b.w * .42), y: b.mini ? floorY : clamp(p.y + hh * .55, topY + hh, floorY) };
+        g.fx.push({ type: 'mark', x: b.dest.x, y: b.dest.y - hh * .5, r: b.w * .4, col: b.def.col[2], t: 0, life: .75 / speedK }); sfx.rumble();
+      }
+    } else if (b.step === 1) {
+      if (b.t > .75 / speedK) {
+        b.x = b.dest.x; b.y = b.dest.y; b.hidden = false; b.alpha = 1; b.step = 2; b.t = 0; b.open = 1; b.sy = 1.2; b.sx = .86; g.shake = 10; sfx.boom();
+        const n = b.mini ? 6 : b.phase === 2 ? 14 : 10, off = Math.random(); for (let i = 0; i < n; i++) { const a = off + i / n * 6.283, v = 165 * speedK; bossShot(b.x, b.y - hh * .5, Math.cos(a) * v, Math.sin(a) * v, b); }
+        inkBurst(b.x, b.y - hh * .5, 40, [b.def.col[0], b.def.col[1]], false);
+      }
+    } else if (b.t > .45) { b.open = 0; bossSet('idle'); }
+    return;
+  }
+  if (s === 'orbs' || s === 'dark') {
+    // 유도 구슬: 잠깐 빛나다가 천천히 따라오는 구슬을 쏜다(도는 힘이 약해 옆으로 비키면 빗나간다). 어둠: 화면이 어두워지고 구슬이 나온다
+    if (b.step === 0) { b.open = 1; if (s === 'dark') { g.darkT = 5.5; sfx.roar(); popup(WORLD_W / 2, g.cam + view.worldH * .3, '어둠이 내린다', '#d8b8ff', true); } b.step = 1; b.t = 0; g.fx.push({ type: 'mark', x: b.x, y: b.y - hh * .55, r: 30, col: b.def.col[2], t: 0, life: .45 / speedK }); }
+    else if (b.step === 1 && b.t > .45 / speedK) {
+      const n = b.mini ? 2 : b.phase === 2 ? 4 : 3, base = Math.atan2(p.y - (b.y - hh * .55), p.x - b.x);
+      for (let i = 0; i < n; i++) { const a = base + (i - (n - 1) / 2) * .7, v = 125 * speedK; g.ebul.push({ x: b.x, y: b.y - hh * .55, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 9, dmg: Math.round(22 * DIFF.dmg(g.wave)), t: 0, col: b.def.col[1], ghost: true, home: 2.4 }); }
+      sfx.spit(); b.step = 2; b.t = 0;
+    } else if (b.step === 2 && b.t > .4) { b.open = 0; bossSet('idle'); }
     return;
   }
   if (s === 'floor') {
@@ -242,7 +376,7 @@ function bossTick(dt) {
     else if (b.step === 2) {
       if (Math.random() < .9) g.fx.push({ type: 'dot', x: TILE + Math.random() * (WORLD_W - TILE * 2), y: floorY - 2, vx: 0, vy: -120 - Math.random() * 180, t: 0, life: .5, r: 3.4, col: Math.random() < .5 ? '#ff9a50' : '#ffd27a', g: 100 });
       g.fx.push({ type: 'warn', x0: TILE, x1: WORLD_W - TILE, y0: floorY - 10, y1: floorY, x: 0, y: 0, t: 0, life: .02 });
-      if (p.onGround && p.inv <= 0) { hurt(p.x + (Math.random() - .5) * 20, Math.round(20 * DIFF.dmg(g.wave))); p.vy = -480; if (g.state === 'dying') return; }
+      if (p.onGround && Math.abs(p.y + p.h / 2 - floorY) < 6 && p.inv <= 0) { hurt(p.x + (Math.random() - .5) * 20, Math.round(20 * DIFF.dmg(g.wave))); p.vy = -480; if (g.state === 'dying') return; }
       if (b.t > (b.mini ? 1.2 : 2)) { b.open = 0; bossSet('idle'); }
     }
     return;

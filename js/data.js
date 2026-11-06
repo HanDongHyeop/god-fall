@@ -102,12 +102,19 @@ const TALENTS = [
   { id: 'heal', name: '암브로시아', desc: '웨이브 시작 시 체력 +1% 회복', icon: 'amulet_a', cost: l => 300 + l * 180, max: 10, effect: l => ({ waveHeal: l * .01 }) },
 ];
 
-/* ───── 상자. rate = [고급, 희귀, 에픽]. 신화는 어떤 상자에서도 나오지 않는다 ───── */
+/* ───── 상자. rate = [고급, 희귀, 에픽]. 신화는 어떤 상자에서도 나오지 않는다 ─────
+   2026-11-06 상자마다 나오는 것을 나눴다(궁수의 전설 2: 은 상자 = 낮은 등급, 흑요석 = 전 부위 51/37/12, 신화석 = 회차마다 바뀌는 세트).
+   slots = 나올 수 있는 부위, scroll = 뽑을 때마다 함께 주는 두루마리 [확률, 최소, 최대], shard = 신 조각 [확률, 개수],
+   featured = 회차마다 바뀌는 '이번 신'의 무기·조각 확률이 오른다 */
 const CHESTS = [
-  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: [.82, .18, 0], shard: [.10, 3], free: 4 * 3600, tint: '#2e5f8e', desc: '고급·희귀 장비' },
-  { id: 'obsidian', name: '흑요석 상자', icon: 'chest_obsidian', cur: 'gem', one: 150, ten: 1350, rate: [.5, .42, .08], shard: [.25, 6], free: 24 * 3600, pity: 5, tint: '#4a2670', desc: '5회 안에 에픽 1개 확정' },
-  { id: 'prism', name: '환채석 상자', icon: 'chest_prism', cur: 'gem', one: 400, ten: 3600, rate: [0, .68, .32], shard: [.5, 10], pity: 4, tint: '#a0621a', desc: '희귀 이상, 4회 안에 에픽 확정' },
+  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: [.8, .2, 0], slots: ['amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [1, 1, 3], shard: [0, 0], free: 4 * 3600, tint: '#2e5f8e',
+    desc: '방어구·장신구와 강화 두루마리. 무기는 나오지 않습니다', note: '고급·희귀 방어구와 장신구가 나오고, 뽑을 때마다 강화 두루마리 1~3장을 함께 줍니다.' },
+  { id: 'obsidian', name: '흑요석 상자', icon: 'chest_obsidian', cur: 'gem', one: 150, ten: 1350, rate: [.51, .37, .12], slots: ['weapon', 'amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [.3, 1, 2], shard: [.25, 6], free: 24 * 3600, pity: 10, tint: '#4a2670',
+    desc: '모든 부위 장비와 신의 조각. 10회 안에 에픽 확정', note: '6부위 장비가 모두 나옵니다. 25% 확률로 신의 조각 6개를 함께 줍니다.' },
+  { id: 'prism', name: '환채석 상자', icon: 'chest_prism', cur: 'gem', one: 400, ten: 3600, rate: [0, .7, .3], slots: ['weapon'], scroll: [0, 0, 0], shard: [.4, 10], featured: .5, pity: 5, tint: '#a0621a',
+    desc: '신 전용 무기만 나옵니다. 이번 회차 신의 무기 확률 50%', note: '희귀 이상 신 전용 무기만 나옵니다. 절반은 이번 회차 신의 무기이고, 40% 확률로 그 신의 조각 10개를 함께 줍니다. 이번 회차 신은 3일마다 바뀝니다.' },
 ];
+const FEATURE_DAYS = 3;
 
 /* ───── 적. 그림은 assets/mon. 위가 어두운 덩어리는 밟아도 되고, 진홍 가시·보랏빛 그림자는 밟으면 다친다 ───── */
 /* 가시를 위로 늘려 그림이 커진 프레임: 위쪽으로 늘린 칸 수. 몸 크기는 그대로 그린다(tools/mon_rules.py가 만든다) */
@@ -122,6 +129,29 @@ const ENEMY = {
   shade: { hp: 26, r: 13, stomp: false, gem: 10, dmg: 25, h: 46, frames: ['shade_a', 'shade_b'], rate: 4, ghost: true, col: ['#3a2358', '#d27ae0'] },
   spit: { hp: 34, r: 14, stomp: true, gem: 12, dmg: 20, h: 38, frames: ['spit_a', 'spit_b'], rate: 0, col: ['#2b1626', '#e88a80'] },
   bat: { hp: 10, r: 9, stomp: true, gem: 3, dmg: 15, h: 24, frames: ['bat_a', 'bat_b'], rate: 9, col: ['#2b1626', '#7a5a70'] },
+};
+
+/* ───── 챕터별 몬스터 능력(2026-11-06) ─────
+   궁수의 전설 2처럼 같은 종이라도 챕터가 바뀌면 다른 능력을 쓴다(같은 몬스터가 등급이 오르면 탄 수·방향·분열이 는다).
+   챕터 안 웨이브 1→2→3으로 갈수록 능력을 가진 개체가 늘고, 웨이브 2부터 강화 개체(크고 붉은 기운, 체력 2.4배, 능력 강화)가 섞인다.
+   능력 이름 → monskill.js. shot 조준 1발 / fan 부채꼴 3발 / spike 십자 4방향 / drip 벽에서 물방울 / lob 포물선 독(떨어진 곳에 장판)
+   laser 가로 광선 / dash 붉은 선 예고 뒤 돌진 / blink 사라졌다가 내 앞에 나타남 / charge 같은 발판에서 돌진
+   죽을 때: split 작은 2마리로 분열 / ring 0.35초 뒤 사방으로 탄 / burn 불 장판 */
+const MON_SKILL = {
+  b1: { eye: 'shot', sac: 'ring' },
+  b2: { eye: 'shot', leech: 'drip', bat: 'dash', shade: 'blink', sac: 'split' },
+  b3: { urchin: 'spike', spit: 'fan', mound: 'burn', sac: 'ring', tick: 'charge' },
+  b4: { eye: 'fan', sac: 'split', bat: 'dash', urchin: 'spike', tick: 'charge', leech: 'drip' },
+  b5: { spit: 'lob', mound: 'split', sac: 'ring', leech: 'drip', eye: 'shot', bat: 'dash' },
+  b6: { shade: 'blink', eye: 'laser', urchin: 'spike', bat: 'dash', spit: 'fan', mound: 'burn' },
+};
+const MON_SKILL_RATE = [.3, .6, .9];          // 챕터 안 웨이브 1·2·3에서 능력을 가진 개체 비율(챕터 1은 절반)
+const ELITE = { rate: [0, .08, .16], hp: 2.4, size: 1.3, gem: 3 };
+/* 재사용 대기(초)와 강화 개체일 때 바뀌는 값 */
+const SKILL_DEF = {
+  shot: { cd: 2.6, col: '#ff9a8a' }, fan: { cd: 2.9, col: '#ffb070' }, spike: { cd: 3, col: '#ff7a9a' }, drip: { cd: 2.3, col: '#c8e060' },
+  lob: { cd: 3.2, col: '#c8e060' }, laser: { cd: 3.4, col: '#ff5aa0' }, charge: { cd: 2.4 }, blink: { cd: 3.4, col: '#d27ae0' },
+  dash: {}, split: {}, ring: { col: '#ff9a8a' }, burn: { col: '#ff8a3a' },
 };
 
 /* ───── 맵 6종: 1~3 심연 계열, 4~6 새 계열 ───── */
@@ -139,28 +169,30 @@ const BIOMES = [
   { id: 'b6', name: '에레보스', sub: '태초의 어둠', ink: '#160f26', tint: 'rgba(190,120,255,', fog: 'rgba(200,150,255,.16)', door: '#e0b8ff',
     enemies: { shade: 5, urchin: 4, bat: 4, eye: 4, leech: 3, spit: 3, tick: 3, mound: 2, sac: 2 }, boss: 5, bits: '#b49ad8' },
 ];
+/* 보스(2026-11-06 개편): 보스마다 대표 기술(sig)이 따로 있고, 공통 기술은 조금만 섞는다. p2 = 체력 절반 아래에서 더해지는 기술(궁수의 전설 2: 2단계에 소환·패턴 추가).
+   minion = 소환할 때 부르는 몬스터. 대표 기술: inhale 빨아들이기 / spiral 회전 탄막 / toll 틈 있는 고리 3겹 / geyser 용암 기둥 박동 / icicle 고드름 비 / spore 포자 장판 / brood 새끼 낳기 / blink 순간이동 폭발 / orbs 유도 구슬 / dark 어둠 */
 const BOSSES = [
-  { name: '심연의 입', sub: '올림포스를 삼킨 것', frames: ['b1_shut', 'b1_open'], w: 150, h: 112, col: ['#2b1626', '#e8dfc9', '#e88a80'], weights: { erupt: 4, dive: 2, sweep: 2, hop: 4, spit: 3, summon: 1 }, hpMul: 1 },
-  { name: '망자의 종', sub: '스틱스 밑바닥을 떠도는 것', frames: ['b2_shut', 'b2_open'], w: 150, h: 130, col: ['#123036', '#a8ffd8', '#5ad8a8'], weights: { sweep: 4, dive: 2, erupt: 2, laser: 3, split: 3, ring: 3, summon: 2 }, hpMul: 1.25, float: true, laser: 'v', split: 'star' },
-  { name: '티탄의 심장', sub: '아직도 뛰고 있다', frames: ['b3_shut', 'b3_open'], w: 150, h: 130, col: ['#3a1212', '#ff9a50', '#c23c1e'], weights: { erupt: 3, dive: 2, laser: 4, split: 3, floor: 4, ring: 2, spit: 3, summon: 1 }, hpMul: 1.55, laser: 'h', split: 'cross' },
-  { name: '얼어붙은 왕', sub: '코키토스 얼음 속에서 눈을 뜬 것', frames: ['b4_shut', 'b4_open'], w: 150, h: 130, col: ['#12263a', '#bfeaff', '#5ad0f0'], weights: { sweep: 4, erupt: 3, dive: 2, laser: 3, split: 3, ring: 3, summon: 1 }, hpMul: 1.3, laser: 'h', split: 'cross' },
-  { name: '썩은 어머니', sub: '낙원을 먹어 치운 곰팡이', frames: ['b5_shut', 'b5_open'], w: 160, h: 130, col: ['#1e2610', '#e4f08a', '#b8d040'], weights: { spit: 4, floor: 3, erupt: 3, dive: 2, split: 4, summon: 2, hop: 2 }, hpMul: 1.4, split: 'star' },
-  { name: '첫 번째 어둠', sub: '빛이 생기기 전부터 있던 것', frames: ['b6_shut', 'b6_open'], w: 160, h: 140, col: ['#160f26', '#e8ccff', '#b070f0'], weights: { dive: 3, sweep: 3, erupt: 3, laser: 4, split: 4, ring: 3, summon: 1 }, hpMul: 1.5, float: true, laser: 'v', split: 'star' },
+  { name: '심연의 입', sub: '올림포스를 삼킨 것', frames: ['b1_shut', 'b1_open'], w: 150, h: 112, col: ['#2b1626', '#e8dfc9', '#e88a80'], sig: '빨아들이기', weights: { inhale: 4, hop: 3, spit: 2, erupt: 2 }, p2: { summon: 2, inhale: 1 }, minion: 'mound', hpMul: 1 },
+  { name: '망자의 종', sub: '스틱스 밑바닥을 떠도는 것', frames: ['b2_shut', 'b2_open'], w: 150, h: 130, col: ['#123036', '#a8ffd8', '#5ad8a8'], sig: '종소리', weights: { toll: 4, spiral: 3, laser: 2, dive: 1 }, p2: { summon: 2, spiral: 1 }, minion: 'shade', hpMul: 1.25, float: true, laser: 'v', split: 'star' },
+  { name: '티탄의 심장', sub: '아직도 뛰고 있다', frames: ['b3_shut', 'b3_open'], w: 150, h: 130, col: ['#3a1212', '#ff9a50', '#c23c1e'], sig: '박동', weights: { geyser: 4, laser: 3, floor: 2, hop: 2 }, p2: { split: 3, geyser: 1 }, minion: 'bat', hpMul: 1.55, laser: 'h', split: 'cross' },
+  { name: '얼어붙은 왕', sub: '코키토스 얼음 속에서 눈을 뜬 것', frames: ['b4_shut', 'b4_open'], w: 150, h: 130, col: ['#12263a', '#bfeaff', '#5ad0f0'], sig: '고드름 비', weights: { icicle: 4, sweep: 3, ring: 2, erupt: 1 }, p2: { split: 3, icicle: 1 }, minion: 'bat', hpMul: 1.3, laser: 'h', split: 'cross' },
+  { name: '썩은 어머니', sub: '낙원을 먹어 치운 곰팡이', frames: ['b5_shut', 'b5_open'], w: 160, h: 130, col: ['#1e2610', '#e4f08a', '#b8d040'], sig: '포자', weights: { spore: 4, spit: 2, hop: 2, brood: 2 }, p2: { brood: 2, spore: 1 }, minion: 'sac', hpMul: 1.4, split: 'star' },
+  { name: '첫 번째 어둠', sub: '빛이 생기기 전부터 있던 것', frames: ['b6_shut', 'b6_open'], w: 160, h: 140, col: ['#160f26', '#e8ccff', '#b070f0'], sig: '순간이동', weights: { blink: 4, orbs: 3, laser: 2, split: 2 }, p2: { dark: 3 }, minion: 'shade', hpMul: 1.5, float: true, laser: 'v', split: 'star' },
 ];
 
 /* 샛길 문: 웨이브마다 최대 1개, 보스 웨이브에는 없다. 파편이 모인 뒤 만나도록 웨이브 뒤쪽에 둔다.
    mini = 문이 함정(중간 보스)일 확률. 겉모습은 보통 문과 같다 */
-const DOOR = { chance: .8, from: .6, to: .88, mini: .1 };
+const DOOR = { chance: .8, from: .6, to: .88, mini: .16 };   // 2026-11-06 함정 10% → 16%
 /* 중간 보스: 그 챕터 보스의 작은 판. 움직임은 진짜 보스와 같은 속도, 공격은 약하다.
    power = 피해 배율, tempo = 공격 박자 배율(예고·탄속·대기), hp = 진짜 보스 체력 대비, minShots = 최소 몇 발을 맞혀야 잡히는지 */
 const MINI = { power: .4, tempo: .55, hp: .55, minShots: 24,
   byBoss: [
-    { n: 1, scale: .48, weights: { hop: 4, spit: 3 } },
-    { n: 1, scale: .48, weights: { laser: 2, ring: 3 } },
-    { n: 2, scale: .384, weights: { spit: 3, hop: 2 } },
-    { n: 1, scale: .48, weights: { sweep: 2, ring: 3, split: 2 } },
-    { n: 3, scale: .32, weights: { hop: 3, spit: 2 } },
-    { n: 2, scale: .384, weights: { laser: 2, split: 2 } },
+    { n: 1, scale: .48, weights: { hop: 3, inhale: 2, spit: 2 } },
+    { n: 1, scale: .48, weights: { toll: 3, spiral: 2 } },
+    { n: 2, scale: .384, weights: { geyser: 2, spit: 2, hop: 2 } },
+    { n: 1, scale: .48, weights: { icicle: 3, ring: 2, sweep: 1 } },
+    { n: 3, scale: .32, weights: { spore: 2, hop: 3 } },
+    { n: 2, scale: .384, weights: { blink: 3, laser: 1 } },
   ] };
 
 /* ───── 난이도 곡선: 웨이브가 오를수록 적과 보스가 강해진다 ───── */
@@ -183,10 +215,14 @@ const REWARD = {
   gemPerBoss: 10, gemFirstClear: 100,   // 같은 보스를 되풀이해 보석을 모으지 못하게 한다. 챕터 첫 클리어에 몰아 준다
 };
 
-/* ───── 카드 등급 ───── */
+/* ───── 카드 등급: 궁수의 전설 2와 같은 4단계(초록·파랑·보라·주황 금빛) ───── */
 const TIER = {
-  일반: { col: '#37b24d', dark: '#10381a', hi: '#a6f3b5', weight: 60 },
-  희귀: { col: '#3478e6', dark: '#10244e', hi: '#a9ccff', weight: 30 },
-  영웅: { col: '#b23ef0', dark: '#2a0f4a', hi: '#efb0ff', weight: 13 },
-  신화: { col: '#e8a020', dark: '#4a2a06', hi: '#ffe59a', weight: 4 },
+  일반: { col: '#37b24d', dark: '#10381a', hi: '#a6f3b5' },
+  희귀: { col: '#3478e6', dark: '#10244e', hi: '#a9ccff' },
+  영웅: { col: '#b23ef0', dark: '#2a0f4a', hi: '#efb0ff' },
+  전설: { col: '#f0a018', dark: '#4a2a06', hi: '#ffe59a' },
 };
+/* 등급 사다리(2026-11-06): 카드 한 장마다 일반에서 시작해 확률에 걸리면 한 칸씩 오른다. [일반→희귀, 희귀→영웅, 영웅→전설]
+   기본: 장당 희귀 이상 45%, 영웅 이상 15.8%, 전설 4.7% → 3장 중 전설이 1장이라도 나올 확률 약 13.5%(궁수의 전설 2처럼 후하게)
+   boost(보스 전리품·함정 방): 장당 희귀 이상 62%, 영웅 이상 27.9%, 전설 10.6% */
+const CARD_UP = { base: [.45, .35, .30], boost: [.62, .45, .38] };

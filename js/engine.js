@@ -5,7 +5,8 @@
 const PPT = {
   phoneW: 578, phoneH: 993,
   stick:  { left: 103, bottom: 121, knobR: 41 },
-  zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },
+  zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },   // 조이스틱이 나타날 수 있는 x 범위(그대로)
+  touch:  { x0: 0, x1: .56 },                            // 조이스틱을 잡을 수 있는 x 범위: 화면 가운데까지 넓힌다(2026-11-06)
   attack: { right: 150, bottom: 91, r: 59 },
   jump:   { innerR: 80, outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76] },
 };
@@ -108,6 +109,8 @@ const sfx = {
   cardTick() { if (this.limit('ct', 70)) this.tone('square', 1100, 900, .02, .05); },
   cardLock(t) { this.tone('square', 500 + t * 220, 760 + t * 300, .12, .16); this.noise(.08, .14, 5000); },
   cardOpen2() { this.noise(.1, .1, 3500); },
+  // 등급이 오를 때: 단계가 높을수록 높고 길고 화려하다
+  cardUp(s) { this.tone('triangle', 420 + s * 180, 900 + s * 320, .16 + s * .05, .22); this.tone('sine', 840 + s * 360, 1700 + s * 500, .1 + s * .06, .12); this.noise(.12 + s * .05, .1 + s * .04, 4200 + s * 900); if (s === 3) this.tone('square', 1320, 2640, .35, .08); },
   setMute(m) { this.muted = m; if (typeof Meta !== 'undefined') { Meta.s.opt.mute = m; Meta.save(); } if (this.bgmGain) this.bgmGain.gain.value = m ? 0 : .34; if (this.bgmEl) this.bgmEl.volume = m ? 0 : .34; },
   /* 배경음: 앞뒤를 겹쳐 만든 파일을 버퍼로 반복한다(인코더 공백을 건너뛴다). 곡이 바뀌면 교차로 줄인다 */
   bgmCache: {}, bgmNow: null, bgmSrc: null, bgmGain: null, bgmWant: null,
@@ -165,7 +168,7 @@ var layout = function () {
   const u = view.u = W / PPT.phoneW;
   ui.knobR = PPT.stick.knobR * u; ui.baseR = ui.knobR * STICK_RADIUS_RATIO; ui.travel = ui.baseR - ui.knobR;
   ui.stickHome.x = PPT.stick.left * u; ui.stickHome.y = H - PPT.stick.bottom * u - view.safeB;
-  ui.zone = { x0: W * PPT.zone.x0, x1: W * PPT.zone.x1, y0: H * PPT.zone.y0, y1: H * PPT.zone.y1 };
+  ui.zone = { x0: W * PPT.touch.x0, x1: W * PPT.touch.x1, y0: H * PPT.zone.y0, y1: H * PPT.zone.y1, sx0: W * PPT.zone.x0, sx1: W * PPT.zone.x1 };
   const a = ui.attack; a.x = W - PPT.attack.right * u; a.y = H - PPT.attack.bottom * u - view.safeB; a.r = PPT.attack.r * u;
   const j = PPT.jump, pts = j.outer.map(([x, y]) => [a.x + x * u, a.y + y * u]), p = new Path2D();
   p.moveTo(pts[0][0], pts[0][1]);
@@ -215,7 +218,7 @@ const input = {
   up(e) { const p = this.ptr.get(e.pointerId); if (!p) return; this.ptr.delete(e.pointerId); if (p.role === 'stick') this.endStick(); else this.syncButtons(); },
   beginStick(id, x, y) {
     const s = this.stick; s.id = id; s.ox = x; s.oy = y; s.dx = 0;
-    const ax = clamp(x, ui.knobR + 3, view.W), ay = clamp(y, ui.knobR + 3, view.H - ui.knobR - 3 - view.safeB * .5);
+    const ax = clamp(x, ui.knobR + 3, Math.max(ui.knobR + 3, ui.zone.sx1)), ay = clamp(y, ui.knobR + 3, view.H - ui.knobR - 3 - view.safeB * .5);
     s.centerX = s.baseX = s.knobX = ax; s.centerY = s.baseY = s.knobY = ay; s.baseAlpha = .35; s.pop = 0;
   },
   endStick() { const s = this.stick; s.id = null; s.dx = 0; s.centerX = ui.stickHome.x; s.centerY = ui.stickHome.y; },
@@ -340,10 +343,11 @@ function chunks(x, y, n, cols, sp = 220, size = 4.5) {
     game.fx.push({ type: 'chunk', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70, t: 0, life: .55 + Math.random() * .3, r: size * (.6 + Math.random() * .8), rot: Math.random() * 6, vr: (Math.random() - .5) * 18, col: cols[i % cols.length] });
   }
 }
-function spawnShards(x, y, value) {
+/* piece: 한 알의 값을 정할 때(루비 광맥 = 5, 작은 루비 그림). 없으면 10짜리 황금과 2짜리 루비로 나눈다 */
+function spawnShards(x, y, value, piece) {
   let left = value;
   while (left > 0) {
-    const v = left >= 10 ? 10 : 2; left -= v;
+    const v = piece ? Math.min(piece, left) : left >= 10 ? 10 : 2; left -= v;
     const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, sp = 150 + Math.random() * 190;
     game.shards.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, v, t: 0 });
   }

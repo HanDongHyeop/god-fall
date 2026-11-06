@@ -120,7 +120,10 @@ function drawEnemy(e) {
   if (e.kind === 'bat' && e.sleep) fi = 0;
   const name = E.frames[fi], im = monImg(name), wim = monWhite(name); if (!ok(im)) return;
   // 가시로 늘어난 프레임은 그만큼 키워 몸 크기를 맞춘다
-  const ext = (MON_EXT[g.biome.id] || {})[name] || 0, h = E.h * s * im.naturalHeight / (im.naturalHeight - ext), w = h * im.naturalWidth / im.naturalHeight, extH = h - E.h * s;
+  const sc = e.sc || 1, ext = (MON_EXT[g.biome.id] || {})[name] || 0, h = E.h * sc * s * im.naturalHeight / (im.naturalHeight - ext), w = h * im.naturalWidth / im.naturalHeight, extH = h - E.h * sc * s;
+  // 강화 개체의 붉은 기운(몸 뒤), 사라지는 그림자는 흐려진다
+  drawMonAura(e, x, y + (e.kind === 'mound' || e.kind === 'tick' || e.kind === 'spit' ? -E.h * sc * s * .45 + e.r * s : 0));
+  const fadeA = e.hidden ? clamp(e.blinkT / .3 - 1, 0, 1) : 1; if (fadeA <= 0) return;
   const ground = e.kind === 'mound' || e.kind === 'tick' || e.kind === 'spit';
   // 움직임: 땅 위는 눌렸다 펴지고, 공중은 둥실거리고, 맞으면 튀어 오른다
   const wob = Math.sin(g.t * (ground ? 11 : 6) + e.x * .3);
@@ -138,15 +141,18 @@ function drawEnemy(e) {
   if (e.kind === 'leech') { ctx.rotate(e.wall < 0 ? Math.PI / 2 : -Math.PI / 2); ctx.translate(0, 0); if (e.dir < 0) ctx.scale(-1, 1); }
   else if (e.face && e.face > 0) ctx.scale(-1, 1);
   ctx.scale(sx, sy);
-  const dy = ground ? -h : -E.h * s / 2 - extH;
+  const dy = ground ? -h : -E.h * sc * s / 2 - extH;
   // 어두운 맵과 분리하는 옅은 빛
   const gr = Math.max(w, h) * .7, gl = ctx.createRadialGradient(0, dy + h / 2, gr * .25, 0, dy + h / 2, gr); gl.addColorStop(0, 'rgba(255,214,240,.2)'); gl.addColorStop(1, 'rgba(255,214,240,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, dy + h / 2, gr, 0, 7); ctx.fill();
   if (e.kind === 'shade') ctx.globalAlpha = .82 + Math.sin(g.t * 7 + e.x) * .12;
+  ctx.globalAlpha *= fadeA;
+  if (e.tele > 0) ctx.translate((Math.random() - .5) * 2.4 * s, 0);
   ctx.drawImage(im, -w / 2, dy, w, h);
   if (e.flash > 0 && ok(wim)) { ctx.globalAlpha = 1; ctx.drawImage(wim, -w / 2, dy, w, h); }
   ctx.restore(); ctx.globalAlpha = 1;
-  if (e.hbT > 0 && e.hp > 0) {
-    const bw = Math.max(22, e.r * 2) * s, bh = 3 * s, bx = x - bw / 2, by = y - (ground ? E.h * .95 - e.r : E.h * .55) * s - 6 * s;
+  drawMonTele(e, x, y + (ground ? -E.h * sc * s * .45 + e.r * s : 0));
+  if ((e.hbT > 0 || e.elite) && e.hp > 0) {
+    const bw = Math.max(22, e.r * 2) * s, bh = 3 * s, bx = x - bw / 2, by = y - (ground ? E.h * sc * .95 - e.r : E.h * sc * .55) * s - 6 * s;
     ctx.globalAlpha = Math.min(1, e.hbT * 3);
     ctx.fillStyle = 'rgba(10,8,18,.85)'; ctx.fillRect(bx - s, by - s, bw + 2 * s, bh + 2 * s);
     ctx.fillStyle = '#ff5068'; ctx.fillRect(bx, by, bw * clamp(e.hp / e.maxHp, 0, 1), bh); ctx.globalAlpha = 1;
@@ -156,6 +162,11 @@ function drawEnemyShots() {
   const s = view.s;
   for (const b of game.ebul) {
     const x = wx(b.x), y = wy(b.y), r = b.r * s; if (y < -20 || y > view.H + 20) continue;
+    if (b.shape === 'ice') {   // 고드름: 아래를 향한 얼음 가시
+      ctx.fillStyle = 'rgba(10,20,40,.85)'; ctx.beginPath(); ctx.moveTo(x - r * 1.3, y - r * 3.2); ctx.lineTo(x + r * 1.3, y - r * 3.2); ctx.lineTo(x, y + r * 1.6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = b.col; ctx.beginPath(); ctx.moveTo(x - r * .9, y - r * 3); ctx.lineTo(x + r * .9, y - r * 3); ctx.lineTo(x, y + r * 1.1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillRect(x - r * .25, y - r * 2.6, r * .3, r * 2.2); continue;
+    }
     ctx.fillStyle = 'rgba(20,6,24,.9)'; ctx.beginPath(); ctx.arc(x, y, r * 1.35, 0, 7); ctx.fill();
     ctx.fillStyle = b.col; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x - r * .25, y - r * .25, r * .4, 0, 7); ctx.fill();
@@ -269,6 +280,10 @@ function drawFx2() {
     } else if (f.type === 'warn') {
       // 보스 공격 예고 띠
       ctx.fillStyle = `rgba(255,50,70,${.14 + Math.abs(Math.sin(f.t * 16)) * .22})`; ctx.fillRect(wx(f.x0), wy(f.y0), (f.x1 - f.x0) * s, (f.y1 - f.y0) * s);
+    } else if (f.type === 'mark') {
+      // 나타날 자리·터질 자리 표식: 고리가 조여 든다
+      const r = f.r * s * (1.6 - k * .7); ctx.globalAlpha = .5 + Math.abs(Math.sin(f.t * 18)) * .4; ctx.strokeStyle = f.col || '#ff5068'; ctx.lineWidth = 2.6 * s;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, r * .35, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
     } else if (f.type === 'warnRay') {
       // 분신이 지나갈 선. 실제 경로와 같은 폭이다
       ctx.save(); ctx.translate(wx(f.x), wy(f.y)); ctx.rotate(f.a); ctx.fillStyle = `rgba(255,50,70,${.16 + Math.abs(Math.sin(f.t * 16)) * .24})`; ctx.fillRect(0, -f.w / 2 * s, f.len * s, f.w * s); ctx.restore();
@@ -396,6 +411,7 @@ function render(dt) {
   if (g.minis) { ctx.save(); ctx.beginPath(); ctx.rect(0, -view.H, view.W, view.H + wy(g.room.floorY)); ctx.clip(); drawMinis(); ctx.restore(); drawBossBits(); }
   for (const j of g.jars) if (j.alive) drawJar(j);
   for (const s of g.shards) drawShard(s);
+  drawHaz();
   for (const e of g.enemies) if (e.alive) drawEnemy(e);
   drawEnemyShots(); drawBullets();
   if (g.state !== 'dying' && g.state !== 'continue') drawHero();
@@ -403,7 +419,8 @@ function render(dt) {
   if (g.room) drawRoomFront();
   drawDoorPrompt();
   ctx.restore();
-  // 전체 화면 효과
+  // 전체 화면 효과. 어둠(첫 번째 어둠의 2단계): 주인공 둘레만 보인다
+  if (g.dark > 0 && g.p) { const px = wx(g.p.x), py = wy(g.p.y), q = ctx.createRadialGradient(px, py, 70 * view.s, px, py, 170 * view.s); q.addColorStop(0, 'rgba(6,2,16,0)'); q.addColorStop(1, `rgba(6,2,16,${.9 * Math.min(1, g.dark)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
   if (g.whiteout > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.85, g.whiteout)})`; ctx.fillRect(0, 0, view.W, view.H); }
   const low = g.p && g.p.hp / g.p.maxHp < .3 ? (.35 + Math.sin(g.t * 5) * .12) : 0, v = Math.max(g.vign, low);
   if (v > 0) {

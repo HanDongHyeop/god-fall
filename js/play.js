@@ -16,6 +16,7 @@ BIOMES.slice(0, 3).forEach(loadBiomeArt);
 function loadChapterMon() { BIOMES.forEach(loadBiomeArt); }
 const monImg = n => { const id = game.biome && game.biome.id, v = id && id !== 'b1' ? IMG[`m_${id}_${n}`] : null; return v && ok(v) ? v : IMG['m_' + n]; };
 const monWhite = n => { const id = game.biome && game.biome.id, v = id && OWN_SHAPE.includes(id) ? IMG[`m_${id}_${n}_w`] : null; return v && ok(v) ? v : IMG['m_' + n + '_w']; };
+loadImg('r_ruby', 'assets/ui/cur_shard.webp');
 for (const n of ['fx_letter_w', 'fx_letter', 'fx_feather1', 'fx_feather2', 'fx_scrap', 'fx_seal', 'o_gold', 'o_rose', 'o_portal_ring', 'o_portal_in']) loadImg(n, `assets/ui/${n}.png`);
 const HERO_FRAMES = ['idle', 'run_a', 'run_pass', 'run_b', 'jump', 'apex', 'tuck', 'fall_a', 'fall_b', 'throw_a', 'throw_b', 'land', 'hurt'];
 function loadGod(id) { for (const f of HERO_FRAMES) { loadImg(`h_${id}_${f}`, `assets/god/${id}/${f}.png`); loadImg(`h_${id}_${f}_w`, `assets/god/${id}/${f}_w.png`); } }
@@ -109,7 +110,7 @@ function buildWave() {
   const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w);
   g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
-  g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = [];
+  g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.dark = 0; g.darkT = 0;
   // 맨 아래 바닥은 조작 버튼에 가리지 않게 화면 위쪽으로 올린다(아래 pad칸은 땅)
   const pad = 3, arenaRows = boss ? Math.ceil(view.worldH / TILE) - pad : 0, rows = DIFF.rows(w) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
   lvl.rows = rows; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
@@ -212,6 +213,7 @@ function buildWave() {
     const rad = ENEMY[kind].r;
     g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + w * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
   }
+  decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   const p = g.p;
   p.x = WORLD_W / 2; p.y = 120; p.vx = 0; p.vy = 0; p.onGround = false; p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.olive = has('olive');
   if (g.st.waveHeal) healBy(p.maxHp * g.st.waveHeal);
@@ -271,6 +273,7 @@ function killEnemy(e, byStomp) {
   if (st.leech) healBy(st.leech);
   if (byStomp && has('feast') && ++p.feastN >= 10) { p.feastN = 0; healBy(10); popup(p.x, p.y - 30, '+10', '#7dffa8'); }
   if (has('corpse')) g.fx.push({ type: 'delay', x: e.x, y: e.y, t: 0, life: .35, boom: 40 });
+  monDeath(e);
 }
 function explode(x, y, r, opt = {}) {
   const g = game;
@@ -410,6 +413,8 @@ function onBulletHit(b, e) {
   // 폭탄처럼 블록에 맞아 터지면 맞은 적이 없다. 적에게 맞았을 때만 카드 효과를 건다
   if (e && (game.st.chain || has('chain'))) chainFrom(e, (game.st.chain || 0) + (has('chain') ? 1 : 0), b.dmg);
   if (e && has('burn')) e.burn = 2.2;
+  // 히드라의 독니: 맞은 자리에서 작은 탄 2발이 양옆 아래로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
+  if (e && has('hydra') && !b.child) for (const s of [-1, 1]) { fireBullet(b.x, b.y + 4, s * 620, 940, false, 0, { mul: .35 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hits.push(e); nb.r *= .8; }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
 }
 
@@ -485,6 +490,7 @@ function tick(dt) {
       const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
       const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
       fireBullet(p.x, by, 0, 1150, false, hand, { mul, big: buff });
+      if (has('echo') && p.shots % 3 === 0) fireBullet(p.x, by - 18, 0, 1150, false, hand, { mul });
       if (has('triple')) { fireBullet(p.x, by, -330, 1100, false, hand, { mul: mul * .7 }); fireBullet(p.x, by, 330, 1100, false, hand, { mul: mul * .7 }); }
       if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .6, bounce: 3 });
       if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: .6 });
@@ -499,6 +505,8 @@ function tick(dt) {
     } else if (p.emptyT <= 0) { p.emptyT = .5; p.ammoFlash = .25; sfx.empty(); }
   }
   p.emptyT = Math.max(0, p.emptyT - dt);
+  // 아틀라스의 짐: 공중에서 0.6초마다 탄 1발
+  if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .6) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
   if (p.ammoFlash) p.ammoFlash = Math.max(0, p.ammoFlash - dt);
   // 이동
   p.vy = Math.min(p.vy + T.grav * dt, T.maxFall);
@@ -531,13 +539,16 @@ function tick(dt) {
   if (p.gemT > 0) { p.gemT -= dt; if (p.gemT <= 0) { p.high = false; p.gemChain = 0; } }
   // 샛길
   if (attackTap && !nearItem) { const d = doorNear(); if (d) { if (g.room) exitRoom(); else enterRoom(d); return; } }
-  if (g.room) { roomTick(dt); if (!g.room || g.state === 'dying') return; }
+  // 크로노스의 모래시계: 적·보스·적 탄만 느려진다
+  const edt = has('kronos') ? dt * .75 : dt;
+  if (g.room) { roomTick(g.room.kind === 'mini' ? edt : dt); if (!g.room || g.state === 'dying') return; }
   // 보스
   if (g.isBossWave && !g.boss && !g.bossDone && !g.room && g.state === 'play' && p.y > (g.arenaTop + 1) * TILE) startBossIntro();
-  if (g.boss && !g.minis) bossTick(dt);
-  if (g.state === 'descend') tickDescent(dt); else updateEnemies(dt, jumpHeld);
+  if (g.boss && !g.minis) bossTick(edt);
+  else if (g.dark) { g.dark = Math.max(0, g.dark - dt * 2); g.darkT = 0; }
+  if (g.state === 'descend') tickDescent(dt); else updateEnemies(edt, jumpHeld);
   if (g.state === 'dying') return;
-  updateEnemyShots(dt);
+  updateEnemyShots(edt);
   if (g.state === 'dying') return;
   // 항아리
   for (const j of g.jars) {
@@ -545,7 +556,7 @@ function tick(dt) {
     if (p.vy > 0 && Math.abs(p.x - j.x) < j.r + p.w / 2 && Math.abs(p.y + p.h / 2 - (j.y - j.r)) < 14) { breakJar(j); p.vy = -T.stompV * .85; p.squash = -.22; p.spin = 1; feathers(p.x, p.y + 6, 2, 80); }
   }
   updateBullets(dt);
-  tickWaves(dt); if (g.state === 'dying') return;
+  tickWaves(edt); if (g.state === 'dying') return;
   // 수호 구슬
   if (has('orbit')) {
     const a0 = g.t * 3.6;
@@ -583,7 +594,7 @@ function updateEnemies(dt, jumpHeld) {
       const c = Math.floor(e.x / TILE), r = Math.floor((e.y + e.r + 2) / TILE);
       if (!lvl.at(c, r)) { e.vy = Math.min(e.vy + T.grav * dt, 400); e.y += e.vy * dt; const rr = Math.floor((e.y + e.r) / TILE); if (lvl.at(Math.floor(e.x / TILE), rr)) { e.y = rr * TILE - e.r; e.vy = 0; } }
       else if (k !== 'spit') {
-        const nx2 = e.x + e.dir * e.spd * dt, front = Math.floor((nx2 + e.dir * e.r) / TILE);
+        const nx2 = e.x + e.dir * e.spd * dt * (e.tele > 0 ? 0 : 1), front = Math.floor((nx2 + e.dir * e.r) / TILE);
         if (!lvl.at(front, r) || isSolid(lvl.at(front, Math.floor(e.y / TILE)))) e.dir *= -1; else e.x = nx2;
         e.face = e.dir;
       } else {
@@ -616,20 +627,22 @@ function updateEnemies(dt, jumpHeld) {
       e.x = e.baseX + Math.sin(tt * 2.4) * 8; e.y = e.baseY; e.face = Math.sign(dx) || 1;
     } else if (k === 'bat') {
       if (e.sleep) {
-        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.wave * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.wave * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; }
-      } else {
+        if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.wave * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.wave * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
+      } else if (e.dashT > 0 && batDashTick(e, dt, spd)) { e.x += Math.sin(tt * 40) * .6; } else {
         e.x += e.vx * dt + Math.sin(tt * 12) * 1.2; e.y += e.vy * dt;
         if (e.x < TILE + 8 || e.x > WORLD_W - TILE - 8) e.vx *= -1;
         e.x = clamp(e.x, TILE + 8, WORLD_W - TILE - 8); e.face = Math.sign(e.vx) || 1;
       }
     }
+    if (e.sk) { monSkillTick(e, dt); if (g.state === 'dying') return; if (!e.alive) continue; }
     // 움직임 값: 기울임·늘어남·먼지에 쓴다
     const mvx = (e.x - ox0) / Math.max(dt, .001), mvy = (e.y - oy0) / Math.max(dt, .001);
     e.mvx = approachSnap(e.mvx || 0, mvx, 12, dt, .5); e.mvy = approachSnap(e.mvy || 0, mvy, 12, dt, .5);
     if (k !== 'shade' && Math.hypot(e.mvx, e.mvy) > 26 && e.y > g.cam - 20 && e.y < g.cam + view.worldH + 20 && g.fx.length < 170 && Math.random() < dt * 9) {
       g.fx.push({ type: 'dot', x: e.x - Math.sign(e.mvx) * e.r * .6, y: e.y + e.r * (k === 'mound' || k === 'tick' ? .85 : .2), vx: -e.mvx * .25 + (Math.random() - .5) * 24, vy: -18 - Math.random() * 26, t: 0, life: .34, r: 1.5, col: ENEMY[k].col[0], g: 220 });
     }
-    // 충돌
+    // 충돌(사라진 그림자는 닿지 않는다)
+    if (e.hidden) continue;
     const hx = Math.abs(p.x - e.x) < e.r + p.w / 2 + (e.stomp ? 3 : -2), hy = Math.abs(p.y - e.y) < e.r + p.h / 2 - 1;
     if (!hx || !hy) continue;
     const feet = p.y + p.h / 2;
@@ -654,10 +667,22 @@ function updateEnemyShots(dt) {
   for (const b of g.ebul) {
     b.t += dt; b.vy += (b.g || 0) * dt; b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.t > 6) b.dead = true;
-    if (isSolid(lvl.at(Math.floor(b.x / TILE), Math.floor(b.y / TILE))) && !b.ghost) { b.dead = true; puff(b.x, b.y, 2, 8, 4); continue; }
+    // 유도 구슬(첫 번째 어둠): 도는 속도에 한계가 있어 옆으로 비키면 피한다
+    if (b.home && b.t < b.home) { const sp = Math.hypot(b.vx, b.vy), a = Math.atan2(p.y - b.y, p.x - b.x), c = Math.atan2(b.vy, b.vx); let dA = a - c; while (dA > 3.14) dA -= 6.28; while (dA < -3.14) dA += 6.28; const na = c + clamp(dA, -2.1 * dt, 2.1 * dt); b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp; }
+    const bc = Math.floor(b.x / TILE), br = Math.floor(b.y / TILE), bt = lvl.at(bc, br);
+    if ((isSolid(bt) || (b.pool || b.shape === 'ice') && bt === ONEWAY && b.vy > 0) && !b.ghost) {
+      b.dead = true; puff(b.x, b.y, 2, 8, 4);
+      // 포물선 공격(독·포자): 날아가는 동안은 닿지 않고, 떨어진 자리에서 터지며 장판을 남긴다(표식 → 낙하 → 터짐)
+      if (b.pool) { if (b.vy > 0 && !lvl.at(bc, br - 1)) addHaz(b.x, br * TILE, b.poolW || 60, b.pool, b.dmg / .8, b.poolT || 2.6); g.fx.push({ type: 'ring', x: b.x, y: br * TILE - 6, r: 34, col: b.col, t: 0, life: .25 }); chunks(b.x, br * TILE - 4, 6, [b.col, '#ffffff'], 200); if (p.inv <= 0 && Math.abs(p.x - b.x) < 30 && Math.abs(p.y + p.h / 2 - br * TILE) < 26) { refill(p); hurt(b.x, b.dmg); if (g.state === 'dying') return; } }
+      if (b.shape === 'ice') { chunks(b.x, br * TILE - 2, 5, ['#e8fbff', '#7ad0f0'], 180); sfx.brk(); }
+      continue;
+    }
+    if (b.y > g.levelH + 60) b.dead = true;
+    if (b.pool) continue;
     if (Math.hypot(p.x - b.x, p.y - b.y) < b.r + 11) { b.dead = true; if (p.inv <= 0) { refill(p); hurt(b.x, b.dmg); if (g.state === 'dying') return; } }
   }
   g.ebul = g.ebul.filter(b => !b.dead);
+  tickHazLater(dt);
 }
 function updateBullets(dt) {
   const g = game;
@@ -672,7 +697,7 @@ function updateBullets(dt) {
     if (Math.abs(b.y - b.y0) > b.range) { b.dead = true; if (b.kind === 'bomb') onBulletHit(b, null); continue; }
     const dx = b.x - b.px, dy = b.y - b.py, seg = (cx, cy) => { const t = clamp(((cx - b.px) * dx + (cy - b.py) * dy) / (dx * dx + dy * dy || 1), 0, 1); return Math.hypot(cx - (b.px + dx * t), cy - (b.py + dy * t)); };
     for (const e of g.enemies) {
-      if (!e.alive || b.hits.includes(e) || seg(e.x, e.y) >= e.r + b.r) continue;
+      if (!e.alive || e.hidden || b.hits.includes(e) || seg(e.x, e.y) >= e.r + b.r) continue;
       if (e.shield && !g.st.breaker) {
         b.dead = true; e.flash = .05; sparks(b.x, e.y - e.r, 3, '#e8dfc9', 180, .18); sfx.ping(); g.fx.push({ type: 'hit', x: b.x, y: e.y - e.r, r: 9, t: 0, life: .08, rot: 0 });
         break;
@@ -705,4 +730,5 @@ function waveClear() {
 function nextWave() {
   const g = game; g.wave++; beginWave(DESCENT.next); input.blockUntil = performance.now() + 150; g.camLock = false; g.bossCam = undefined; g.timeScale = 1;
 }
-function pickRoom(R) { const r = R(); return r < .42 ? 'shop' : r < .67 ? 'treasure' : r < .87 ? 'altar' : 'spring'; }
+/* 방 비율(2026-11-06): 좌판이 너무 잦다는 의견으로 42% → 26%. 보물 동굴은 황금 수정 또는 루비 광맥 */
+function pickRoom(R) { const r = R(); return r < .26 ? 'shop' : r < .56 ? 'treasure' : r < .80 ? 'altar' : 'spring'; }

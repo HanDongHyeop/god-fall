@@ -5,12 +5,12 @@ const ROOM_TITLE = { shop: ['떠돌이 신의 좌판', '파편으로 사세요']
 
 function enterRoom(d) {
   const g = game, p = g.p; d.used = true; sfx.door();
-  g.saved = { grid: lvl.grid, hp: lvl.hp, rows: lvl.rows, enemies: g.enemies, jars: g.jars, shards: g.shards, decor: g.decor, portal: g.portal, levelH: g.levelH, cam: g.cam, px: p.x, py: p.y, doors: g.doors, ebul: g.ebul, decals: g.decals, door: d, arenaTop: g.arenaTop, isBossWave: g.isBossWave, floorRow: g.floorRow };
+  g.saved = { haz: g.haz, grid: lvl.grid, hp: lvl.hp, rows: lvl.rows, enemies: g.enemies, jars: g.jars, shards: g.shards, decor: g.decor, portal: g.portal, levelH: g.levelH, cam: g.cam, px: p.x, py: p.y, doors: g.doors, ebul: g.ebul, decals: g.decals, door: d, arenaTop: g.arenaTop, isBossWave: g.isBossWave, floorRow: g.floorRow };
   g.isBossWave = false;
   const rows = Math.max(Math.ceil(view.worldH / TILE) + 1, 14), F = rows - 4; lvl.rows = rows; g.floorRow = F; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
   for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) { if (r < F - 9 || r >= F || c === 0 || c === COLS - 1) lvl.set(c, r, HARD); }
   if (d.kind === 'mini') buildMiniRoom(F);
-  g.levelH = (rows - 1) * TILE; g.enemies = []; g.jars = []; g.shards = []; g.decor = []; g.portal = null; g.doors = []; g.ebul = []; g.decals = []; g.bullets = [];
+  g.levelH = (rows - 1) * TILE; g.enemies = []; g.jars = []; g.shards = []; g.decor = []; g.portal = null; g.doors = []; g.ebul = []; g.decals = []; g.bullets = []; g.haz = []; g.later = [];
   const side = d.side, floorY = F * TILE;
   p.x = side ? WORLD_W - TILE - 40 : TILE + 40; p.y = floorY - p.h / 2 - 1; p.vx = 0; p.vy = 0; p.onGround = true; p.inv = 0;
   refill(p);
@@ -31,10 +31,14 @@ function enterRoom(d) {
     for (let i = stock.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stock[i], stock[j]] = [stock[j], stock[i]]; }
     stock.slice(0, 3).forEach((it, i) => room.items.push({ ...it, x: spots[i], y: floorY }));
   } else if (d.kind === 'treasure') {
-    room.crystal = { x: WORLD_W / 2 + (side ? -30 : 30), y: floorY - 34, hp: 4, shake: 0 };
+    // 황금 수정(큰 파편) 또는 루비 광맥(작은 루비가 쏟아진다). 받는 양은 같다
+    const ruby = Math.random() < .5;
+    room.crystal = { x: WORLD_W / 2 + (side ? -30 : 30), y: floorY - 34, hp: 4, shake: 0, ruby };
+    if (ruby) room.title = ['루비 광맥', '거대한 루비를 쏘세요'];
   } else if (d.kind === 'altar') {
+    // 제단은 희귀부터 시작해 같은 등급 사다리로 오른다
     const pool = cardPool().filter(c => c.tier !== '일반'), pick = [];
-    while (pick.length < 3 && pool.length) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    while (pick.length < 3 && pool.length) { const c = takeOfTier(pool, rollTier(true, 1)); if (!c) break; pick.push(c); }
     pick.forEach((c, i) => room.items.push({ id: 'c_' + c.id, name: c.name, sub: c.desc, note: c.note, icon: c.id, cost: 0, tier: c.tier, card: c, once: true, buy: () => applyCard(c), hpCost: i === 2 ? .2 : 0 }));
     room.items.forEach((it, i) => { it.x = spots[i]; it.y = floorY; });
   } else if (d.kind === 'spring') {
@@ -220,12 +224,12 @@ function miniWin() {
 function tickFade(dt) { const g = game; g.fade = clamp(g.fade + g.fadeOut * dt * 3.4, 0, 1); if (g.fade === 0 || g.fade === 1) g.fadeOut = 0; }
 function exitRoom() {
   const g = game, p = g.p, s = g.saved, d = s.door; sfx.door(); g.floorRow = s.floorRow;
-  lvl.grid = s.grid; lvl.hp = s.hp; lvl.rows = s.rows; g.enemies = s.enemies; g.jars = s.jars; g.shards = g.shards.length ? s.shards.concat(g.shards.map(q => (q.y = s.py - 30, q.x = s.px, q))) : s.shards; g.decor = s.decor; g.portal = s.portal; g.levelH = s.levelH; g.doors = s.doors; g.ebul = s.ebul; g.decals = s.decals; g.arenaTop = s.arenaTop; g.isBossWave = s.isBossWave;
+  lvl.grid = s.grid; lvl.hp = s.hp; lvl.rows = s.rows; g.enemies = s.enemies; g.jars = s.jars; g.shards = g.shards.length ? s.shards.concat(g.shards.map(q => (q.y = s.py - 30, q.x = s.px, q))) : s.shards; g.decor = s.decor; g.portal = s.portal; g.levelH = s.levelH; g.doors = s.doors; g.ebul = s.ebul; g.decals = s.decals; g.haz = s.haz || []; g.later = []; g.arenaTop = s.arenaTop; g.isBossWave = s.isBossWave;
   if (g.room.kind === 'mini') { g.boss = null; g.minis = null; sfx.bgmFor && sfx.bgmFor('wave', g.biome.id); }
   g.room = null; g.saved = null; g.bullets = [];
   p.x = s.px; p.y = s.py; p.x = d.side ? WORLD_W - TILE - 34 : TILE + 34; p.vx = 0; p.vy = 0; p.inv = 1.2; g.cam = s.cam;
   // 다운웰처럼 입구 근처의 적은 사라진다
-  for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 110) killEnemy(e, false);
+  for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 110) { e.sk = null; killEnemy(e, false); }
   g.fade = 1; g.fadeOut = -1; refill(p);
 }
 /* 바닥을 밟고 입구 앞에 서 있을 때만 드나들 수 있다. 공중이거나 그냥 지나가면 아무 일도 없다 */
@@ -258,10 +262,10 @@ function roomBuy(it) {
 function crystalHit(b) {
   const g = game, c = g.room.crystal, p = g.p;
   c.hp--; c.shake = 1; sfx.brk(); g.fx.push({ type: 'hit', x: b.x, y: b.y, r: 18, t: 0, life: .1, rot: 0 }); g.shake = Math.max(g.shake, 5); g.hitStop = Math.max(g.hitStop, 2 / 60);
-  spawnShards(c.x, c.y, Math.round(10 * p.gemMul));
+  spawnShards(c.x, c.y, Math.round(10 * p.gemMul), c.ruby ? 5 : 0);
   if (c.hp <= 0) {
     g.whiteout = .5; g.shake = 14; sfx.bigBoom(); g.hitStop = 6 / 60;
-    imageBits('o_gold', c.x, c.y, 60, 4, 300); spawnShards(c.x, c.y, Math.round(120 * p.gemMul));
+    imageBits(c.ruby ? 'r_ruby' : 'o_gold', c.x, c.y, 60, 4, 300); spawnShards(c.x, c.y, Math.round(120 * p.gemMul), c.ruby ? 5 : 0);
     p.high = true; p.gemChain = 100; p.gemT = 4 * (1 + g.st.highPct); popup(c.x, c.y - 40, '신성 폭주!', '#ffe27a', true);
   }
 }
@@ -279,7 +283,7 @@ function drawRoomBack() {
   const gl = ctx.createRadialGradient(view.W / 2, wy(r.floorY - 40), 10 * s, view.W / 2, wy(r.floorY - 40), 170 * s);
   gl.addColorStop(0, 'rgba(255,214,140,.22)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = gl; ctx.fillRect(0, wy(r.floorY - 9 * TILE), view.W, 9 * TILE * s);
   if (r.crystal && r.crystal.hp > 0) {
-    const c = r.crystal, im = IMG.o_gold; if (ok(im)) { const h = 74 * s, w = h * im.naturalWidth / im.naturalHeight, jx = (Math.random() - .5) * c.shake * 6 * s; ctx.drawImage(im, wx(c.x) - w / 2 + jx, wy(c.y) - h / 2 - 2 * s, w, h); }
+    const c = r.crystal, im = c.ruby ? IMG.r_ruby : IMG.o_gold; if (ok(im)) { const h = (c.ruby ? 80 : 74) * s, w = h * im.naturalWidth / im.naturalHeight, jx = (Math.random() - .5) * c.shake * 6 * s; ctx.drawImage(im, wx(c.x) - w / 2 + jx, wy(c.y) - h / 2 - 2 * s, w, h); }
   }
   for (const it of r.items) {
     if (it.sold && !it.once) continue;

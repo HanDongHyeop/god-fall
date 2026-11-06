@@ -148,25 +148,29 @@ const Meta = {
     const s = this.s, C = CHESTS.find(c => c.id === chestId); if (!C) return null;
     if (!free) { const price = count >= 10 ? C.ten : C.one; if (s[C.cur] < price) return null; s[C.cur] -= price; }
     else s.chest[chestId].freeAt = Date.now() + C.free * 1000;
-    const out = [], st = s.chest[chestId], keys = Object.keys(GEAR);
+    const out = [], st = s.chest[chestId], keys = Object.keys(GEAR).filter(k => C.slots.includes(GEAR[k].slot)), feat = this.featuredGod();
     for (let i = 0; i < count; i++) {
       let force = false;
       if (C.pity) { st.pity = (st.pity || 0) + 1; if (st.pity >= C.pity) force = true; }
       const g = this.rollGrade(C, force); if (g === 2) st.pity = 0;
-      const d = keys[Math.floor(Math.random() * keys.length)];
-      out.push({ type: 'item', item: this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null) });
-      if (Math.random() < C.shard[0]) {
-        const pool = GODS.filter(x => x.id !== 'hermes'), pick = pool[Math.floor(Math.random() * pool.length)];
+      const d = keys[Math.floor(Math.random() * keys.length)], wgod = GEAR[d].slot !== 'weapon' ? null : C.featured && Math.random() < C.featured ? feat : this.rollWeaponGod();
+      out.push({ type: 'item', item: this.addItem(d, g, wgod) });
+      if (C.shard[0] && Math.random() < C.shard[0]) {
+        const pool = GODS.filter(x => x.id !== 'hermes'), pick = C.featured ? GOD_BY[feat] : pool[Math.floor(Math.random() * pool.length)];
         // 전설 조각은 더 귀하다
         const amt = pick.rank === '전설' ? Math.ceil(C.shard[1] * .5) : C.shard[1];
         this.addShard(pick.id, amt); out.push({ type: 'shard', god: pick.id, n: amt });
-      } else if (Math.random() < .35) {
-        const sl = SLOTS[Math.floor(Math.random() * 6)].id, n = 1 + Math.floor(Math.random() * 3);
+      }
+      if (C.scroll[0] && Math.random() < C.scroll[0]) {
+        const sl = GEAR[d].slot, n = C.scroll[1] + Math.floor(Math.random() * (C.scroll[2] - C.scroll[1] + 1));
         s.scrolls[sl] += n; out.push({ type: 'scroll', slot: sl, n });
       }
     }
     this.save(); return out;
   },
+  /* 환채석 상자의 이번 회차 신: FEATURE_DAYS일마다 순서대로 바뀐다. left = 남은 밀리초 */
+  featuredGod(now = Date.now()) { const per = FEATURE_DAYS * 864e5; return GODS[Math.floor(now / per) % GODS.length].id; },
+  featuredLeft(now = Date.now()) { const per = FEATURE_DAYS * 864e5; return per - now % per; },
   /* 신의 소환 */
   pullGod(count, free) {
     const s = this.s, C = GOD_CHEST, st = s.chest.god = s.chest.god || { freeAt: 0, pity: 0 };
