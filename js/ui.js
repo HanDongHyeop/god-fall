@@ -1,6 +1,8 @@
 /* 로비 UI: 궁수의 전설 2 구성(위쪽 재화 띠 · 아래 5칸 메뉴 · 장비 6칸 · 대장간 · 상자). 게임 규칙은 meta.js에 있고 여기는 화면만 다룬다 */
 'use strict';
 const uiIcon = n => `assets/ui/${n}.webp`;
+const GODS_PLANNED = 12;   // 캐릭터 칸 수(지금 6 + 앞으로 만들 6). 새 신을 넣으면 '준비 중' 칸이 하나씩 줄어든다
+const RANK_BG = { '레어': ['#4a7fe0', '#213a86'], '에픽': ['#9150d6', '#45207a'], '전설': ['#d9962e', '#713f10'] };   // 카드 바탕(위·아래)
 /* 터지는 빛: 고리 하나와 불꽃 n개. 무대 좌표로 맨 위에 그리고 저절로 사라진다 */
 function sparkBurst(el, col, n = 14, size = 1) {
   const st = $('stage').getBoundingClientRect(), r = el.getBoundingClientRect(), w = document.createElement('div'); w.className = 'burst';
@@ -151,23 +153,28 @@ const UI = {
     const sc = SLOTS.map(S => `<div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(S.id === 'weapon' ? 'w_' + s.god : S.id + '_a')}" alt=""><b class="oL">${s.scrolls[S.id]}</b></div>`).join('');
     return `<div class="toolbar"><button class="btn gold" id="bSort">${this.sort === 'grade' ? '등급 정렬' : '부위 정렬'}</button><button class="btn gold" id="bForge"><span>대장간</span></button></div><div class="scroll" id="gearScroll"><div class="grid">${list.map(i => itemTile(i, i.god && i.god !== s.god ? 'dim' : '')).join('') || '<div class="muted" style="grid-column:1/6;text-align:center;padding:calc(var(--u)*8)">가방이 비었습니다</div>'}</div><div class="sect">업그레이드 스크롤</div><div class="scgrid">${sc}</div></div>`;
   },
-  /* 캐릭터 탭의 무대: 장비 칸 대신 고유 능력 Lv.1~4 표(참고 영상과 같은 배치) */
+  /* 캐릭터 탭의 무대: 장비 칸 대신 오른쪽 패널(이름 · 고유 능력 Lv.1~4 · 해금/출전/레벨 업 버튼). 궁수의 전설 2 배치 */
   godPanelHTML() {
-    const cur = this.godView || Meta.s.god, G = GOD_BY[cur], lv = Meta.godLv(cur);
-    const rows = [[G.passive, 1], ...GOD_LV[cur].map(([t], n) => [t, n + 2])].map(([t, n]) => `<div class="gl ${n <= lv ? 'on' : ''}"><b class="oL">Lv.${n}</b><span>${t}</span></div>`).join('');
-    return `<div class="gpanel"><div class="gname oL"><span style="--rk:${G.rankCol}" class="grk">${G.rank}</span>${G.name}</div><div class="gpips">${[1, 2, 3, 4].map(n => `<i class="${n <= lv ? 'on' : ''}"></i>`).join('')}</div>${rows}</div>`;
+    const s = Meta.s, cur = this.godView || s.god, G = GOD_BY[cur], lv = Meta.godLv(cur), info = Meta.godInfo(cur), cost = Meta.godCost(cur);
+    const rows = [[G.passive, 1], ...GOD_LV[cur].map(([t], n) => [t, n + 2])].map(([t, n]) => `<div class="gl ${n <= lv ? 'on' : ''}"><b class="oL">Lv.${n}</b> ${t}</div>`).join('');
+    const cnt = c => `<small>${info.shard}/${c}</small>`;
+    const act = !lv ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>해금 ${cnt(cost)}</button>`
+      : `${s.god !== cur ? '<button class="btn gold" id="gSel">출전</button>' : ''}${cost !== null ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>레벨 업 ${cnt(cost)}</button>` : '<span class="gmax oL">최대 레벨</span>'}`;
+    return `<div class="gpanel"><div class="gname oL"><span style="--rk:${G.rankCol}" class="grk">${G.rank}</span>${G.name}</div><div class="gsub">${G.title} · ${G.weapon}</div><div class="gpips">${[1, 2, 3, 4].map(n => `<i class="${n <= lv ? 'on' : ''}"></i>`).join('')}</div>${rows}<div class="god-act">${act}</div></div>`;
   },
+  /* 캐릭터 목록: 4열 카드(등급 색 바탕 · 얼굴 위주 · 조각 막대). 새 신이 들어올 자리(준비 중)를 미리 채워 12칸을 맞춘다. 안내 글은 목록 아래 */
   godsPane() {
-    const s = Meta.s, cur = this.godView || s.god, G = GOD_BY[cur], info = Meta.godInfo(cur), cost = Meta.godCost(cur), lv = Meta.godLv(cur);
+    const s = Meta.s, cur = this.godView || s.god, G = GOD_BY[cur], lv = Meta.godLv(cur);
     const cards = GODS.map(g => {
-      const i = Meta.godInfo(g.id), c = Meta.godCost(g.id), l = Meta.godLv(g.id), pct = c ? Math.min(100, i.shard / c * 100) : 100;
-      return `<button class="gc ${l ? '' : 'lock'} ${g.id === cur ? 'sel' : ''}" data-god="${g.id}"><img src="assets/god/${g.id}/big_bare.webp" alt="">${s.god === g.id ? '<span class="on">출전</span>' : ''}<span class="rk oL" style="--rk:${g.rankCol}">${l ? 'Lv.' + l : g.rank}</span><span class="pg oL"><i style="width:${pct}%"></i><span>${c === null ? '최대' : i.shard + '/' + c}</span></span></button>`;
+      const i = Meta.godInfo(g.id), c = Meta.godCost(g.id), l = Meta.godLv(g.id), pct = c ? Math.min(100, i.shard / c * 100) : 100, bg = RANK_BG[g.rank] || RANK_BG['레어'];
+      return `<button class="gc ${l ? '' : 'lock'} ${g.id === cur ? 'sel' : ''} ${c !== null && i.shard >= c ? 'ready' : ''}" data-god="${g.id}"><span class="pt" style="--b1:${bg[0]};--b2:${bg[1]}"><img src="assets/god/${g.id}/big_bare.webp" alt=""><span class="rk oL" style="--rk:${g.rankCol}">${l ? 'Lv.' + l : g.rank}</span>${l ? '' : `<img class="lk" src="${uiIcon('ico_lock')}" alt="">`}</span>${s.god === g.id ? '<span class="on oL">출전 중</span>' : ''}<span class="pg oL"><i style="width:${pct}%"></i><img src="${uiIcon('cur_shard')}" alt=""><span>${c === null ? '최대' : i.shard + '/' + c}</span></span></button>`;
     }).join('');
+    const soon = Array.from({ length: Math.max(0, GODS_PLANNED - GODS.length) }, () => '<div class="gc soon"><span class="pt"><b>?</b></span><span class="pg oL"><span>준비 중</span></span></div>').join('');
     const nextBonus = lv && lv < GOD_LV_MAX ? ` · 다음 레벨 +${Math.round(GOD_LV_BONUS * 100)}%` : '';
-    const act = !lv ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>해금 (조각 ${info.shard}/${cost})</button>` : `${s.god !== cur ? '<button class="btn gold" id="gSel">출전</button>' : ''}${cost !== null ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>레벨 업 (조각 ${info.shard}/${cost})</button>` : ''}`;
     const share = Meta.godShare(cur), all = Meta.accountBonus(), pc = x => (x * 100).toFixed(x * 100 % 1 ? 1 : 0);
     const acc = `<div class="gacc oL"><b>모든 신에게 주는 보너스</b><span>이 신 공격력 +${pc(share.atk)}% · 체력 +${pc(share.hp)}%</span><span>전체 합계 공격력 +${pc(all.atk)}% · 체력 +${pc(all.hp)}%</span></div>`;
-    return `<div class="scroll">${acc}<div class="sect oL" style="text-align:center;line-height:1.35;word-break:keep-all">${G.title} · 무기: ${G.weapon}<br>연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : ''}${lv ? '' : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div><div class="god-act">${act}</div><div class="gods">${cards}</div></div>`;
+    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
+    return `<div class="scroll" id="godScroll"><div class="gods">${cards}${soon}</div>${about}${acc}</div>`;
   },
   gearClick(e) {
     const t = e.target, sl = t.closest('.slot'), it = t.closest('.grid .it'), st = t.closest('.st'), gc = t.closest('.gc');

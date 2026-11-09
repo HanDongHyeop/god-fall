@@ -39,13 +39,13 @@ const Intro = (() => {
     bufOf(n).then(buf => {
       if (!buf || st !== s0 || s0.done || s0.bgm !== n || sfx.bgmNow === n) return;
       if (!sfx.bgmGain) { sfx.bgmGain = a.createGain(); sfx.bgmGain.gain.value = sfx.muted ? 0 : .34; sfx.bgmGain.connect(a.destination); }
-      const t = a.currentTime, old = sfx.bgmSrc, fo = flip ? 1 : .5;
+      const t = a.currentTime, old = sfx.bgmSrc, fo = flip ? .28 : .5;   // 뒤집힘은 짧게(0.28초): 살짝 늘어지며 빨리 작아지고 바로 다음 곡
       if (old) {
-        if (flip) { old.playbackRate.setValueAtTime(old.playbackRate.value, t); old.playbackRate.exponentialRampToValueAtTime(.3, t + fo); }   // 테이프가 늘어지듯 뒤집힌다
-        old.fade.gain.cancelScheduledValues(t); old.fade.gain.setValueAtTime(old.fade.gain.value, t); old.fade.gain.linearRampToValueAtTime(0, t + fo); old.stop(t + fo + .05);
+        if (flip) { old.playbackRate.setValueAtTime(old.playbackRate.value, t); old.playbackRate.exponentialRampToValueAtTime(.6, t + fo); }   // 테이프가 살짝 늘어지듯 뒤집힌다
+        old.fade.gain.cancelScheduledValues(t); old.fade.gain.setValueAtTime(old.fade.gain.value, t); if (flip) old.fade.gain.setTargetAtTime(0, t, fo / 4); else old.fade.gain.linearRampToValueAtTime(0, t + fo); old.stop(t + fo + .05);
       }
-      const src = a.createBufferSource(), f = a.createGain(), t0 = t + (flip ? .35 : 0); src.buffer = buf; src.loop = true; src.loopStart = .06; src.loopEnd = buf.duration - .06; src.fade = f;
-      f.gain.setValueAtTime(0, t); f.gain.linearRampToValueAtTime(1, t0 + (flip ? 1.2 : .8)); src.connect(f); f.connect(sfx.bgmGain); src.start(t0, .06);
+      const src = a.createBufferSource(), f = a.createGain(), t0 = t + (flip ? .06 : 0); src.buffer = buf; src.loop = true; src.loopStart = .06; src.loopEnd = buf.duration - .06; src.fade = f;
+      f.gain.setValueAtTime(0, t); f.gain.linearRampToValueAtTime(1, t0 + (flip ? .25 : .8)); src.connect(f); f.connect(sfx.bgmGain); src.start(t0, .06);
       sfx.bgmSrc = src; sfx.bgmNow = n; sfx.bgmWant = n;
     });
   }
@@ -173,7 +173,7 @@ const Intro = (() => {
     onDone = done; st = { i: 0, t: 0, clock: 0, prev: null, fired: new Set(), shake: [], flash: [], glow: [], punch: [], parts: [], end: null, done: false, ready: false, xf: null, bgm: null, prevBgm: sfx.bgmNow };
     el.classList.add('on'); fit(); addEventListener('resize', fit);
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.fillStyle = '#0c0818'; cx.fillRect(0, 0, cv.width, cv.height);
-    const s0 = st; Promise.race([loadAll(), new Promise(r => setTimeout(r, 6000))]).then(() => { if (st === s0) { s0.ready = true; s0.t = 0; if (cuts[0].music) bgm(cuts[0].music); } });
+    const s0 = st; Promise.race([loadAll(), new Promise(r => setTimeout(r, 6000))]).then(() => { if (st === s0) { s0.ready = true; s0.t = 0; if (cuts[0].music) bgm(cuts[0].music); cuts.forEach(c => c.music && bufOf(c.music)); } });   // 2장 곡도 미리 풀어 둬야 탭하는 순간 바로 바뀐다
     last = performance.now(); raf = requestAnimationFrame(loop);
   }
   return { play, next, skip: () => finish(), preload: loadAll, get state() { return st; }, cuts, INTRO_VER };

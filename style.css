@@ -89,27 +89,27 @@ img { display: block; -webkit-user-drag: none; }
 .bsub { font-size: calc(var(--u) * 3.2); color: #dcd8ff; text-shadow: 0 1px 3px #000; }
 
 /* ───── 장비 탭 ───── */
-.hero-stage { position: relative; flex: none; height: calc(var(--u) * 78); background: url('assets/ui/stage_bg.jpg') center bottom/cover; overflow: hidden; }
-.hero { position: absolute; left: 50%; bottom: calc(var(--u) * 12); width: calc(var(--u) * 50); height: calc(var(--u) * 60); transform: translateX(-50%); display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.hero-stage { position: relative; flex: none; height: calc(var(--u) * 64); background: url('assets/ui/stage_bg.jpg') center bottom/cover; overflow: hidden; }
+.hero { position: absolute; left: 50%; bottom: calc(var(--u) * 11); width: calc(var(--u) * 44); height: calc(var(--u) * 50); transform: translateX(-50%); display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
 .hero img { max-height: 100%; max-width: 100%; transform-origin: 50% 100%; animation: breathe 2.6s ease-in-out infinite; filter: drop-shadow(0 calc(var(--u) * .8) calc(var(--u) * .8) rgba(0, 0, 0, .35)); }
 .hero.swap img { animation: swap .4s cubic-bezier(.2, 1.5, .4, 1), breathe 2.6s .4s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scale(1.012, .985); } }
 @keyframes swap { from { transform: translateY(calc(var(--u) * -4)) scale(.9, 1.12); } }
-.aura { position: absolute; left: 50%; bottom: calc(var(--u) * 8); width: calc(var(--u) * 60); height: calc(var(--u) * 16); transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, var(--ac, transparent), transparent); opacity: .7; animation: auraP 2.4s ease-in-out infinite; }
+.aura { position: absolute; left: 50%; bottom: calc(var(--u) * 7); width: calc(var(--u) * 60); height: calc(var(--u) * 16); transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, var(--ac, transparent), transparent); opacity: .7; animation: auraP 2.4s ease-in-out infinite; }
 @keyframes auraP { 50% { opacity: .35; transform: translateX(-50%) scale(1.08); } }
-.col { position: absolute; top: calc(var(--u) * 3); display: flex; flex-direction: column; gap: calc(var(--u) * 2.2); } .col.l { left: calc(var(--u) * 2.4); } .col.r { right: calc(var(--u) * 2.4); }
-.slot { position: relative; width: calc(var(--u) * 16.5); height: calc(var(--u) * 16.5); border-radius: calc(var(--u) * 3); }
+.col { position: absolute; top: calc(var(--u) * 2.4); display: flex; flex-direction: column; gap: calc(var(--u) * 1.8); } .col.l { left: calc(var(--u) * 2.4); } .col.r { right: calc(var(--u) * 2.4); }
+.slot { position: relative; width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: calc(var(--u) * 3); }
 .slot.empty { background: rgba(20, 40, 90, .58); box-shadow: inset 0 0 0 calc(var(--u) * .5) rgba(160, 190, 255, .35); }
 .slot.empty img { opacity: .28; filter: grayscale(1) brightness(1.6); }
 .it { position: relative; display: block; border-radius: calc(var(--u) * 2.6); background: linear-gradient(var(--c, #555) 0%, var(--d, #333) 100%); box-shadow: inset 0 0 0 calc(var(--u) * .5) rgba(255, 255, 255, .55), 0 calc(var(--u) * .6) 0 rgba(0, 0, 0, .45); }
 .it img { position: absolute; inset: 11%; width: 78%; height: 78%; object-fit: contain; filter: drop-shadow(0 .06em .06em rgba(0, 0, 0, .35)); }
-.slot .lv { position: absolute; top: calc(var(--u) * -1.5); left: 50%; transform: translateX(-50%); font-size: calc(var(--u) * 2.6); white-space: nowrap; z-index: 2; } .slot > img.ph { position: absolute; inset: 14%; width: 72%; height: 72%; object-fit: contain; }
+.slot .lv { position: absolute; top: calc(var(--u) * .7); left: calc(var(--u) * .8); font-size: calc(var(--u) * 2.4); line-height: 1.35; padding: 0 calc(var(--u) * .8); border-radius: calc(var(--u) * 1); background: #0009; white-space: nowrap; z-index: 2; }   /* 칸 안 왼쪽 위(칸 사이가 좁아 위로 빼면 윗칸과 겹친다) */ .slot > img.ph { position: absolute; inset: 14%; width: 72%; height: 72%; object-fit: contain; }
 .statbar { position: absolute; left: 50%; bottom: calc(var(--u) * 1.8); transform: translateX(-50%); display: flex; align-items: center; gap: calc(var(--u) * 1.2); background: #2a180edd; padding: calc(var(--u) * .9) calc(var(--u) * 1.6); border-radius: calc(var(--u) * 2.4); box-shadow: inset 0 0 0 calc(var(--u) * .3) #6b4a22; font-size: calc(var(--u) * 3.6); white-space: nowrap; }
 .statbar img { width: calc(var(--u) * 5); height: calc(var(--u) * 5); object-fit: contain; }
 .statbar .sl { font-size: calc(var(--u) * 2.5); color: #ffe9c0; display: block; }
 .statbar .iw { width: calc(var(--u) * 5.2); height: calc(var(--u) * 5.2); border-radius: 50%; background: #fff; color: #222; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 3.4); }
 .sub-tabs { display: grid; grid-template-columns: 1fr 1fr; flex: none; background: #14122a; }
-.st { height: calc(var(--u) * 10.4); display: flex; align-items: center; justify-content: center; gap: .3em; font-size: calc(var(--u) * 4); background: #232148; position: relative; border-radius: calc(var(--u) * 2.4) calc(var(--u) * 2.4) 0 0; }
+.st { height: calc(var(--u) * 9.4); display: flex; align-items: center; justify-content: center; gap: .3em; font-size: calc(var(--u) * 4); background: #232148; position: relative; border-radius: calc(var(--u) * 2.4) calc(var(--u) * 2.4) 0 0; }
 .st.on { background: linear-gradient(#ffe066, #f5b324); color: #5a2c00; text-shadow: none; }
 .toolbar { display: flex; justify-content: space-between; padding: calc(var(--u) * 1.8) calc(var(--u) * 2); background: #1b1a3c; flex: none; }
 .toolbar .btn { min-height: calc(var(--u) * 8.6); font-size: calc(var(--u) * 3.4); padding: 0 calc(var(--u) * 3); }
@@ -124,15 +124,25 @@ img { display: block; -webkit-user-drag: none; }
 .sect { padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4) calc(var(--u) * 1); font-size: calc(var(--u) * 3.3); color: #cfcdf0; background: #1b1a3c; }
 
 /* 캐릭터 */
-.gods { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * 2.2); padding: calc(var(--u) * 2.4); background: #1b1a3c; min-height: 100%; align-content: start; }
-.gc { position: relative; border-radius: calc(var(--u) * 2.6); background: linear-gradient(#49579e, #262a60); padding-top: 100%; box-shadow: inset 0 0 0 calc(var(--u) * .4) rgba(255, 255, 255, .25), 0 calc(var(--u) * .6) 0 #0006; overflow: hidden; }
-.gc.sel { box-shadow: inset 0 0 0 calc(var(--u) * .6) var(--gold), 0 calc(var(--u) * .6) 0 #0006; }
-.gc > img { position: absolute; left: 50%; top: 4%; height: 96%; transform: translateX(-50%); max-width: none; }
-.gc.lock > img { filter: brightness(.3) saturate(.3); }
-.gc .rk { position: absolute; top: calc(var(--u) * 1); left: calc(var(--u) * 1); font-size: calc(var(--u) * 2.5); padding: 0 calc(var(--u) * 1); border-radius: calc(var(--u) * 1); background: var(--rk); }
-.gc .pg { position: absolute; left: 6%; right: 6%; bottom: 5%; height: calc(var(--u) * 4); border-radius: calc(var(--u) * 1.4); background: #0009; overflow: hidden; font-size: calc(var(--u) * 2.7); display: flex; align-items: center; justify-content: center; } .gc .pg i { position: absolute; left: 0; top: 0; bottom: 0; background: #3fbf4d; } .gc .pg span { position: relative; }
-.gc .stars { position: absolute; left: 0; right: 0; top: calc(var(--u) * 1); text-align: center; color: var(--gold); font-size: calc(var(--u) * 2.6); padding-left: calc(var(--u) * 6); }
-.gc .on { position: absolute; right: calc(var(--u) * 1); top: calc(var(--u) * 1); font-size: calc(var(--u) * 2.5); background: var(--gold2); color: #5a2c00; padding: 0 calc(var(--u) * 1); border-radius: calc(var(--u) * 1); }
+/* 캐릭터 카드 4열: 등급 색 바탕의 얼굴 칸 + 아래 조각 막대. 고른 카드는 금테 + 살짝 떠오름, 출전 중은 위에 띠 */
+.gods { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * 2.2) calc(var(--u) * 1.8); padding: calc(var(--u) * 3) calc(var(--u) * 2.4) calc(var(--u) * 2.4); background: #1b1a3c; align-content: start; }
+.gc { position: relative; display: flex; flex-direction: column; gap: calc(var(--u) * .8); padding: calc(var(--u) * .7); border-radius: calc(var(--u) * 2.4); background: #0f0e2a; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff1c, 0 calc(var(--u) * .6) 0 #0007; transition: transform .12s; }
+.gc .pt { position: relative; display: block; padding-top: 108%; border-radius: calc(var(--u) * 1.8); overflow: hidden; background: radial-gradient(120% 90% at 50% 30%, var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * -.6) 0 #0004, inset 0 0 0 calc(var(--u) * .3) #ffffff30; }
+.gc .pt > img:first-child { position: absolute; left: 50%; top: 7%; height: 148%; transform: translateX(-50%); max-width: none; filter: drop-shadow(0 calc(var(--u) * .5) calc(var(--u) * .5) #0006); }
+.gc.lock .pt > img:first-child { filter: brightness(.28) saturate(.3); }
+.gc .rk { position: absolute; top: calc(var(--u) * .8); left: calc(var(--u) * .8); font-size: calc(var(--u) * 2.4); line-height: 1.35; padding: 0 calc(var(--u) * .9); border-radius: calc(var(--u) * 1); background: var(--rk); }
+.gc .lk { position: absolute; top: calc(var(--u) * .8); right: calc(var(--u) * .8); width: calc(var(--u) * 4.2); height: calc(var(--u) * 4.2); object-fit: contain; opacity: .9; }
+.gc .pg { position: relative; height: calc(var(--u) * 4.6); border-radius: calc(var(--u) * 1.4); background: #000a; overflow: hidden; font-size: calc(var(--u) * 2.7); display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * .6); padding-left: calc(var(--u) * 1); }
+.gc .pg i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#5fdc5a, #2b9e39); } .gc .pg span, .gc .pg img { position: relative; } .gc .pg img { width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); object-fit: contain; margin-left: calc(var(--u) * -1); }
+.gc.ready .pg { box-shadow: 0 0 0 calc(var(--u) * .35) #7dff6a, 0 0 calc(var(--u) * 1.6) #7dff6a99; }
+.gc.sel { background: linear-gradient(#ffe066, #f5a623); box-shadow: 0 0 0 calc(var(--u) * .4) #fff3b0, 0 0 calc(var(--u) * 2.4) #ffc84acc, 0 calc(var(--u) * .6) 0 #0007; transform: translateY(calc(var(--u) * -.6)); z-index: 1; }
+.gc .on { position: absolute; left: 50%; top: calc(var(--u) * -1.6); transform: translateX(-50%); white-space: nowrap; font-size: calc(var(--u) * 2.4); line-height: 1.5; padding: 0 calc(var(--u) * 1.6); border-radius: calc(var(--u) * 1.4); background: #0d3b2a; color: #7dffa8; box-shadow: inset 0 0 0 calc(var(--u) * .25) #7dffa866; z-index: 2; }
+.gc.soon { background: #15143a; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff10; }
+.gc.soon .pt { background: repeating-linear-gradient(135deg, #1f1e4a 0 calc(var(--u) * 2), #1b1a42 calc(var(--u) * 2) calc(var(--u) * 4)); box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff14; }
+.gc.soon .pt b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 400; font-size: calc(var(--u) * 9); color: #ffffff22; }
+.gc.soon .pg { color: #8b89bb; padding-left: 0; }
+.gabout { margin: 0 calc(var(--u) * 2.4); padding: calc(var(--u) * 1.4) calc(var(--u) * 2); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; background: #24224d; font-size: calc(var(--u) * 2.9); color: #dedcff; text-align: center; line-height: 1.4; word-break: keep-all; } .gabout b { font-weight: 400; color: var(--gold); margin-right: .3em; }
+#godScroll { background: #1b1a3c; padding-bottom: calc(var(--u) * 7); } #godScroll .gacc { margin: 0 calc(var(--u) * 2.4); border-radius: 0 0 calc(var(--u) * 2) calc(var(--u) * 2); }
 .god-info { position: absolute; left: calc(var(--u) * 21); right: calc(var(--u) * 21); top: calc(var(--u) * 2); background: #0a0920cc; border-radius: calc(var(--u) * 2); padding: calc(var(--u) * 1.4); font-size: calc(var(--u) * 2.8); line-height: 1.32; text-align: center; }
 .god-info b { display: block; font-weight: 400; font-size: calc(var(--u) * 3.8); color: var(--gold); }
 .god-act { padding: calc(var(--u) * 1.8) calc(var(--u) * 2.4); background: #1b1a3c; display: flex; gap: calc(var(--u) * 2); justify-content: center; }
@@ -349,17 +359,23 @@ img { display: block; -webkit-user-drag: none; }
 @keyframes logoFloat { 50% { transform: translateY(calc(var(--u) * -1.1)); } }
 
 /* 캐릭터 탭 무대: 신은 왼쪽, 고유 능력 표는 오른쪽 */
-.gods-on .hero { left: 26%; width: calc(var(--u) * 46); }
-.gods-on .aura { left: 26%; width: calc(var(--u) * 48); }
-.gods-on .statbar { left: 26%; }
-.gpanel { position: absolute; right: calc(var(--u) * 2); top: calc(var(--u) * 2.4); bottom: calc(var(--u) * 2.4); width: calc(var(--u) * 49); padding: calc(var(--u) * 1.6); border-radius: calc(var(--u) * 2.4); background: #17153ae8; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff30; display: flex; flex-direction: column; gap: calc(var(--u) * .8); overflow: hidden; }
+.gods-on .hero { left: 25%; width: calc(var(--u) * 44); }
+.gods-on .aura { left: 25%; width: calc(var(--u) * 44); }
+.gods-on .statbar { left: 25%; }
+.gpanel { position: absolute; right: calc(var(--u) * 1.8); top: calc(var(--u) * 1.8); bottom: calc(var(--u) * 1.8); width: calc(var(--u) * 50); padding: calc(var(--u) * 1.4); border-radius: calc(var(--u) * 2.4); background: #17153ae8; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff30; display: flex; flex-direction: column; gap: calc(var(--u) * .7); overflow: hidden; }
+.gsub { text-align: center; font-size: calc(var(--u) * 2.6); color: #b9b6e8; margin-top: calc(var(--u) * -.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gpanel .god-act { margin-top: auto; padding: calc(var(--u) * .6) 0 0; background: none; gap: calc(var(--u) * 1.2); flex: none; }
+.gpanel .god-act .btn { min-height: calc(var(--u) * 10); font-size: calc(var(--u) * 3.4); padding: 0 calc(var(--u) * 2); flex: 1 1 auto; white-space: nowrap; }
+.gpanel .god-act #gSel { flex: 0 0 auto; }
+.gpanel .god-act small { font-size: .78em; opacity: .9; }
+.gmax { flex: 1; text-align: center; color: var(--gold); font-size: calc(var(--u) * 3.4); line-height: calc(var(--u) * 10); }
 .gname { display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * 1.2); font-size: calc(var(--u) * 4.2); color: var(--gold); }
 .grk { font-size: calc(var(--u) * 2.5); color: #fff; padding: 0 calc(var(--u) * 1); border-radius: calc(var(--u) * 1); background: var(--rk); }
 .gpips { display: flex; gap: calc(var(--u) * 1); justify-content: center; margin-bottom: calc(var(--u) * .4); }
 .gpips i { width: calc(var(--u) * 7); height: calc(var(--u) * 1.5); border-radius: calc(var(--u) * 1); background: #0008; box-shadow: inset 0 0 0 1px #fff3; }
 .gpips i.on { background: linear-gradient(#fff0a8, #ffb52e); box-shadow: 0 0 calc(var(--u) * 1) #ffc84a88; }
-.gl { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: calc(var(--u) * .7) calc(var(--u) * 1.4); border-radius: calc(var(--u) * 1.4); background: #0e0d26; color: #8583a8; font-size: calc(var(--u) * 2.75); line-height: 1.22; word-break: keep-all; }
-.gl b { font-weight: 400; color: #8583a8; font-size: calc(var(--u) * 2.9); }
+.gl { flex: 1 1 0; min-height: 0; display: flex; align-items: center; padding: calc(var(--u) * .5) calc(var(--u) * 1.3); border-radius: calc(var(--u) * 1.4); background: #0e0d26; color: #8583a8; font-size: calc(var(--u) * 2.6); line-height: 1.2; word-break: keep-all; overflow: hidden; }
+.gl b { font-weight: 400; color: #8583a8; font-size: calc(var(--u) * 2.7); flex: none; margin-right: .35em; }
 .gl.on { background: #322f6e; color: #fff; } .gl.on b { color: var(--gold); }
 
 /* 장비 레벨 표시 */
