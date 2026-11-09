@@ -130,20 +130,15 @@ const Meta = {
     return plan;
   },
   equipBest() { const p = this.bestPlan(); for (const x of p) this.equip(x.uid); return p; },
-  /* 일괄 강화: 낀 칸 중 레벨이 가장 낮은 칸부터 한 단계씩(칸 레벨을 고르게). per = 칸마다 최대 몇 단계(1 = 모든 칸 +1, Infinity = 재화가 떨어질 때까지) */
-  upgradePlan(per = Infinity) {
-    const s = this.s, ids = SLOTS.map(S => S.id).filter(id => this.equipped(id)), lv = {}, n = {}, sc = { ...s.scrolls }; let gold = s.gold;
-    ids.forEach(id => { lv[id] = this.levelOf(id); n[id] = 0; });
-    for (let guard = 0; guard < 5000; guard++) {
-      const can = ids.filter(id => { const c = this.costAt(lv[id]); return n[id] < per && lv[id] < LV_MAX && gold >= c.gold && sc[id] >= c.scroll; });
-      if (!can.length) break;
-      const id = can.sort((a, b) => lv[a] - lv[b] || ids.indexOf(a) - ids.indexOf(b))[0], c = this.costAt(lv[id]);
-      gold -= c.gold; sc[id] -= c.scroll; lv[id]++; n[id]++;
-    }
-    const rows = ids.map(id => ({ slot: id, from: lv[id] - n[id], to: lv[id], scroll: s.scrolls[id] - sc[id], why: n[id] ? '' : lv[id] >= LV_MAX ? '최대 레벨' : s.scrolls[id] < this.costAt(lv[id]).scroll ? '두루마리 부족' : '골드 부족' }));
-    return { rows, gold: s.gold - gold, steps: ids.reduce((t, id) => t + n[id], 0) };
+  /* 일괄 업그레이드(장비 칸 팝업): 이 칸 하나를 골드나 두루마리가 떨어질 때까지, 최대 레벨까지 올린다 */
+  slotUpPlan(slot, god) {
+    const s = this.s, from = this.levelOf(slot, god), cap = this.lvCap(slot); let l = from, gold = 0, scroll = 0, why = '';
+    if (!this.equipped(slot, god)) return { from, to: from, gold, scroll, why: '장착 안 됨' };
+    while (l < cap) { const c = this.costAt(l); if (s.gold - gold < c.gold) { why = '골드 부족'; break; } if (s.scrolls[slot] - scroll < c.scroll) { why = '두루마리 부족'; break; } gold += c.gold; scroll += c.scroll; l++; }
+    if (l >= cap) why = '최대 레벨';
+    return { from, to: l, gold, scroll, why };
   },
-  upgradeAll(per = Infinity) { const p = this.upgradePlan(per); for (const r of p.rows) for (let i = r.from; i < r.to; i++) this.upgrade(r.slot); return p; },
+  upgradeMax(slot, god) { const p = this.slotUpPlan(slot, god); let n = 0; for (let i = p.from; i < p.to; i++) if (this.upgrade(slot, god)) n++; return { ...p, n }; },
   /* 분해: 장비를 그 부위 강화 두루마리와 골드로 바꾼다(고급 1장 · 희귀 3장 · 에픽 9장, 골드는 장당 20). 무기·신화·착용 중인 장비는 분해하지 않는다 */
   salvageGain(it) { const k = [1, 3, 9][it.g] || 0; return { slot: GEAR[it.d].slot, scroll: k, gold: 20 * k }; },
   canSalvage(it) { return !!it && it.g < MYTH && GEAR[it.d].slot !== 'weapon' && !this.isEquipped(it.uid); },

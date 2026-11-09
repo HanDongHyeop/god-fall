@@ -151,8 +151,8 @@ const UI = {
     const s = Meta.s, list = s.inv.filter(i => !Meta.isEquipped(i.uid));
     list.sort(this.sort === 'grade' ? (a, b) => b.g - a.g || SLOTS.findIndex(x => x.id === GEAR[a.d].slot) - SLOTS.findIndex(x => x.id === GEAR[b.d].slot) : (a, b) => SLOTS.findIndex(x => x.id === GEAR[a.d].slot) - SLOTS.findIndex(x => x.id === GEAR[b.d].slot) || b.g - a.g);
     const sc = SLOTS.map(S => `<div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(S.id === 'weapon' ? 'w_' + s.god : S.id + '_a')}" alt=""><b class="oL">${s.scrolls[S.id]}</b></div>`).join('');
-    const nb = Meta.bestPlan().length, nu = Meta.upgradePlan(1).steps;
-    return `<div class="toolbar"><button class="btn gold" id="bSort">${this.sort === 'grade' ? '등급 정렬' : '부위 정렬'}</button><span class="tb-gap"></span><button class="btn ${nb ? 'green' : 'gray dimb'}" id="bBest">일괄 장착${nb ? `<i class="badge">${nb}</i>` : ''}</button><button class="btn ${nu ? 'green' : 'gray dimb'}" id="bUpAll">일괄 강화</button><button class="btn gold" id="bForge"><span>대장간</span></button></div><div class="scroll" id="gearScroll"><div class="grid">${list.map(i => itemTile(i, i.god && i.god !== s.god ? 'dim' : '')).join('') || '<div class="muted" style="grid-column:1/6;text-align:center;padding:calc(var(--u)*8)">가방이 비었습니다</div>'}</div><div class="sect">업그레이드 스크롤</div><div class="scgrid">${sc}</div></div>`;
+    const nb = Meta.bestPlan().length;
+    return `<div class="toolbar"><button class="btn gold" id="bSort">${this.sort === 'grade' ? '등급 정렬' : '부위 정렬'}</button><span class="tb-gap"></span><button class="btn ${nb ? 'green' : 'gray dimb'}" id="bBest">일괄 장착${nb ? `<i class="badge">${nb}</i>` : ''}</button><button class="btn gold" id="bForge"><span>대장간</span></button></div><div class="scroll" id="gearScroll"><div class="grid">${list.map(i => itemTile(i, i.god && i.god !== s.god ? 'dim' : '')).join('') || '<div class="muted" style="grid-column:1/6;text-align:center;padding:calc(var(--u)*8)">가방이 비었습니다</div>'}</div><div class="sect">업그레이드 스크롤</div><div class="scgrid">${sc}</div></div>`;
   },
   /* 캐릭터 탭의 무대: 장비 칸 대신 오른쪽 패널(이름 · 고유 능력 Lv.1~4 · 해금/출전/레벨 업 버튼). 궁수의 전설 2 배치 */
   godPanelHTML() {
@@ -185,7 +185,6 @@ const UI = {
     if (t.closest('#bSort')) { sfx.tap(); this.sort = this.sort === 'grade' ? 'slot' : 'grade'; this.r_gear(); return; }
     if (t.closest('#bForge')) { sfx.tap(); this.openForge(); return; }
     if (t.closest('#bBest')) { this.equipAll(); return; }
-    if (t.closest('#bUpAll')) { sfx.tap(); this.upAllPop(1); return; }
     if (t.closest('#bInfo')) { sfx.tap(); this.statPop(); return; }
     if (gc) { sfx.tap(); this.godView = gc.dataset.god; this._swap = true; this.r_gear(); return; }
     if (t.closest('#gSel')) { sfx.tap(); loadGod(this.godView); Meta.selectGod(this.godView); this._swap = true; this.render(); this.toast(GOD_BY[this.godView].name + ' 출전'); return; }
@@ -222,24 +221,6 @@ const UI = {
     mine.forEach((x, i) => setTimeout(() => { const sl = document.querySelector(`.slot[data-slot="${x.slot}"]`); if (sl) { sl.classList.add('upg'); sparkBurst(sl, GRADES[x.to].glow, 12, 1); } }, i * 70));
     this.toast(`${mine.length ? `${mine.length}칸 장착` : ''}${mine.length && others ? ' · ' : ''}${others ? `다른 신 무기 ${others}개 장착` : ''}`);
   },
-  /* 일괄 강화 확인 창: 모든 칸 +1 / 최대한(레벨 낮은 칸부터 고르게) */
-  upAllPop(mode) {
-    const per = mode === 1 ? 1 : Infinity, p = Meta.upgradePlan(per), s = Meta.s;
-    const ico = id => uiIcon(id === 'weapon' ? 'w_' + s.god : id + '_a');
-    const rows = p.rows.map(r => `<div class="ua-r ${r.to > r.from ? '' : 'off'}"><img src="${ico(r.slot)}" alt=""><span class="ua-nm">${SLOT_BY[r.slot].name}</span><span class="ua-lv">${r.to > r.from ? `Lv.${r.from} <b>→ Lv.${r.to}</b>` : `Lv.${r.from}`}</span><span class="ua-cs">${r.to > r.from ? `<img src="${uiIcon('cur_scroll')}" alt="">-${r.scroll}` : r.why}</span></div>`).join('') || '<div class="note">장착한 장비가 없습니다</div>';
-    this.popup(`<div class="card-pop" style="--c:#2fae3d;--d:#15622a"><div class="hd">일괄 강화</div><button class="x" data-close>✕</button>
-      <div class="ua-tabs"><button class="${mode === 1 ? 'on' : ''}" data-ua="1">모든 칸 +1</button><button class="${mode === 1 ? '' : 'on'}" data-ua="max">최대한</button></div>
-      <div class="ua-rows">${rows}</div>
-      <div class="ua-sum"><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(p.gold)} 사용 <small>(남는 골드 ${fmt(s.gold - p.gold)})</small></div>
-      <div class="note">${mode === 1 ? '장착한 칸을 한 단계씩 올립니다.' : '레벨이 낮은 칸부터 고르게, 골드나 두루마리가 떨어질 때까지 올립니다.'}</div>
-      <div class="ip-acts"><button class="btn gray" data-close>취소</button><button class="btn green" id="uaGo" ${p.steps ? '' : 'disabled'}>강화 ${p.steps ? `<small>${p.steps}단계</small>` : ''}</button></div></div>`);
-    $('pop').querySelectorAll('[data-ua]').forEach(b => b.onclick = () => { sfx.tap(); this.upAllPop(b.dataset.ua === '1' ? 1 : 'max'); });
-    $('uaGo').onclick = () => {
-      const p0 = Meta.power(), r = Meta.upgradeAll(per); if (!r.steps) return; sfx.upgrade(); this.closePop(); this.render(); powerPill(p0, Meta.power());
-      r.rows.filter(x => x.to > x.from).forEach((x, i) => setTimeout(() => { const sl = document.querySelector(`.slot[data-slot="${x.slot}"]`); if (sl) { sl.classList.add('upg'); sparkBurst(sl, 'rgba(120,255,140,.95)', 10, .9); } }, i * 70));
-      this.toast(`${r.steps}단계 강화했습니다`);
-    };
-  },
   /* 일괄 분해 확인 창(대장간): 등급을 고르고, 받을 두루마리·골드를 미리 보여 준다 */
   salvagePop(gr) {
     const s = Meta.s; gr = gr || this._salvGr || [0]; this._salvGr = gr;
@@ -260,10 +241,10 @@ const UI = {
     const S = SLOT_BY[slot], it = Meta.equipped(slot, god), s = Meta.s;
     if (!it) { this.toast(`가방에서 ${S.name}를 골라 장착하세요`); this.sub = 'gear'; return; }
     const b = this.itemBody(it, Meta.slotBonus(slot, god)), c = Meta.upgradeCost(slot, god), cap = Meta.lvCap(slot), lv = Meta.levelOf(slot, god), maxed = lv >= cap;
-    const lab = S.stat === 'atk' ? '공격력' : '체력';
+    const lab = S.stat === 'atk' ? '공격력' : '체력', bp = Meta.slotUpPlan(slot, god), bn = bp.to - bp.from;
     this.popup(`<div class="card-pop" style="${gradeVars(it.g)}"><div class="hd">${b.name}</div><button class="x" data-close>✕</button>${b.html}
-      <div class="ip-up"><div class="row"><span>레벨 ${lv} / ${cap}</span><span style="color:#2a8c3a">다음 레벨 ${lab} +${S.perLv}</span></div>${maxed ? `<div class="row no">최대 레벨입니다</div>` : `<div class="row"><span class="${s.gold < c.gold ? 'no' : ''}"><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(c.gold)}</span><span class="${s.scrolls[slot] < c.scroll ? 'no' : ''}"><img src="${uiIcon('cur_scroll')}" alt=""> ${s.scrolls[slot]} / ${c.scroll}</span></div>`}</div>
-      <div class="ip-acts"><button class="btn gray" id="ipOff">해제</button><button class="btn green" id="ipUp" ${Meta.canUpgrade(slot, god) ? '' : 'disabled'}>업그레이드</button></div></div>`);
+      <div class="ip-up"><div class="row"><span>레벨 ${lv} / ${cap}</span><span style="color:#2a8c3a">다음 레벨 ${lab} +${S.perLv}</span></div>${maxed ? `<div class="row no">최대 레벨입니다</div>` : `<div class="row"><span class="${s.gold < c.gold ? 'no' : ''}"><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(c.gold)}</span><span class="${s.scrolls[slot] < c.scroll ? 'no' : ''}"><img src="${uiIcon('cur_scroll')}" alt=""> ${s.scrolls[slot]} / ${c.scroll}</span></div>`}${maxed ? '' : `<div class="row bulk ${bn ? '' : 'off'}"><span>일괄 ${bn ? `<b>Lv.${bp.from} → Lv.${bp.to}</b>` : `<i>${bp.why}</i>`}</span>${bn ? `<span><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(bp.gold)} <img src="${uiIcon('cur_scroll')}" alt=""> ${bp.scroll}</span>` : ''}</div>`}</div>
+      <div class="ip-acts up3"><button class="btn gray" id="ipOff">해제</button><button class="btn green" id="ipUp" ${Meta.canUpgrade(slot, god) ? '' : 'disabled'}>업그레이드</button><button class="btn gold" id="ipUpMax" ${bn ? '' : 'disabled'}><span>일괄 업그레이드</span>${bn ? `<small>+${bn}레벨</small>` : ''}</button></div></div>`);
     $('ipOff').onclick = () => { Meta.unequip(slot, god); sfx.tap(); if (slot === 'weapon') this._swap = true; this.closePop(); this.render(); };
     $('ipUp').onclick = () => {
       const p0 = Meta.power(); if (!Meta.upgrade(slot, god)) { sfx.empty(); return; }
@@ -271,6 +252,14 @@ const UI = {
       const pop = $('pop'), ic = pop.querySelector('.ip-top .it'), lvEl = pop.querySelector('.ip-lv'), plus = document.createElement('span');
       ic.classList.add('upg'); lvEl.classList.add('bump'); plus.className = 'ip-plus oL'; plus.textContent = `${lab} +${S.perLv}`; ic.append(plus);
       sparkBurst(ic, GRADES[it.g].glow, 16, 1); powerPill(p0, Meta.power());
+    };
+    $('ipUpMax').onclick = () => {   // 한 번에 여러 레벨: 같은 강화 연출을 크게, 올린 레벨 수를 띄운다
+      const p0 = Meta.power(), r = Meta.upgradeMax(slot, god); if (!r.n) { sfx.empty(); return; }
+      sfx.upgrade(); this.render(); this.slotPop(slot, god);
+      const pop = $('pop'), ic = pop.querySelector('.ip-top .it'), lvEl = pop.querySelector('.ip-lv'), plus = document.createElement('span');
+      ic.classList.add('upg'); lvEl.classList.add('bump'); plus.className = 'ip-plus oL'; plus.textContent = `Lv.+${r.n} · ${lab} +${Math.round(r.n * S.perLv)}`; ic.append(plus);
+      sparkBurst(ic, GRADES[it.g].glow, 26, 1.25); powerPill(p0, Meta.power());
+      const sl = document.querySelector(`.slot[data-slot="${slot}"]`); if (sl) sl.classList.add('upg');
     };
   },
   statPop() {
