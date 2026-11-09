@@ -70,7 +70,8 @@ const Meta = {
   lvCap() { return LV_MAX; },
   /* 슬롯 레벨 수치. 장비를 바꿔도 칸에 남는다. 장비를 빼면 보너스도 쉰다 */
   slotBonus(slot, god) { const S = SLOT_BY[slot]; return this.equipped(slot, god) ? Math.round((this.levelOf(slot, god) - 1) * S.perLv) : 0; },
-  upgradeCost(slot, god) { const l = this.levelOf(slot, god); return { gold: Math.round(40 + 10 * l + .45 * l * l), scroll: 1 + Math.floor(l / 10) }; },
+  costAt(l) { return { gold: Math.round(40 + 10 * l + .45 * l * l), scroll: 1 + Math.floor(l / 10) }; },   // 레벨 l → l+1 비용
+  upgradeCost(slot, god) { return this.costAt(this.levelOf(slot, god)); },
   canUpgrade(slot, god) { const c = this.upgradeCost(slot, god), s = this.s; return !!this.equipped(slot, god) && this.levelOf(slot, god) < this.lvCap(slot) && s.gold >= c.gold && s.scrolls[slot] >= c.scroll; },
   upgrade(slot, god) {
     if (!this.canUpgrade(slot, god)) return false;
@@ -113,6 +114,54 @@ const Meta = {
   /* 지금 낀 것보다 나으면 초록 화살표 */
   isBetter(it) { const w = GEAR[it.d].slot === 'weapon'; if (w && !this.godLv(it.god)) return false; const cur = this.equipped(GEAR[it.d].slot, w ? it.god : null); return !cur || it.g > cur.g; },
   anyUpgrade() { return SLOTS.some(S => this.canUpgrade(S.id)); },
+  /* 일괄 장착: 칸마다 지금 낀 것보다 등급이 높은 것만 끼운다(초록 화살표와 같은 기준). 무기는 해금한 신마다 그 신의 전용 무기 중 가장 높은 것 */
+  bestPlan() {
+    const s = this.s, plan = [], num = u => +u.slice(1);
+    const pick = (list, cur) => { const b = list.sort((a, c) => c.g - a.g || num(c.uid) - num(a.uid))[0]; return b && (!cur || b.g > cur.g) ? b : null; };
+    const free = slot => s.inv.filter(i => GEAR[i.d].slot === slot && !this.isEquipped(i.uid));
+    for (const S of SLOTS) {
+      if (S.id !== 'weapon') { const cur = this.equipped(S.id), b = pick(free(S.id), cur); if (b) plan.push({ slot: S.id, god: null, uid: b.uid, from: cur ? cur.g : -1, to: b.g }); continue; }
+      for (const g of GODS) {
+        if (!this.godLv(g.id) && g.id !== s.god) continue;
+        const cur = this.equipped('weapon', g.id), b = pick(free('weapon').filter(i => i.god === g.id), cur);
+        if (b) plan.push({ slot: 'weapon', god: g.id, uid: b.uid, from: cur ? cur.g : -1, to: b.g });
+      }
+    }
+    return plan;
+  },
+  equipBest() { const p = this.bestPlan(); for (const x of p) this.equip(x.uid); return p; },
+  /* 일괄 강화: 낀 칸 중 레벨이 가장 낮은 칸부터 한 단계씩(칸 레벨을 고르게). per = 칸마다 최대 몇 단계(1 = 모든 칸 +1, Infinity = 재화가 떨어질 때까지) */
+  upgradePlan(per = Infinity) {
+    const s = this.s, ids = SLOTS.map(S => S.id).filter(id => this.equipped(id)), lv = {}, n = {}, sc = { ...s.scrolls }; let gold = s.gold;
+    ids.forEach(id => { lv[id] = this.levelOf(id); n[id] = 0; });
+    for (let guard = 0; guard < 5000; guard++) {
+      const can = ids.filter(id => { const c = this.costAt(lv[id]); return n[id] < per && lv[id] < LV_MAX && gold >= c.gold && sc[id] >= c.scroll; });
+      if (!can.length) break;
+      const id = can.sort((a, b) => lv[a] - lv[b] || ids.indexOf(a) - ids.indexOf(b))[0], c = this.costAt(lv[id]);
+      gold -= c.gold; sc[id] -= c.scroll; lv[id]++; n[id]++;
+    }
+    const rows = ids.map(id => ({ slot: id, from: lv[id] - n[id], to: lv[id], scroll: s.scrolls[id] - sc[id], why: n[id] ? '' : lv[id] >= LV_MAX ? '최대 레벨' : s.scrolls[id] < this.costAt(lv[id]).scroll ? '두루마리 부족' : '골드 부족' }));
+    return { rows, gold: s.gold - gold, steps: ids.reduce((t, id) => t + n[id], 0) };
+  },
+  upgradeAll(per = Infinity) { const p = this.upgradePlan(per); for (const r of p.rows) for (let i = r.from; i < r.to; i++) this.upgrade(r.slot); return p; },
+  /* 분해: 장비를 그 부위 강화 두루마리와 골드로 바꾼다(고급 1장 · 희귀 3장 · 에픽 9장, 골드는 장당 20). 무기·신화·착용 중인 장비는 분해하지 않는다 */
+  salvageGain(it) { const k = [1, 3, 9][it.g] || 0; return { slot: GEAR[it.d].slot, scroll: k, gold: 20 * k }; },
+  canSalvage(it) { return !!it && it.g < MYTH && GEAR[it.d].slot !== 'weapon' && !this.isEquipped(it.uid); },
+  salvage(uids) {
+    const s = this.s, out = { n: 0, gold: 0, scrolls: {} };
+    for (const u of uids) {
+      const it = this.item(u); if (!this.canSalvage(it)) continue;
+      const g = this.salvageGain(it); s.inv = s.inv.filter(o => o.uid !== u); s.scrolls[g.slot] += g.scroll; s.gold += g.gold;
+      out.n++; out.gold += g.gold; out.scrolls[g.slot] = (out.scrolls[g.slot] || 0) + g.scroll;
+    }
+    if (out.n) this.save(); return out;
+  },
+  /* 일괄 분해 대상: 고른 등급만. 지금 낀 것보다 나은 장비(초록 화살표)와 바로 합성할 수 있는 3개 묶음은 남긴다 */
+  salvageList(grades) {
+    const groups = {};
+    for (const i of this.s.inv) if (this.canSalvage(i) && grades.includes(i.g) && !this.isBetter(i)) (groups[i.d + ':' + i.g] = groups[i.d + ':' + i.g] || []).push(i);
+    return Object.values(groups).flatMap(g => g.slice(Math.floor(g.length / 3) * 3));
+  },
   /* 합성: 같은 장비 + 재료 2개. 에픽 → 신화는 같은 칸의 에픽이면 된다 */
   mergeNeed(it) { if (it.g >= MYTH) return null; return { n: 2, sameSlot: it.g === MYTH - 1 }; },
   mergeMats(it) {
