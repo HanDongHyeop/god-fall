@@ -3,7 +3,7 @@
    기획: _기획/GOD FALL/10_인트로_기획.md · 시안 미리보기: 시안/13_인트로/preview (A·B 비교). 지금 쓰는 안 = INTRO_VER */
 'use strict';
 const Intro = (() => {
-  const INTRO_VER = 'R';   // A 서사 / B 코믹 / R 추천(A + 5장 대사만 B). 그림은 assets/intro/a1~a6.jpg (B를 쓰려면 b1~b5도 넣는다)
+  const INTRO_VER = 'A';   // A 서사 / B 코믹 / R 추천(A + 5장 대사만 B). 그림은 assets/intro/a1~a6.jpg (B를 쓰려면 b1~b5도 넣는다)
   const A = [
     { img: 'a1', cap: '구름 위 올림포스.\n신들의 잔치는 끝날 줄 몰랐다.', z: [1.2, 1.05], p: [[60, 70], [30, 30]], mv: 6, in: 'fade', amb: ['sparkle'], beats: [{ t: .2, k: 'sfx', s: 'chime' }] },
     { img: 'a2', cap: '그날 밤, 빛이 생기기 전부터 있던 것이\n눈을 떴다.', z: [1.14, 1.24], p: [[0, 90], [0, -10]], mv: 5, in: 'fade', amb: ['ember', 'rumble'],
