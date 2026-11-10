@@ -7,11 +7,12 @@ const PPT = {
   stick:  { left: 103, bottom: 121, knobR: 41 },
   zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },   // 조이스틱이 나타날 수 있는 x 범위(그대로)
   touch:  { x0: 0, x1: .56 },                            // 조이스틱을 잡을 수 있는 x 범위: 화면 가운데까지 넓힌다(2026-11-06)
-  attack: { right: 162, bottom: 91, r: 59 },   // 2026-11-06: 살짝 왼쪽으로(150→162)
+  attack: { right: 188, bottom: 123, r: 59 },   // 2026-11-06: 살짝 왼쪽으로(150→162). 2026-11-10: 사용자 스샷 기준 왼쪽 26 · 위 32 더(162→188, 91→123)
   // 점프: 원래 모양(outer·innerEnd, 공격 중심 기준 각 -78°~10°, 반지름 78~136)을 그대로 두고
   // 아래로 돌려(가운데 각 -34°→-12°) 넓히고(각 ×1.09) 키운다(반지름 80~152). 공격 오른쪽 아래를 눌러도 점프가 된다
   jump:   { outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76], c0: -34, r0: 78, r1: 136, c: -12, k: 1.09, ri: 80, ro: 152,
-            hit: { a0: -96, a1: 62, rMax: 174 } },
+            hit: { a0: -96, a1: 62, rMax: 174 },
+            sx: 1.12 },   // 2026-11-10: 공격이 왼쪽으로 간 만큼 생긴 오른쪽 여유(26)에서 18만큼 가로로 넓힌다. 바깥쪽일수록 많이, 공격에 붙은 안쪽은 그대로
 };
 const STICK_RADIUS_RATIO = 2.45, STICK_DEAD_PX = 6;
 /* 테스트용 키. 화면에 글자로 쓰지 않는다(나중에 바꿀 값) */
@@ -177,15 +178,20 @@ var layout = function () {
   const a = ui.attack; a.x = W - PPT.attack.right * u; a.y = H - PPT.attack.bottom * u - view.safeB; a.r = PPT.attack.r * u;
   const j = PPT.jump, D = Math.PI / 180, p = new Path2D();
   const pol = ([x, y]) => { const t = j.c + (Math.atan2(y, x) / D - j.c0) * j.k, r = j.ri + (Math.hypot(x, y) - j.r0) * (j.ro - j.ri) / (j.r1 - j.r0); return [t * D, r]; };
-  const xy = ([t, r]) => [a.x + Math.cos(t) * r * u, a.y + Math.sin(t) * r * u], pts = j.outer.map(pol);
+  const wx = r => 1 + (j.sx - 1) * clamp((r - j.ri) / (j.ro - j.ri), 0, 1);   // 가로 넓힘: 안쪽 원(ri)은 0, 바깥(ro)은 sx
+  const xy = ([t, r]) => [a.x + Math.cos(t) * r * u * wx(r), a.y + Math.sin(t) * r * u], pts = j.outer.map(pol), P = pts.map(xy);
   p.moveTo(...xy(pts[0]));
   for (let i = 1; i < pts.length; i++) p.lineTo(...xy(pts[i]));
-  const tEnd = pts[4][0], tTop = pol(j.innerEnd)[0];
+  const ang = q => Math.atan2(q[1] - a.y, q[0] - a.x), tEnd = pts[4][0], tTop = pol(j.innerEnd)[0];
   p.arc(a.x, a.y, j.ri * u, tEnd, tTop, true);
   p.closePath(); ui.jumpPath = p;
-  ui.jumpArc = { tb: tEnd, tt: Math.min(tTop, pts[0][0]), R: j.ro * 1.3 * u };   // 게이지는 아래 끝(tb)에서 위 끝(tt)으로 찬다
+  ui.jumpArc = { tb: tEnd, tt: Math.min(tTop, ang(P[0])), R: j.ro * 1.3 * u };   // 게이지는 아래 끝(tb)에서 위 끝(tt)으로 찬다
   ui.jumpCenter = { x: xy(pol([86, -56]))[0], y: xy(pol([86, -56]))[1] }; ui.jumpTop = { x: xy(pts[0])[0], y: xy(pts[0])[1] };
-  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: j.hit.rMax * u, a0: j.hit.a0 * D, a1: j.hit.a1 * D };
+  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: Math.max(j.hit.rMax * u, ...P.map(q => Math.hypot(q[0] - a.x, q[1] - a.y) + 8 * u)), a0: j.hit.a0 * D, a1: j.hit.a1 * D };
+  // 칸 나눔 홈의 바깥 끝: 가운데 각도로 쏜 선이 바깥 테두리와 만나는 거리(넓힌 모양에 맞춘다)
+  const sm = (ui.jumpArc.tb + ui.jumpArc.tt) / 2, dx = Math.cos(sm), dy = Math.sin(sm); ui.jumpNotchR = j.ro * u;
+  for (let i = 0; i < P.length - 1; i++) { const [x1, y1] = P[i], [x2, y2] = P[i + 1], ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
+    const s = ((x1 - a.x) * ey - (y1 - a.y) * ex) / den, q = ((x1 - a.x) * dy - (y1 - a.y) * dx) / den; if (s > 0 && q >= 0 && q <= 1) { ui.jumpNotchR = s; break; } }
   input.resetStickVisual();
 };
 
@@ -534,7 +540,7 @@ function drawButtons(dt) {
     if (f < 1) { ctx.strokeStyle = 'rgba(200,240,255,.9)'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + Math.cos(s1) * J.R, a.y + Math.sin(s1) * J.R); ctx.stroke(); }
   }
   // 칸 나눔: 화살표를 가리지 않게 안쪽·바깥 가장자리에 짧은 홈만
-  const sm = (J.tb + J.tt) / 2, cs_ = Math.cos(sm), sn_ = Math.sin(sm), ri = PPT.jump.ri * u, ro = PPT.jump.ro * u; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(2, 3.2 * u); ctx.lineCap = 'round';
+  const sm = (J.tb + J.tt) / 2, cs_ = Math.cos(sm), sn_ = Math.sin(sm), ri = PPT.jump.ri * u, ro = ui.jumpNotchR; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(2, 3.2 * u); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(a.x + cs_ * (ri - 4 * u), a.y + sn_ * (ri - 4 * u)); ctx.lineTo(a.x + cs_ * (ri + 18 * u), a.y + sn_ * (ri + 18 * u));
   ctx.moveTo(a.x + cs_ * (ro - 20 * u), a.y + sn_ * (ro - 20 * u)); ctx.lineTo(a.x + cs_ * (ro + 6 * u), a.y + sn_ * (ro + 6 * u)); ctx.stroke();
   ctx.restore();
