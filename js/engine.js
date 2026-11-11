@@ -7,12 +7,13 @@ const PPT = {
   stick:  { left: 103, bottom: 121, knobR: 41 },
   zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },   // 조이스틱이 나타날 수 있는 x 범위(그대로)
   touch:  { x0: 0, x1: .56 },                            // 조이스틱을 잡을 수 있는 x 범위: 화면 가운데까지 넓힌다(2026-11-06)
-  attack: { right: 188, bottom: 123, r: 59 },   // 2026-11-06: 살짝 왼쪽으로(150→162). 2026-11-10: 사용자 스샷 기준 왼쪽 26 · 위 32 더(162→188, 91→123)
+  attack: { right: 188, bottom: 123, r: 59,
+            ext: { r: 89, a0: 95, a1: 235 } },   // 2026-11-11: 점프와 안 닿는 왼쪽~왼쪽 아래(각 95°~235°, 아래=90°)는 버튼 가까운 빈 곳도 공격(판정 반지름 67→89)   // 2026-11-06: 살짝 왼쪽으로(150→162). 2026-11-10: 사용자 스샷 기준 왼쪽 26 · 위 32 더(162→188, 91→123)
   // 점프: 원래 모양(outer·innerEnd, 공격 중심 기준 각 -78°~10°, 반지름 78~136)을 그대로 두고
   // 아래로 돌려(가운데 각 -34°→-12°→+12°) 넓히고(각 ×1.09) 키운다(반지름 80~152). 오른손 엄지는 바깥 버튼을 조금 아래로 누르므로 공격보다 살짝 아래에 둔다(2026-11-11 사용자)
   jump:   { outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76], c0: -34, r0: 78, r1: 136, c: 12, k: 1.09, ri: 80, ro: 152,
-            hit: { a0: -72, a1: 86, rMax: 174 },   // 2026-11-11: 가운데 각을 -12°→+12°로(공격 오른쪽 살짝 위 → 오른쪽 살짝 아래). 판정 각도 범위도 같이 +24°
-            sx: 1.12 },   // 2026-11-10: 공격이 왼쪽으로 간 만큼 생긴 오른쪽 여유(26)에서 18만큼 가로로 넓힌다. 바깥쪽일수록 많이, 공격에 붙은 안쪽은 그대로
+            hit: { a0: -72, a1: 86, rMax: 174, ext: { a0: -35, rMax: 205 } },   // 2026-11-11: 가운데 각을 -12°→+12°로(공격 오른쪽 살짝 위 → 오른쪽 살짝 아래). 판정 각도 범위도 같이 +24°
+            sx: 1.12 },   // hit.ext: 오른쪽~아래(각 -35° 이상)는 버튼 밖 빈 곳도 화면 끝까지 점프(2026-11-11). 공격과 맞닿은 경계는 그대로   // 2026-11-10: 공격이 왼쪽으로 간 만큼 생긴 오른쪽 여유(26)에서 18만큼 가로로 넓힌다. 바깥쪽일수록 많이, 공격에 붙은 안쪽은 그대로
 };
 const STICK_RADIUS_RATIO = 2.45, STICK_DEAD_PX = 6;
 /* 테스트용 키. 화면에 글자로 쓰지 않는다(나중에 바꿀 값) */
@@ -187,7 +188,7 @@ var layout = function () {
   p.closePath(); ui.jumpPath = p;
   ui.jumpArc = { tb: tEnd, tt: Math.min(tTop, ang(P[0])), R: j.ro * 1.3 * u };   // 게이지는 아래 끝(tb)에서 위 끝(tt)으로 찬다
   ui.jumpCenter = { x: xy(pol([86, -56]))[0], y: xy(pol([86, -56]))[1] }; ui.jumpTop = { x: xy(pts[0])[0], y: xy(pts[0])[1] };
-  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: Math.max(j.hit.rMax * u, ...P.map(q => Math.hypot(q[0] - a.x, q[1] - a.y) + 8 * u)), a0: j.hit.a0 * D, a1: j.hit.a1 * D };
+  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: Math.max(j.hit.rMax * u, ...P.map(q => Math.hypot(q[0] - a.x, q[1] - a.y) + 8 * u)), a0: j.hit.a0 * D, a1: j.hit.a1 * D, e0: j.hit.ext.a0 * D, eMax: j.hit.ext.rMax * u };
   // 칸 나눔 홈의 바깥 끝: 가운데 각도로 쏜 선이 바깥 테두리와 만나는 거리(넓힌 모양에 맞춘다)
   const sm = (ui.jumpArc.tb + ui.jumpArc.tt) / 2, dx = Math.cos(sm), dy = Math.sin(sm); ui.jumpNotchR = j.ro * u;
   for (let i = 0; i < P.length - 1; i++) { const [x1, y1] = P[i], [x2, y2] = P[i + 1], ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
@@ -202,11 +203,16 @@ const input = {
   keys: { l: false, r: false, a: false, j: false }, blockUntil: 0,
   resetStickVisual() { const s = this.stick; if (s.id !== null) return; s.knobX = s.centerX = s.baseX = ui.stickHome.x; s.knobY = s.centerY = s.baseY = ui.stickHome.y; },
   inZone(x, y) { const z = ui.zone; return x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1; },
-  hitAttack(x, y, pad = 0) { const a = ui.attack; return Math.hypot(x - a.x, y - a.y) <= a.r + PPT.attack.r * .14 * view.u + pad; },
+  hitAttack(x, y, pad = 0) {
+    const a = ui.attack, d = Math.hypot(x - a.x, y - a.y); if (d <= a.r + PPT.attack.r * .14 * view.u + pad) return true;
+    const e = PPT.attack.ext; if (d > e.r * view.u + pad) return false;
+    const an = (Math.atan2(y - a.y, x - a.x) * 180 / Math.PI + 360) % 360; return an >= e.a0 && an <= e.a1;
+  },
   hitJump(x, y, pad = 0) {
     const a = ui.attack, h = ui.jumpHit, d = Math.hypot(x - a.x, y - a.y);
-    if (d < h.rMin - pad || d > h.rMax + pad) return false;
-    const an = Math.atan2(y - a.y, x - a.x); return an >= h.a0 && an <= h.a1;
+    const an = Math.atan2(y - a.y, x - a.x), rMax = an >= h.e0 ? Math.max(h.rMax, h.eMax) : h.rMax;
+    if (d < h.rMin - pad || d > rMax + pad) return false;
+    return an >= h.a0 && an <= h.a1;
   },
   down(e) {
     sfx.init();
@@ -579,8 +585,9 @@ function drawDebug() {
   if ($('optZone').checked) { ctx.fillStyle = 'rgba(255,80,80,.18)'; ctx.fillRect(z.x0, z.y0, z.x1 - z.x0, z.y1 - z.y0); ctx.strokeStyle = 'rgba(255,60,60,.8)'; ctx.lineWidth = 1; ctx.strokeRect(z.x0, z.y0, z.x1 - z.x0, z.y1 - z.y0); }
   if ($('optHit').checked) {
     const a = ui.attack, h = ui.jumpHit; ctx.strokeStyle = 'rgba(255,255,0,.9)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(a.x, a.y, a.r + PPT.attack.r * .14 * view.u, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(a.x, a.y, h.rMax, h.a0, h.a1); ctx.arc(a.x, a.y, h.rMin, h.a1, h.a0, true); ctx.closePath(); ctx.stroke();
+    const D = Math.PI / 180, e = PPT.attack.ext, rb = a.r + PPT.attack.r * .14 * view.u;
+    ctx.beginPath(); ctx.arc(a.x, a.y, rb, e.a1 * D, e.a0 * D + Math.PI * 2); ctx.arc(a.x, a.y, e.r * view.u, e.a0 * D, e.a1 * D); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(a.x, a.y, h.rMax, h.a0, h.e0); ctx.arc(a.x, a.y, h.eMax, h.e0, h.a1); ctx.arc(a.x, a.y, h.rMin, h.a1, h.a0, true); ctx.closePath(); ctx.stroke();
     const p = game.p; if (p) { ctx.strokeStyle = '#0f0'; ctx.strokeRect(wx(p.x - p.w / 2), wy(p.y - p.h / 2), p.w * view.s, p.h * view.s); }
   }
 }
