@@ -37,13 +37,15 @@ const UI = {
     setInterval(() => { if ($('lobby').classList.contains('on')) { Meta.tick(); this.refreshTop(); } }, 5000);
     // 타이틀: 첫 터치에서 오디오를 깨우고 로비로
     const enter = () => { $('mTitle').classList.remove('on'); $('lobby').classList.add('on'); sfx.bgmFor && sfx.bgmFor('lobby'); GODS.forEach(g => { if (Meta.godLv(g.id)) loadGod(g.id); }); loadChapterMon(); };
-    // 처음이면 인트로(js/intro.js)를 먼저 보여 준다. 한 번도 판을 안 한 사람은 인트로의 다이브가 그대로 챕터 1 낙하로 이어진다
+    // 타이틀(로고)을 누르면 매번 인트로(js/intro.js)부터 시작한다(핍의 젤리광산처럼, 건너뛰기 있음). 한 번도 판을 안 한 사람은 인트로의 다이브가 그대로 챕터 1 낙하로 이어진다
+    // 자동 시험에서 로비로 바로 가려면 window.__skipIntro 또는 localStorage gf_skipIntro=1
+    const noIntro = () => { try { return !!window.__skipIntro || localStorage.getItem('gf_skipIntro') === '1'; } catch (e) { return !!window.__skipIntro; } };
     const go = () => {
       sfx.init(); sfx.card(); $('mTitle').onclick = null;
-      if (!Meta.s.introSeen && typeof Intro !== 'undefined') { const fresh = !Meta.s.seenTip; Intro.play(() => { Meta.s.introSeen = true; Meta.save(); enter(); if (fresh) { this.chapterView = 0; this.render(); this.start(); } }); return; }
+      if (typeof Intro !== 'undefined' && !noIntro()) { const fresh = !Meta.s.seenTip; Intro.play(() => { Meta.s.introSeen = true; Meta.save(); enter(); if (fresh) { this.chapterView = 0; this.render(); this.start(); } }); return; }
       enter();
     };
-    if (!Meta.s.introSeen && typeof Intro !== 'undefined') Intro.preload();
+    if (typeof Intro !== 'undefined' && !noIntro()) Intro.preload();
     // 요청이 끝나지 않아도 15초 뒤에는 넘어갈 수 있다. 늦은 그림은 도착하는 대로 나타난다
     const wait0 = performance.now(), wait = setInterval(() => { const keys = Object.keys(IMG), done = keys.filter(k => IMG[k].complete).length, ready = done >= keys.length * .85 || performance.now() - wait0 > 15000; $('tgo').textContent = ready ? '화면을 터치하세요' : `불러오는 중 ${Math.round(done / keys.length * 100)}%`; if (ready) { clearInterval(wait); $('mTitle').onclick = go; } }, 120);
     addEventListener('beforeunload', () => Meta.save());
