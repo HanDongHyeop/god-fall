@@ -454,7 +454,10 @@ function tick(dt) {
   // 버튼 하나(v30): 문·좌판·휴식 물건 앞 바닥에서 누르면 그것을 쓰고(점프 안 함), 그 밖에는 점프. O 키(시험용)도 쓰기
   const act = locked ? null : interactNear();
   let attackTap = !locked && input.attackEdge; input.attackEdge = false;
-  if (input.jumpEdge) { if (!locked) { if (act) attackTap = true; else p.buffer = BUFFER; } input.jumpEdge = false; }
+  // v30.2: 이번 누르기가 공격이 될 수 있는지는 누른 순간에 정한다 — 이미 점프 상태로 공중에 있을 때 누른 것만 공격이 된다(땅·그냥 떨어지는 중에 누르면 끝까지 점프만).
+  // 누른 순간 바로 쏘지 않고 HOLD_FIRE초 넘게 누르고 있어야 쏜다(짧게 탭한 2단 점프에서 탄이 새지 않게)
+  if (input.jumpEdge) { if (!locked) { if (act) attackTap = true; else p.buffer = BUFFER; p.pressFire = !act && !p.onGround && p.jumpState; p.holdT = 0; } input.jumpEdge = false; }
+  if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; p.pressFire = false; }
   const st = g.st;
   // 좌우
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
@@ -472,7 +475,7 @@ function tick(dt) {
     if (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS) {
       p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 버튼을 누르고 있으면 공격)
       if (fromGround) {
-        p.vy = -T.jumpV;
+        p.vy = -T.jumpV; p.pressFire = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
       } else {
         p.vy = p.vy < 0 ? Math.max(p.vy - T.jumpV * T.airAdd, -T.jumpV * T.airCap) : -T.jumpV * Math.max(T.airAdd, .95);
@@ -490,7 +493,7 @@ function tick(dt) {
   // 공격(v30.1): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지, 버튼을 누르고 있는 동안 쏜다.
   // 한 번 뛰고 계속 누르면 쏘고, 손을 뗐다 다시 누르면 게이지가 있을 때 한 번 더 뛰고 그대로 누르고 있으면 또 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
   // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
-  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && !p.onGround && p.jumpState && !isSolid(below);
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && p.pressFire && p.holdT >= HOLD_FIRE && !p.onGround && p.jumpState && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
   if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);

@@ -40,6 +40,7 @@ try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete 
 
 const MAX_JUMPS = 3, HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
 const COYOTE = .08, BUFFER = .11;
+const HOLD_FIRE = .16;   // v30.2: 점프 상태에서 누른 뒤 이만큼(초) 계속 누르고 있어야 쏘기 시작한다(짧은 탭 = 점프만)
 const WORLD_W = 360, TILE = 40, COLS = 9;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const approachSnap = (v, target, rate, dt, eps = .004) => {
