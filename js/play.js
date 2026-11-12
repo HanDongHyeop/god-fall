@@ -455,9 +455,18 @@ function tick(dt) {
   const act = locked ? null : interactNear();
   let attackTap = !locked && input.attackEdge; input.attackEdge = false;
   // v30.2: 이번 누르기가 공격이 될 수 있는지는 누른 순간에 정한다 — 이미 점프 상태로 공중에 있을 때 누른 것만 공격이 된다(땅·그냥 떨어지는 중에 누르면 끝까지 점프만).
-  // 누른 순간 바로 쏘지 않고 HOLD_FIRE초 넘게 누르고 있어야 쏜다(짧게 탭한 2단 점프에서 탄이 새지 않게)
-  if (input.jumpEdge) { if (!locked) { if (act) attackTap = true; else p.buffer = BUFFER; p.pressFire = !act && !p.onGround && p.jumpState; p.holdT = 0; } input.jumpEdge = false; }
-  if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; p.pressFire = false; }
+  // v30.3: 점프 상태로 공중에서 누르면 바로 뛰지 않고 탭인지 꾹 누름인지 본다 — HOLD_FIRE 전에 떼면(탭) 그때 점프, 넘기면 공격(뛰지 않음 = 게이지를 안 씀).
+  // 땅·그냥 떨어지는 중에 누르면 기다리지 않고 바로 점프(공격이 될 수 없는 누르기)
+  if (input.jumpEdge) {
+    if (!locked) {
+      if (act) attackTap = true;
+      else { const air = !p.onGround && p.jumpState; p.pressFire = air; p.tapPending = air; if (!air) p.buffer = BUFFER; }
+      p.holdT = 0;
+    }
+    input.jumpEdge = false;
+  }
+  if (jumpHeld) { p.holdT = (p.holdT || 0) + dt; if (p.tapPending && p.holdT >= HOLD_FIRE) p.tapPending = false; }
+  else { if (p.tapPending && !locked) p.buffer = BUFFER; p.tapPending = false; p.holdT = 0; p.pressFire = false; }
   const st = g.st;
   // 좌우
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
