@@ -181,7 +181,9 @@ function drawBullets() {
     if (y < -40 || y > view.H + 40) continue;
     const ang = Math.atan2(b.vy, b.vx) - Math.PI / 2;
     const tail = 34 * s * dir * Math.min(1, b.t * 18 + .25);
-    if (p && p.high) { ctx.strokeStyle = 'rgba(255,214,110,.55)'; ctx.lineWidth = 9 * s; ctx.beginPath(); ctx.moveTo(x, y + tail); ctx.lineTo(x, y); ctx.stroke(); }
+    if (godMode() || b.fan) { ctx.strokeStyle = b.fan ? 'rgba(255,196,70,.6)' : 'rgba(255,214,110,.55)'; ctx.lineWidth = (b.fan ? 7 : 9) * s; const sp = Math.hypot(b.vx, b.vy) || 1; ctx.beginPath(); ctx.moveTo(x - b.vx / sp * 34 * s, y - b.vy / sp * 34 * s); ctx.lineTo(x, y); ctx.stroke(); }
+    if (b.hydra) { ctx.fillStyle = 'rgba(90,255,150,.45)'; ctx.beginPath(); ctx.arc(x, y, 7 * s, 0, 7); ctx.fill(); }
+    drawSeekTrail(b, x, y);
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
     if (b.kind === 'letter') {
       ctx.strokeStyle = tint; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(0, -Math.abs(tail) * .85); ctx.lineTo(0, 0); ctx.stroke();
@@ -212,7 +214,6 @@ function drawBullets() {
     }
     ctx.restore();
   }
-  if (has('apollo') && p) { ctx.strokeStyle = 'rgba(255,90,110,.65)'; ctx.lineWidth = 1.4 * s; ctx.beginPath(); ctx.moveTo(wx(p.x), wy(p.y + 16)); ctx.lineTo(wx(p.x), wy(p.y + 16 + 600)); ctx.stroke(); }
 }
 function heroFrame(p) {
   if (p.hurtT > 0) return 'hurt';
@@ -243,6 +244,11 @@ function drawHero() {
   const blink = p.inv > 0 && p.hurtT <= 0 && Math.floor(g.t * 14) % 2 === 0;
   if ((p.hitFlash > 0 || blink) && ok(wim)) { ctx.globalAlpha = p.hitFlash > 0 ? 1 : .6; ctx.drawImage(wim, dx, dy, dw, dh); ctx.globalAlpha = 1; }
   ctx.restore();
+  if (!p.onGround && (p.ammo < p.maxAmmo || p.ammoFlash > 0)) {
+    const n = p.maxAmmo, d = Math.min(4.2, 70 / n) * s, w = d * .72, y0 = wy(p.y) - 40 * s, x0 = wx(p.x) - n * d / 2;
+    ctx.fillStyle = 'rgba(12,16,30,.7)'; ctx.fillRect(x0 - 1.2 * s, y0 - 1.2 * s, n * d + 2.4 * s - (d - w), w + 2.4 * s);
+    for (let i = 0; i < n; i++) { ctx.fillStyle = i < p.ammo ? (p.ammo <= 2 ? '#ff8a6b' : '#fff2b0') : p.ammoFlash > 0 ? '#ff5068' : 'rgba(255,255,255,.14)'; ctx.fillRect(x0 + i * d, y0, w, w); }
+  }
   if (p.gauge < 100 || p.gaugeFlash > 0) {
     const bw = 15 * s, bh = 3.4 * s, gap = 2 * s, x0 = wx(p.x) - bw - gap / 2, y0 = wy(p.y) - 46 * s;
     for (let i = 0; i < 2; i++) {
@@ -252,8 +258,7 @@ function drawHero() {
     }
   }
   if (has('owl')) { const im2 = IMG.c_owl, ox = wx(p.x + p.face * -24), oy = wy(p.y - 26 + Math.sin(g.t * 4) * 4); if (ok(im2)) ctx.drawImage(im2, ox - 11 * s, oy - 11 * s, 22 * s, 22 * s); }
-  if (has('orbit')) { const a0 = g.t * 3.6; for (let i = 0; i < 3; i++) { const a = a0 + i * 2.094, ox = wx(p.x + Math.cos(a) * 42), oy = wy(p.y - 8 + Math.sin(a) * 42); ctx.fillStyle = '#7fd0ff'; ctx.beginPath(); ctx.arc(ox, oy, 5.5 * s, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ox - 1.5 * s, oy - 1.5 * s, 2 * s, 0, 7); ctx.fill(); } }
-  if (p.high) { ctx.strokeStyle = 'rgba(255,220,100,.6)'; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y - 8), 32 * s + Math.sin(g.t * 12) * 2 * s, 0, 7); ctx.stroke(); }
+  if (godMode()) { ctx.strokeStyle = 'rgba(255,220,100,.6)'; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y - 8), 32 * s + Math.sin(g.t * 12) * 2 * s, 0, 7); ctx.stroke(); }
 }
 /* 새 이펙트: 타격 별, 방사선, 시체 섬광, 낙뢰, 전격 */
 function drawFx2() {
@@ -275,6 +280,7 @@ function drawFx2() {
     } else if (f.type === 'zap') {
       ctx.strokeStyle = '#fff6a8'; ctx.lineWidth = (6 * (1 - k) + 1) * s; ctx.lineJoin = 'miter'; ctx.beginPath(); let yy = 0, xx = x; ctx.moveTo(xx, 0);
       const seed = f.x * 7; while (yy < y) { yy += 34 * s; xx = x + Math.sin(seed + yy) * 16 * s; ctx.lineTo(xx, Math.min(yy, y)); } ctx.stroke();
+    } else if (f.type === 'bolt') { drawBoltFx(f);
     } else if (f.type === 'arc') {
       ctx.strokeStyle = '#d8ecff'; ctx.lineWidth = (3.4 * (1 - k) + .6) * s; ctx.beginPath(); ctx.moveTo(x, y); const x2 = wx(f.x2), y2 = wy(f.y2), mx = (x + x2) / 2 + Math.sin(f.t * 80) * 8 * s, my = (y + y2) / 2 + Math.cos(f.t * 80) * 8 * s; ctx.lineTo(mx, my); ctx.lineTo(x2, y2); ctx.stroke();
     } else if (f.type === 'warn') {
@@ -379,7 +385,7 @@ function drawBanner() {
   const g = game, b = g.banner; if (!b || (g.state !== 'play' && g.state !== 'descend')) return;
   const s = view.s, W = view.W, y = view.H * .26, k = b.t, inA = clamp(k / .22, 0, 1), outA = clamp((b.life - k) / .25, 0, 1), ease = 1 - Math.pow(1 - inA, 3), h = 58 * s;
   ctx.globalAlpha = outA;
-  ctx.fillStyle = 'rgba(8,6,18,.78)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
+  ctx.fillStyle = b.gold ? 'rgba(70,40,0,.86)' : 'rgba(8,6,18,.78)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
   ctx.fillStyle = '#ffd24a'; ctx.fillRect(W * (1 - ease), y - h / 2, W, 2 * s); ctx.fillRect(W * (ease - 1), y + h / 2 - 2 * s, W, 2 * s);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`; textOut(b.a, W / 2 + (1 - ease) * 80 * s, y - 13 * s, '#ffe9b0', 2.6);
   ctx.font = `${22 * s}px ${FONT}`; textOut(b.b, W / 2 - (1 - ease) * 80 * s, y + 10 * s, '#fff', 3.4);
@@ -389,7 +395,7 @@ function drawHints() {
   const g = game; if (!(g.hintT > 0) || g.state !== 'play') return;
   const al = clamp(g.hintT, 0, 1), s = view.s;
   ctx.globalAlpha = al; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`;
-  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['공격', ui.attack.x - 40 * s, ui.attack.y - ui.attack.r * 1.2], ['점프', ui.jumpTop.x + 14 * s, ui.jumpTop.y - 11 * s]]) textOut(t, x, y);
+  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프 · 공중에선 자동 공격', clamp(ui.btn.x, 90 * s, view.W - 90 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
   ctx.globalAlpha = 1;
 }
 function render(dt) {
@@ -408,7 +414,7 @@ function render(dt) {
   // 중간 보스 방은 발판이 전투 공간이라 어두운 막 위에 그린다. 다른 방은 막이 앞쪽이다
   const miniRoom = g.room && g.room.kind === 'mini';
   if (miniRoom) drawRoomBack();
-  drawTiles(); drawDoors(); drawRest(); drawPortal(); if (!g.minis) drawBossBits();
+  drawSkillsBack(); drawTiles(); drawDoors(); drawRest(); drawPortal(); if (!g.minis) drawBossBits();
   if (g.room && !miniRoom) drawRoomBack();
   // 중간 보스는 발판과 어두운 막 앞에 그린다. 바닥 아래만 잘라 땅에서 올라오는 모습은 그대로 둔다
   if (g.minis) { ctx.save(); ctx.beginPath(); ctx.rect(0, -view.H, view.W, view.H + wy(g.room.floorY)); ctx.clip(); drawMinis(); ctx.restore(); drawBossBits(); }
@@ -417,7 +423,7 @@ function render(dt) {
   drawHaz();
   for (const e of g.enemies) if (e.alive) drawEnemy(e);
   drawEnemyShots(); drawBullets();
-  if (g.state !== 'dying' && g.state !== 'continue') drawHero();
+  if (g.state !== 'dying' && g.state !== 'continue') { drawHero(); drawSkillsFront(); }
   drawFx(); drawFx2();
   if (g.room) drawRoomFront();
   drawDoorPrompt(); drawRestPrompt();

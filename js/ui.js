@@ -23,13 +23,16 @@ function itemTile(it, extra = '') {
   const dim = extra.includes('dim'), better = !dim && !Meta.isEquipped(it.uid) && Meta.isBetter(it);
   return `<button class="it ${extra}" data-uid="${it.uid}" style="${gradeVars(it.g)}"><img src="${itemIconSrc(it)}" alt="">${it.god ? `<img class="wgod ${Meta.godLv(it.god) ? '' : 'no'}" src="assets/god/${it.god}/big_bare.webp" alt="">` : ''}${it.isNew ? '<span class="new"></span>' : ''}${better ? '<span class="up"></span>' : ''}</button>`;
 }
+/* 탭 전환 렉(2026-11-12 v30): 탭을 누를 때마다 화면 전체를 innerHTML로 다시 만들어 그림이 새로 풀리는 동안 비어 보였다.
+   같은 내용이면 손대지 않고(그림·스크롤 그대로), 장비 탭의 캐릭터·장비 두 화면은 따로 들고 있다가 갈아 끼운다 */
+const setHTML = (el, h) => { if (el._h === h) return false; el._h = h; el.innerHTML = h; return true; };
 const UI = {
   tab: 'battle', sub: 'gear', chapterView: 0, sort: 'grade',
   boot() {
     Meta.tick();
     sfx.muted = !!Meta.s.opt.mute;
     this.chapterView = Meta.s.chapter;
-    this.buildNav(); this.go('battle');
+    this.buildNav(); this.warm(); this.go('battle');
     const dev = /[?&]dev=1/.test(location.search);
     if (dev) { $('gear').style.display = 'block'; }
     $('pause').onclick = () => this.pause();
@@ -58,11 +61,18 @@ const UI = {
     $('screens').innerHTML = items.map(([k]) => `<div class="screen" id="s_${k}"></div>`).join('');
     this.refreshTop();
   },
+  /* 부팅 때 모든 탭을 한 번 만들어 두고 그림을 미리 풀어 둔다(처음 여는 탭도 바로 뜬다) */
+  warm() {
+    const sub = this.sub; for (const k of ['shop', 'quest', 'talent']) this['r_' + k](); this.sub = 'gods'; this.r_gear(); this.sub = 'gear'; this.r_gear(); this.sub = sub;
+    const urls = new Set([...document.querySelectorAll('#screens img, #topbar img, #nav img')].map(i => i.src));
+    GODS.forEach(g => { urls.add(new URL(`assets/god/${g.id}/big_bare.webp`, location.href).href); urls.add(new URL(`assets/god/${g.id}/big_armed.webp`, location.href).href); });
+    this._warm = [...urls].map(u => { const im = new Image(); im.decoding = 'async'; im.src = u; if (im.decode) im.decode().catch(() => {}); return im; });   // 붙잡아 두어야 풀린 그림이 버려지지 않는다
+  },
   go(tab) { this.tab = tab; [...$('nav').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); for (const s of $('screens').children) s.classList.toggle('on', s.id === 's_' + tab); this.render(); },
   render() { this['r_' + this.tab](); this.refreshTop(); },
   refreshTop() {
     const s = Meta.s, st = Meta.stats();
-    $('topbar').innerHTML = `<button class="ava" data-go="gods"><img src="assets/god/${s.god}/big_bare.webp" alt=""></button><div class="tb-r"><div class="tb-1"><div class="cur oL"><img src="${uiIcon('cur_energy')}" alt="">${s.energy}/30</div><div class="cur oL"><img src="${uiIcon('cur_gold')}" alt="">${fmt(s.gold)}</div><div class="cur oL"><img src="${uiIcon('cur_gem')}" alt="">${fmt(s.gem)}</div></div><div class="tb-2"><span class="oL">${s.name}</span><span class="pw oL"><img src="${uiIcon('cur_power')}" alt="">${st.power}</span><button class="set" data-go="set">⚙</button></div></div>`;
+    setHTML($('topbar'), `<button class="ava" data-go="gods"><img src="assets/god/${s.god}/big_bare.webp" alt=""></button><div class="tb-r"><div class="tb-1"><div class="cur oL"><img src="${uiIcon('cur_energy')}" alt="">${s.energy}/30</div><div class="cur oL"><img src="${uiIcon('cur_gold')}" alt="">${fmt(s.gold)}</div><div class="cur oL"><img src="${uiIcon('cur_gem')}" alt="">${fmt(s.gem)}</div></div><div class="tb-2"><span class="oL">${s.name}</span><span class="pw oL"><img src="${uiIcon('cur_power')}" alt="">${st.power}</span><button class="set" data-go="set">⚙</button></div></div>`);
     $('topbar').onclick = e => { const b = e.target.closest('[data-go]'); if (!b) return; sfx.tap(); if (b.dataset.go === 'gods') { this.sub = 'gods'; this.go('gear'); } else this.settings(); };
     const qb = document.querySelector('.nb[data-tab=quest]'), gb = document.querySelector('.nb[data-tab=gear]');
     const setB = (el, on) => { if (!el) return; let d = el.querySelector('.badge'); if (on && !d) { d = document.createElement('i'); d.className = 'badge'; d.textContent = '!'; el.appendChild(d); d.style.right = '12%'; d.style.top = '6%'; } else if (!on && d) d.remove(); };
@@ -75,9 +85,9 @@ const UI = {
     el.className = 'screen on battle';
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
-    el.innerHTML = `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>
+    setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>
       <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`;
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
     el.onclick = e => {
       const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
       if (e.target.closest('#bStart')) this.start();
@@ -145,7 +155,9 @@ const UI = {
     const side = godsTab ? this.godPanelHTML() : `<div class="col l">${SLOTS.filter(x => x.side === 'L').map(x => this.slotHTML(x)).join('')}</div><div class="col r">${SLOTS.filter(x => x.side === 'R').map(x => this.slotHTML(x)).join('')}</div>`;
     const stage = `<div class="hero-stage ${godsTab ? 'gods-on' : ''}">${this.heroHTML()}${side}<div class="statbar oL"><img src="${uiIcon('cur_power')}" alt=""><span><span class="sl">공격력</span>${st.atk}</span><span style="width:calc(var(--u)*1)"></span><img src="${uiIcon('armor_a')}" alt=""><span><span class="sl">체력</span>${st.hp}</span><button class="iw" id="bInfo">i</button></div></div>`;
     const tabs = `<div class="sub-tabs"><button class="st oL ${this.sub === 'gods' ? 'on' : ''}" data-sub="gods">캐릭터</button><button class="st oL ${this.sub === 'gear' ? 'on' : ''}" data-sub="gear">장비${s.inv.some(i => i.isNew) ? '<i class="badge" style="top:8%;right:30%">!</i>' : ''}</button></div>`;
-    el.innerHTML = stage + tabs + (this.sub === 'gear' ? this.gearPane() : this.godsPane());
+    const P = this._panes || (this._panes = { gear: document.createElement('div'), gods: document.createElement('div') }), pane = P[this.sub];
+    pane.className = 'gpane'; setHTML(pane, stage + tabs + (this.sub === 'gear' ? this.gearPane() : this.godsPane()));
+    if (el.firstChild !== pane || el.childNodes.length !== 1) el.replaceChildren(pane);
     this._swap = false;
     el.onclick = e => this.gearClick(e);
   },
@@ -318,7 +330,7 @@ const UI = {
     const GC = GOD_CHEST, gst = s.chest.god || {}, gfr = (gst.freeAt || 0) <= now, gleft = Math.max(0, (gst.freeAt || 0) - now), gic = uiIcon('cur_gem');
     const gtm = gleft ? `${Math.floor(gleft / 3600000)}시간 ${Math.floor(gleft / 60000) % 60}분 뒤 무료` : '';
     const gcard = `<div class="chest" style="--t:${GC.tint}"><div class="hd2 oL"><span>${GC.name}</span><button class="info" data-rategod="1">i</button></div><div class="bd"><img class="cimg" src="${uiIcon(GC.icon)}" alt=""><div><div class="dsc">${GC.desc}</div><span class="pity">전설 확정까지 ${Math.max(1, GC.pity - (gst.pity || 0))}회</span>${gtm ? `<div class="pity" style="display:block;margin-top:calc(var(--u)*1)">${gtm}</div>` : ''}</div></div><div class="acts">${gfr ? `<button class="btn gold free" data-pullgod="1" data-free="1"><span>무료 1회</span></button>` : ''}<button class="btn green" data-pullgod="1"><span class="oL">1회 소환</span><span class="pr oL"><img src="${gic}" alt="">${GC.one}</span></button><button class="btn green" data-pullgod="10"><span class="oL">10회 소환</span><span class="pr oL"><img src="${gic}" alt="">${GC.ten}</span></button></div></div>`;
-    el.innerHTML = `<div class="scroll">${gcard}${html}<div class="chest" style="--t:#2a6a3a"><div class="hd2 oL"><span>에너지 충전</span></div><div class="dsc" style="margin:calc(var(--u)*1) 0">에너지 ${ENERGY.buyN}을 채웁니다. 상한을 넘어 쌓입니다.</div><div class="acts"><button class="btn green" id="buyEn" style="grid-column:1/3"><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${ENERGY.buyGem}</span></button></div></div><div style="height:calc(var(--u)*2)"></div></div>`;
+    setHTML(el, `<div class="scroll">${gcard}${html}<div class="chest" style="--t:#2a6a3a"><div class="hd2 oL"><span>에너지 충전</span></div><div class="dsc" style="margin:calc(var(--u)*1) 0">에너지 ${ENERGY.buyN}을 채웁니다. 상한을 넘어 쌓입니다.</div><div class="acts"><button class="btn green" id="buyEn" style="grid-column:1/3"><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${ENERGY.buyGem}</span></button></div></div><div style="height:calc(var(--u)*2)"></div></div>`);
     el.onclick = e => {
       const t = e.target, p = t.closest('[data-pull]'), r = t.closest('[data-rate]');
       if (r) { sfx.tap(); this.ratePop(r.dataset.rate); return; }
@@ -377,13 +389,13 @@ const UI = {
   r_quest() {
     const el = $('s_quest'), Q = Meta.quests(); el.className = 'screen on bg-dark';
     const row = q => { const done = q.cur >= q.need, cl = Meta.questClaimed(q), c = Math.min(q.cur, q.need); return `<div class="qrow"><div><div class="nm">${q.name}</div><div class="bar"><i style="width:${c / q.need * 100}%"></i><span>${c} / ${q.need}</span></div><div class="rw"><span><img src="${uiIcon('cur_gem')}" alt=""> ${q.gem}</span><span><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(q.gold)}</span></div></div><button class="btn ${cl ? 'gray' : 'green'}" data-q="${q.id}" ${done && !cl ? '' : 'disabled'}>${cl ? '완료' : '받기'}</button></div>`; };
-    el.innerHTML = `<div class="scroll"><div class="list"><div class="h2 oL">오늘의 임무</div>${Q.filter(q => q.daily).map(row).join('')}<div class="h2 oL">업적</div>${Q.filter(q => !q.daily).map(row).join('')}</div></div>`;
+    setHTML(el, `<div class="scroll"><div class="list"><div class="h2 oL">오늘의 임무</div>${Q.filter(q => q.daily).map(row).join('')}<div class="h2 oL">업적</div>${Q.filter(q => !q.daily).map(row).join('')}</div></div>`);
     el.onclick = e => { const b = e.target.closest('[data-q]'); if (b && !b.disabled && Meta.questClaim(b.dataset.q)) { sfx.reward(); this.render(); } };
   },
   /* ───── 재능 ───── */
   r_talent() {
     const el = $('s_talent'), s = Meta.s; el.className = 'screen on bg-dark';
-    el.innerHTML = `<div class="scroll"><div class="h2 oL" style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">재능: 골드로 영구히 강해집니다</div><div class="tal">${TALENTS.map(t => { const l = s.talent[t.id] || 0, mx = l >= t.max, c = t.cost(l); return `<div class="tc"><img src="${uiIcon(t.icon)}" alt=""><div class="nm oL">${t.name}</div><div class="lvv">Lv.${l} / ${t.max}</div><div class="dsc">${t.desc}</div><button class="btn green" data-t="${t.id}" ${mx || s.gold < c ? 'disabled' : ''}><span class="pr oL">${mx ? '최대' : `<img src="${uiIcon('cur_gold')}" alt="">${fmt(c)}`}</span></button></div>`; }).join('')}</div></div>`;
+    setHTML(el, `<div class="scroll"><div class="h2 oL" style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">재능: 골드로 영구히 강해집니다</div><div class="tal">${TALENTS.map(t => { const l = s.talent[t.id] || 0, mx = l >= t.max, c = t.cost(l); return `<div class="tc"><img src="${uiIcon(t.icon)}" alt=""><div class="nm oL">${t.name}</div><div class="lvv">Lv.${l} / ${t.max}</div><div class="dsc">${t.desc}</div><button class="btn green" data-t="${t.id}" ${mx || s.gold < c ? 'disabled' : ''}><span class="pr oL">${mx ? '최대' : `<img src="${uiIcon('cur_gold')}" alt="">${fmt(c)}`}</span></button></div>`; }).join('')}</div></div>`);
     el.onclick = e => { const b = e.target.closest('[data-t]'); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); } };
   },
   settings() {
@@ -401,5 +413,5 @@ layout = function () { _layout0(); stage.style.setProperty('--u', (view.W / 100)
 layout();
 requestAnimationFrame(frame);
 UI.boot();
-window.GF = { game, input, ui, view, PPT, CARDS, startRun, T, lvl, TILE, COLS, step, sfx, IMG, heroFrame, Meta, UI, DIFF, ENEMY, buildWave, mkEnemy, nextWave, revive, finishRun, openCards, startBossIntro, enterRoom, exitRoom, killEnemy, hurt };
+window.GF = { game, input, ui, view, PPT, CARDS, startRun, T, lvl, TILE, COLS, step, sfx, IMG, heroFrame, Meta, UI, DIFF, ENEMY, buildWave, mkEnemy, nextWave, revive, finishRun, openCards, startBossIntro, enterRoom, exitRoom, killEnemy, hurt, applyCard, CARD_BY, famLv, cardPool, interactNear, ORB, SEEK };
 if (/[?&]debug=1/.test(location.search)) { $('optZone').checked = true; $('optHit').checked = true; }

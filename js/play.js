@@ -39,9 +39,9 @@ function runStats() {
 }
 function atkNow() {
   const g = game, p = g.p; let a = p.atk;
-  if (has('heavy')) a *= 1.6;
+  if (has('heavy')) a *= 1.7;
   if (has('fest')) a *= p.combo >= 25 ? 1.6 : p.combo >= 15 ? 1.3 : 1;
-  if (p.high) a *= 1.6;
+  if (godMode()) a *= 1.6;
   return a;
 }
 function rollDamage(mul = 1) {
@@ -271,7 +271,7 @@ function killEnemy(e, byStomp) {
   const g = game, p = g.p, E = ENEMY[e.kind], st = g.st;
   e.alive = false; g.kills++;
   if (!p.onGround) { p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo); p.comboPop = 1; if (st.comboStrike && p.combo % 8 === 0) smite(); }
-  spawnShards(e.x, e.y, Math.round(e.gem * (p.high ? 2 : 1) * p.gemMul));
+  spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));
   // 처치: 하얗게 커졌다가 터진다
   g.fx.push({ type: 'corpse', name: E.frames[0], x: e.x, y: e.y, h: E.h, flip: e.face, t: 0, life: .07 });
   inkBurst(e.x, e.y, e.r, E.col, byStomp);
@@ -282,8 +282,8 @@ function killEnemy(e, byStomp) {
   vibrate(byStomp ? 22 : 10);
   if (byStomp) sfx.stomp(p.combo); else sfx.kill(p.combo);
   if (st.leech) healBy(st.leech);
-  if (byStomp && has('feast') && ++p.feastN >= 10) { p.feastN = 0; healBy(10); popup(p.x, p.y - 30, '+10', '#7dffa8'); }
-  if (has('corpse')) g.fx.push({ type: 'delay', x: e.x, y: e.y, t: 0, life: .35, boom: 40 });
+  if (has('feast') && ++p.feastN >= 8) { p.feastN = 0; const n = Math.round(p.maxHp * .08); healBy(n); popup(p.x, p.y - 30, '+' + n, '#7dffa8'); }
+  if (has('corpse')) g.fx.push({ type: 'delay', x: e.x, y: e.y, t: 0, life: .3, boom: 56 });
   monDeath(e);
 }
 function explode(x, y, r, opt = {}) {
@@ -318,7 +318,6 @@ function breakTile(c, r) {
   puff(x, y + 8, 4, 12, 7);
   game.shake = Math.max(game.shake, 3.5); game.hitStop = Math.max(game.hitStop, 1 / 60); sfx.brk();
   if (game.rand() < .4) spawnShards(x, y, 6);
-  if (has('blockshot')) for (const a of [-1, 0, 1]) fireBullet(x, y, a * 420, 800, false, 0, { mul: .5 });
 }
 function breakJar(j) {
   j.alive = false; spawnShards(j.x, j.y, Math.round(24 * game.p.gemMul));
@@ -343,7 +342,7 @@ function hurt(from, dmg0) {
   if (st.thorns) for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 90) hitEnemy(e, Math.round(p.atk), false, e.x, e.y);
   if (p.hp <= 0) {
     if (p.lastStand) { p.lastStand = false; p.hp = 1; popup(p.x, p.y - 50, '버텼다!', '#ffe27a', true); p.inv = 2; return; }
-    if (has('thanatos') && !p.reviveUsed) { p.reviveUsed = true; p.hp = Math.round(p.maxHp * .3); p.inv = 2.4; g.whiteout = .5; popup(p.x, p.y - 50, '타나토스의 유예', '#b7d4ff', true); sfx.reward(); return; }
+    if (has('thanatos') && !p.reviveUsed) { p.reviveUsed = true; p.hp = p.maxHp; p.inv = 2.6; g.whiteout = .8; g.ebul = []; explode(p.x, p.y, 190, { tiles: false, dmg: Math.round(atkNow() * 3), ink: '#3a5aa0', cols: ['#b7d4ff', '#ffffff', '#6a8ad0'] }); g.slowT = .5; popup(p.x, p.y - 50, '타나토스의 유예', '#b7d4ff', true); sfx.reward(); return; }
     p.hp = 0; gameOver();
   }
 }
@@ -383,10 +382,9 @@ function endCombo() {
 }
 function gainShard(s) {
   const p = game.p;
-  p.shards += s.v; game.shardTotal += s.v; p.gemChain += s.v; p.gemT = (p.high ? 4 : 2.2) * (1 + game.st.highPct + (has('overload') ? .5 : 0)); sfx.gem(p.gemChain);
+  p.shards += s.v; game.shardTotal += s.v; p.gemChain += s.v; p.gemT = (p.high ? 4 : 2.2) * (1 + game.st.highPct + (has('overload') ? .8 : 0)); sfx.gem(p.gemChain);
   if (!p.high && p.gemChain >= 100) { p.high = true; popup(p.x, p.y - 30, '신성 폭주!', '#ffe27a', true); game.fx.push({ type: 'ring', x: p.x, y: p.y, r: 70, col: 'rgba(255,230,130,.95)', t: 0, life: .4 }); sfx.reward(); }
   if (has('cell') && p.ammo < p.maxAmmo) p.ammo++;
-  if (has('popping')) fireBullet(p.x, p.y - 12, 0, -1150, true, 0, { mul: .5 });
 }
 /* ───── 탄: 신마다 모양과 판정이 다르다 ───── */
 const SHOT = {
@@ -396,7 +394,7 @@ const SHOT = {
 function fireBullet(x, y, vx, vy, up = false, ox = 0, o = {}) {
   const g = game, p = g.p, kind = o.kind || g.god_.shot, S = SHOT[kind], { dmg, crit } = rollDamage(o.mul || 1);
   const k = Math.hypot(vx, vy) / 1150;
-  g.bullets.push({ x, y, px: x, py: y, vx: vx * S.v / 1150, vy: vy * S.v / 1150, y0: y, range: (has('apollo') ? 2 : 1) * S.range, r: S.r * (p.high ? 1.5 : 1) * (o.big ? 1.6 : 1), dmg, crit, up, ox, t: 0, wob: Math.random() * 6, kind, pierce: (g.st.pierce || 0) + (has('pierce') ? 1 : 0), bounce: o.bounce || 0, hits: [] });
+  g.bullets.push({ x, y, px: x, py: y, vx: vx * S.v / 1150, vy: vy * S.v / 1150, y0: y, range: (has('apollo') ? 1.6 : 1) * S.range, r: S.r * (godMode() ? 1.5 : 1) * (has('heavy') ? 1.4 : 1) * (o.big ? 1.6 : 1), dmg, crit, up, ox, t: 0, wob: Math.random() * 6, kind, pierce: (g.st.pierce || 0) + (has('pierce') ? 2 : 0), bounce: o.bounce || 0, hits: [], dist: 0, seekR: o.seekR || 0, seekTurn: o.seekTurn || 0 });
 }
 function smite(x0) {
   const g = game, top = g.cam, bot = g.cam + view.worldH; let t = null, d = 1e9;
@@ -422,10 +420,11 @@ function onBulletHit(b, e) {
     const r = game.st.splash; explode(b.x, b.y, r, { dmg: Math.round(b.dmg * .55), tiles: !!game.st.breaker, ink: b.kind === 'wine' ? '#8a1f4a' : '#ff8a3a', cols: b.kind === 'wine' ? ['#c23c62', '#6a1838', '#ffd0dc'] : undefined });
   }
   // 폭탄처럼 블록에 맞아 터지면 맞은 적이 없다. 적에게 맞았을 때만 카드 효과를 건다
-  if (e && (game.st.chain || has('chain'))) chainFrom(e, (game.st.chain || 0) + (has('chain') ? 1 : 0), b.dmg);
-  if (e && has('burn')) e.burn = 2.2;
+  if (e && (game.st.chain || has('chain'))) chainFrom(e, (game.st.chain || 0) + (has('chain') ? 2 : 0), b.dmg);
+  if (e && has('burn')) e.burn = Math.max(e.burn || 0, 3);
   // 히드라의 독니: 맞은 자리에서 작은 탄 2발이 양옆 아래로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
-  if (e && has('hydra') && !b.child) for (const s of [-1, 1]) { fireBullet(b.x, b.y + 4, s * 620, 940, false, 0, { mul: .35 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hits.push(e); nb.r *= .8; }
+  // 히드라의 독니(전설): 맞은 자리에서 적을 쫓는 독니 3발로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
+  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .5, seekR: 140, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
 }
 
@@ -445,14 +444,17 @@ function step(dt0) {
   if (!['play', 'descend', 'intro', 'bossdead', 'dying'].includes(g.state)) return;
   if (g.state === 'play' && g.hintT > 0) g.hintT -= dt0;
   if (g.hitStop > 0) { g.hitStop -= dt0; return; }
-  const dt = dt0 * g.timeScale;
+  if (g.slowT > 0) g.slowT -= dt0;
+  const dt = dt0 * g.timeScale * (g.slowT > 0 ? .35 : 1);
   tick(dt);
 }
 function tick(dt) {
   const g = game, p = g.p, locked = g.state !== 'play';
-  const attack = !locked && (input.attackHeld || input.keys.a), jumpHeld = !locked && (input.jumpHeld || input.keys.j);
-  if (input.jumpEdge) { if (!locked) p.buffer = BUFFER; input.jumpEdge = false; }
-  const attackTap = !locked && input.attackEdge; input.attackEdge = false;
+  const jumpHeld = !locked && (input.jumpHeld || input.keys.j);
+  // 버튼 하나(v30): 문·좌판·휴식 물건 앞 바닥에서 누르면 그것을 쓰고(점프 안 함), 그 밖에는 점프. O 키(시험용)도 쓰기
+  const act = locked ? null : interactNear();
+  let attackTap = !locked && input.attackEdge; input.attackEdge = false;
+  if (input.jumpEdge) { if (!locked) { if (act) attackTap = true; else p.buffer = BUFFER; } input.jumpEdge = false; }
   const st = g.st;
   // 좌우
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
@@ -470,9 +472,8 @@ function tick(dt) {
     if (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS) {
       p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++;
       if (fromGround) {
-        p.vy = -T.jumpV * (has('volcano') ? 1.2 : 1);
+        p.vy = -T.jumpV;
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
-        if (has('volcano')) explode(p.x, p.y + 10, 56);
       } else {
         p.vy = p.vy < 0 ? Math.max(p.vy - T.jumpV * T.airAdd, -T.jumpV * T.airCap) : -T.jumpV * Math.max(T.airAdd, .95);
         gust(p.x, p.y + p.h / 2 + 2, 36); feathers(p.x, p.y - 22, 3, 90); sfx.flap();
@@ -486,38 +487,36 @@ function tick(dt) {
   p.fireT -= dt; p.attackPose = Math.max(0, p.attackPose - dt); p.throwT = Math.max(0, p.throwT - dt);
   const nearItem = g.room ? roomItemNear() : null;
   if (nearItem && attackTap) { roomBuy(nearItem); }
-  const firing = (attack || attackTap) && !nearItem;
-  const gliding = attack && has('feather') && p.ammo <= 0 && !p.onGround && p.glide > 0;
-  if (gliding) { p.glide -= dt; p.vy = Math.min(p.vy, 70); if (Math.random() < .5) sparks(p.x, p.y + 14, 1, 'rgba(255,255,255,.8)', 40, .25); }
-  // 공격은 공중에서만 된다. 땅에서는 버튼이 어두워지고 아무것도 나가지 않는다
-  if (firing && !p.onGround && p.fireT <= 0) {
-    if (p.ammo > 0) {
-      const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * (has('rapid') ? .8 : 1) * (has('heavy') ? 1.25 : 1);
-      p.fireT = every;
-      const wasLast = p.ammo === 1;
-      p.ammo--;
-      p.attackPose = Math.max(.12, every); p.throwT = Math.max(.06, every * .5); p.shotN++; p.shots++;
-      const by = p.y + p.h / 2 + 3, hand = -p.flip * HAND_X;
-      const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
-      const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
-      fireBullet(p.x, by, 0, 1150, false, hand, { mul, big: buff });
-      if (has('echo') && p.shots % 3 === 0) fireBullet(p.x, by - 18, 0, 1150, false, hand, { mul });
-      if (has('triple')) { fireBullet(p.x, by, -330, 1100, false, hand, { mul: mul * .7 }); fireBullet(p.x, by, 330, 1100, false, hand, { mul: mul * .7 }); }
-      if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .6, bounce: 3 });
-      if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: .6 });
-      if (has('strike') && p.shots % 6 === 0) smite();
-      g.fx.push({ type: 'gustHand', x: p.x + hand, y: by - 3, t: 0, life: .09 });
-      if (p.shotN % 3 === 0) feathers(p.x + (Math.random() - .5) * 20, p.y - 26, 1, 40);
-      sfx.shotOf(g.god_.shot);
-      g.kick = Math.min(g.kick + 2.6, 6);
-      const rec = g.god_.recoil * (has('heavy') ? .7 : 1);
-      p.vy = p.vy > 0 ? p.vy * rec - 30 : Math.max(p.vy - 24, -T.jumpV * T.airCap);
-      p.squash = Math.max(p.squash, .12);
-    } else if (p.emptyT <= 0) { p.emptyT = .5; p.ammoFlash = .25; sfx.empty(); }
-  }
+  // 공격(v30): 점프 버튼과 합쳤다. 공중에 있으면 저절로 쏜다. 땅에서는 쏘지 않는다.
+  // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = !locked && !p.onGround && !isSolid(below);
+  p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
+  if (firing && p.fireT <= 0 && p.ammo > 0) {
+    const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
+    p.fireT = every; p.fireGlow = every + .05;
+    const wasLast = p.ammo === 1;
+    p.ammo--;
+    p.attackPose = Math.max(.12, every); p.throwT = Math.max(.06, every * .5); p.shotN++; p.shots++;
+    const by = p.y + p.h / 2 + 3, hand = -p.flip * HAND_X;
+    const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
+    const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
+    fireVolley(p.x, by, hand, mul, buff);
+    if (has('echo') && p.shots % 2 === 0) fireBullet(p.x, by - 18, 0, 1150, false, hand, { mul });
+    if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .8, bounce: 3 });
+    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: .7, seekR: 60, seekTurn: 10 });
+    if (has('strike') && p.shots % 4 === 0) smite();
+    g.fx.push({ type: 'gustHand', x: p.x + hand, y: by - 3, t: 0, life: .09 });
+    if (p.shotN % 3 === 0) feathers(p.x + (Math.random() - .5) * 20, p.y - 26, 1, 40);
+    sfx.shotOf(g.god_.shot);
+    g.kick = Math.min(g.kick + 2.6, 6);
+    // 반동: 떨어지는 중에만 낙하를 늦춘다. 올라가는 중에는 더 띄우지 않는다(저절로 쏘므로 점프 높이가 늘지 않게)
+    const rec = g.god_.recoil * (has('heavy') ? .7 : 1);
+    if (p.vy > 0) p.vy = p.vy * rec - 30;
+    p.squash = Math.max(p.squash, .12);
+  } else if (firing && p.ammo <= 0 && p.emptyT <= 0) { p.emptyT = .6; p.ammoFlash = .25; }
   p.emptyT = Math.max(0, p.emptyT - dt);
   // 아틀라스의 짐: 공중에서 0.6초마다 탄 1발
-  if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .6) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
+  if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .3) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
   if (p.ammoFlash) p.ammoFlash = Math.max(0, p.ammoFlash - dt);
   // 이동
   p.vy = Math.min(p.vy + T.grav * dt, T.maxFall);
@@ -553,7 +552,7 @@ function tick(dt) {
   // 휴식 판: 룰렛 돌리기·샘 마시기
   if (g.rest) { if (attackTap && !nearItem) { const t = restNear(); if (t) useRest(t); } restTick(dt); }
   // 크로노스의 모래시계: 적·보스·적 탄만 느려진다
-  const edt = has('kronos') ? dt * .75 : dt;
+  const edt = has('kronos') ? dt * .6 : dt;
   if (g.room) { roomTick(g.room.kind === 'mini' ? edt : dt); if (!g.room || g.state === 'dying') return; }
   // 보스
   if (g.isBossWave && !g.boss && !g.bossDone && !g.room && g.state === 'play' && p.y > (g.arenaTop + 1) * TILE) startBossIntro();
@@ -570,11 +569,8 @@ function tick(dt) {
   }
   updateBullets(dt);
   tickWaves(edt); if (g.state === 'dying') return;
-  // 수호 구슬
-  if (has('orbit')) {
-    const a0 = g.t * 3.6;
-    for (let i = 0; i < 3; i++) { const a = a0 + i * 2.094, ox = p.x + Math.cos(a) * 42, oy = p.y - 8 + Math.sin(a) * 42; for (const e of g.enemies) if (e.alive && Math.hypot(e.x - ox, e.y - oy) < e.r + 7 && !(e.orbT > g.t)) { e.orbT = g.t + .4; hitEnemy(e, Math.round(atkNow() * .3), false, ox, oy); } }
-  }
+  // 궤도 구슬·천둥 폭풍(skills.js)
+  orbTick(edt); stormTick(dt);
   // 파편
   const magnet = has('magnet') ? 150 : 56;
   for (const s of g.shards) {
@@ -601,7 +597,8 @@ function updateEnemies(dt, jumpHeld) {
   for (const e of g.enemies) {
     if (!e.alive || e.y < top || e.y > bot) continue;
     e.flash = Math.max(0, e.flash - dt); e.pop = Math.max(0, e.pop - dt * 9); e.hbT = Math.max(0, e.hbT - dt);
-    if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .15)), false, e.x, e.y); if (!e.alive) continue; }
+    if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .2)), false, e.x, e.y); if (!e.alive) continue; }
+    if (e.frz > 0) { e.frz -= dt; continue; }   // 원소 구슬(얼음): 잠깐 얼어 움직이지도 닿지도 않는다
     const tt = g.t + (e.ph || 0), k = e.kind, ox0 = e.x, oy0 = e.y;
     if (k === 'mound' || k === 'tick' || k === 'spit') {
       const c = Math.floor(e.x / TILE), r = Math.floor((e.y + e.r + 2) / TILE);
@@ -667,12 +664,12 @@ function updateEnemies(dt, jumpHeld) {
       if (e.stomp) {
         // 밟기: 약한 적은 한 번에, 체력이 많아진 뒤에는 크게 깎는다
         const sd = Math.max((e.maxHp || e.hp) * .65, atkNow() * 1.6 * (1 + g.st.stompPct));
-        p.vy = jumpHeld ? -T.stompHoldV : -T.stompV * (has('sole') ? 1.2 : 1);
+        p.vy = jumpHeld ? -T.stompHoldV : -T.stompV;
         refill(p); p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
         e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2;
         if (e.hp <= 0) killEnemy(e, true);
         else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); inkBurst(e.x, e.y, e.r * .7, ENEMY[k].col, false); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 7); }
-        if (has('titan')) explode(e.x, e.y + 20, 72);
+        if (has('titan')) explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: '#8a5a2a', cols: ['#ffd27a', '#c08040', '#ffffff'] });
         if (g.st.stompWave) explode(e.x, e.y, 54, { tiles: false, dmg: Math.round(p.atk * .7) });
       } else { if (p.inv <= 0) refill(p); hurt(e.x, e.dmg); p.vy = -340; if (g.state === 'dying') return; }
     } else if (p.inv <= 0) { refill(p); hurt(e.x, e.dmg); if (g.state === 'dying') return; }
@@ -705,13 +702,11 @@ function updateBullets(dt) {
   const g = game;
   for (const b of g.bullets) {
     b.px = b.x; b.py = b.y;
-    if (b.kind === 'soul' && g.st.homing) {
-      let t = null, d = 200; for (const e of g.enemies) if (e.alive && !b.hits.includes(e)) { const q = Math.hypot(e.x - b.x, e.y - b.y); if (q < d) { d = q; t = e; } }
-      if (t) { const sp = Math.hypot(b.vx, b.vy), a = Math.atan2(t.y - b.y, t.x - b.x), c = Math.atan2(b.vy, b.vx); let dA = a - c; while (dA > 3.14) dA -= 6.28; while (dA < -3.14) dA += 6.28; const na = c + clamp(dA, -9 * dt, 9 * dt); b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp; }
-    }
-    b.x += b.vx * dt; b.y += b.vy * dt; b.t += dt; b.ox *= Math.exp(-34 * dt);
+    steerBullet(b, dt);   // 유도(skills.js): 카드·하데스·올빼미·히드라
+    b.x += b.vx * dt; b.y += b.vy * dt; b.dist += Math.hypot(b.vx, b.vy) * dt; b.t += dt; b.ox *= Math.exp(-34 * dt);
     if (b.bounce > 0 && (b.x < TILE + 4 || b.x > WORLD_W - TILE - 4)) { b.vx *= -1; b.bounce--; b.x = clamp(b.x, TILE + 4, WORLD_W - TILE - 4); }
-    if (Math.abs(b.y - b.y0) > b.range) { b.dead = true; if (b.kind === 'bomb') onBulletHit(b, null); continue; }
+    // 휘는 탄은 날아간 거리로, 곧은 탄은 내려간 깊이로 사라진다
+    if (b.sk ? b.dist > b.range * 1.25 : Math.abs(b.y - b.y0) > b.range) { b.dead = true; if (b.kind === 'bomb') onBulletHit(b, null); continue; }
     const dx = b.x - b.px, dy = b.y - b.py, seg = (cx, cy) => { const t = clamp(((cx - b.px) * dx + (cy - b.py) * dy) / (dx * dx + dy * dy || 1), 0, 1); return Math.hypot(cx - (b.px + dx * t), cy - (b.py + dy * t)); };
     for (const e of g.enemies) {
       if (!e.alive || e.hidden || b.hits.includes(e) || seg(e.x, e.y) >= e.r + b.r) continue;
@@ -739,9 +734,17 @@ function updateBullets(dt) {
   }
   g.bullets = g.bullets.filter(b => !b.dead);
 }
+/* 버튼 하나(v30): 바닥에 서서 문·좌판 물건·휴식 물건 앞에 있으면 점프 대신 그것을 쓴다. 버튼에 적을 말을 돌려준다 */
+function interactNear() {
+  const g = game, p = g.p; if (!p || !p.onGround || g.state !== 'play') return null;
+  if (g.room) { const it = roomItemNear(); if (it) return it.cost || it.hpCost ? '사기' : '받기'; }
+  if (doorNear()) return g.room ? '나가기' : '들어가기';
+  if (g.rest) { const t = restNear(); if (t) return g.rest.kind === 'wheel' ? '돌리기' : '마시기'; }
+  return null;
+}
 function waveClear() {
   const g = game, p = g.p;
-  if (has('interest')) { const n = Math.round(p.shards * .1); p.shards += n; popup(p.x, p.y - 30, `이자 +${n}`, '#ffe27a', true); }
+  if (has('interest')) { const n = Math.round(p.shards * .25); p.shards += n; popup(p.x, p.y - 30, `이자 +${n}`, '#ffe27a', true); }
   // 휴식 판은 카드 없이 다음 판으로, 보스 판은 챕터 클리어로 판이 끝난다
   if (isRestWave(g.wave)) { nextWave(); return; }
   if (isBossWave(g.wave)) { chapterClear(); return; }

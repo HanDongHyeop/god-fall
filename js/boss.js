@@ -398,6 +398,6 @@ function tickWaves(dt) {
       f.x += f.vx * dt; if (f.x < TILE || f.x > WORLD_W - TILE) { f.t = f.life; continue; }
       if (p.onGround && Math.abs(p.x - f.x) < 18 && Math.abs(p.y + p.h / 2 - f.y) < 8 && p.inv <= 0) { refill(p); hurt(f.x, Math.round(20 * DIFF.dmg(g.wave))); p.vy = -380; if (g.state === 'dying') return; }
     }
-    if (f.type === 'delay' && !f.done && f.t >= f.life - .02) { f.done = true; explode(f.x, f.y, f.boom, { tiles: false, dmg: Math.round(p.atk * .5), ink: '#6a2a9a', cols: ['#b070e0', '#3a1a5a', '#fff'] }); }
+    if (f.type === 'delay' && !f.done && f.t >= f.life - .02) { f.done = true; explode(f.x, f.y, f.boom, { tiles: false, dmg: Math.round(atkNow() * .7), ink: '#6a2a9a', cols: ['#b070e0', '#3a1a5a', '#fff'] }); }
   }
 }

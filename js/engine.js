@@ -7,13 +7,9 @@ const PPT = {
   stick:  { left: 103, bottom: 121, knobR: 41 },
   zone:   { x0: .043, x1: .300, y0: .107, y1: .967 },   // 조이스틱이 나타날 수 있는 x 범위(그대로)
   touch:  { x0: 0, x1: .56 },                            // 조이스틱을 잡을 수 있는 x 범위: 화면 가운데까지 넓힌다(2026-11-06)
-  attack: { right: 188, bottom: 123, r: 59,
-            ext: { r: 89, a0: 95, a1: 235 } },   // 2026-11-11: 점프와 안 닿는 왼쪽~왼쪽 아래(각 95°~235°, 아래=90°)는 버튼 가까운 빈 곳도 공격(판정 반지름 67→89)   // 2026-11-06: 살짝 왼쪽으로(150→162). 2026-11-10: 사용자 스샷 기준 왼쪽 26 · 위 32 더(162→188, 91→123)
-  // 점프: 원래 모양(outer·innerEnd, 공격 중심 기준 각 -78°~10°, 반지름 78~136)을 그대로 두고
-  // 아래로 돌려(가운데 각 -34°→-12°→+12°) 넓히고(각 ×1.09) 키운다(반지름 80~152). 오른손 엄지는 바깥 버튼을 조금 아래로 누르므로 공격보다 살짝 아래에 둔다(2026-11-11 사용자)
-  jump:   { outer: [[28, -115], [85, -106], [132, -31], [116, 21], [79, 14]], innerEnd: [16, -76], c0: -34, r0: 78, r1: 136, c: 12, k: 1.09, ri: 80, ro: 152,
-            hit: { a0: -72, a1: 86, rMax: 174, ext: { a0: -35, rMax: 205 } },   // 2026-11-11: 가운데 각을 -12°→+12°로(공격 오른쪽 살짝 위 → 오른쪽 살짝 아래). 판정 각도 범위도 같이 +24°
-            sx: 1.12 },   // hit.ext: 오른쪽~아래(각 -35° 이상)는 버튼 밖 빈 곳도 화면 끝까지 점프(2026-11-11). 공격과 맞닿은 경계는 그대로   // 2026-11-10: 공격이 왼쪽으로 간 만큼 생긴 오른쪽 여유(26)에서 18만큼 가로로 넓힌다. 바깥쪽일수록 많이, 공격에 붙은 안쪽은 그대로
+  // 2026-11-12 v30: 공격 버튼을 없애고 점프 버튼 하나로 합쳤다(공중에 있으면 저절로 공격). 예전 공격 자리(right 188, bottom 123)보다 오른쪽으로 56, 살짝 아래로 3.
+  // 판정: 버튼 반지름의 1.3배 원 + 버튼 왼쪽 끝(1.05r)·위(1.45r)부터 화면 오른쪽 끝·아래 끝까지의 빈 곳 전부(조이스틱 영역 밖만)
+  btn: { right: 132, bottom: 120, r: 70, hitR: 1.3, ext: { left: 1.05, up: 1.45 } },
 };
 const STICK_RADIUS_RATIO = 2.45, STICK_DEAD_PX = 6;
 /* 테스트용 키. 화면에 글자로 쓰지 않는다(나중에 바꿀 값) */
@@ -163,7 +159,7 @@ const sfx = {
 
 /* ───── 화면 치수 ───── */
 const view = { W: 0, H: 0, dpr: 1, s: 1, worldH: 0, safeT: 0, safeB: 0, u: 1 };
-const ui = { stickHome: { x: 0, y: 0 }, knobR: 0, baseR: 0, travel: 0, zone: {}, attack: { x: 0, y: 0, r: 0 }, jumpPath: null, jumpHit: {}, jumpCenter: { x: 0, y: 0 } };
+const ui = { stickHome: { x: 0, y: 0 }, knobR: 0, baseR: 0, travel: 0, zone: {}, btn: { x: 0, y: 0, r: 0 }, attack: null, jumpCenter: null, jumpTop: { x: 0, y: 0 } };
 var layout = function () {
   const vw = innerWidth, vh = innerHeight, W = Math.min(vw, Math.round(vh * 9 / 16)), H = vh;
   stage.style.width = W + 'px';
@@ -176,23 +172,8 @@ var layout = function () {
   ui.knobR = PPT.stick.knobR * u; ui.baseR = ui.knobR * STICK_RADIUS_RATIO; ui.travel = ui.baseR - ui.knobR;
   ui.stickHome.x = PPT.stick.left * u; ui.stickHome.y = H - PPT.stick.bottom * u - view.safeB;
   ui.zone = { x0: W * PPT.touch.x0, x1: W * PPT.touch.x1, y0: H * PPT.zone.y0, y1: H * PPT.zone.y1, sx0: W * PPT.zone.x0, sx1: W * PPT.zone.x1 };
-  const a = ui.attack; a.x = W - PPT.attack.right * u; a.y = H - PPT.attack.bottom * u - view.safeB; a.r = PPT.attack.r * u;
-  const j = PPT.jump, D = Math.PI / 180, p = new Path2D();
-  const pol = ([x, y]) => { const t = j.c + (Math.atan2(y, x) / D - j.c0) * j.k, r = j.ri + (Math.hypot(x, y) - j.r0) * (j.ro - j.ri) / (j.r1 - j.r0); return [t * D, r]; };
-  const wx = r => 1 + (j.sx - 1) * clamp((r - j.ri) / (j.ro - j.ri), 0, 1);   // 가로 넓힘: 안쪽 원(ri)은 0, 바깥(ro)은 sx
-  const xy = ([t, r]) => [a.x + Math.cos(t) * r * u * wx(r), a.y + Math.sin(t) * r * u], pts = j.outer.map(pol), P = pts.map(xy);
-  p.moveTo(...xy(pts[0]));
-  for (let i = 1; i < pts.length; i++) p.lineTo(...xy(pts[i]));
-  const ang = q => Math.atan2(q[1] - a.y, q[0] - a.x), tEnd = pts[4][0], tTop = pol(j.innerEnd)[0];
-  p.arc(a.x, a.y, j.ri * u, tEnd, tTop, true);
-  p.closePath(); ui.jumpPath = p;
-  ui.jumpArc = { tb: tEnd, tt: Math.min(tTop, ang(P[0])), R: j.ro * 1.3 * u };   // 게이지는 아래 끝(tb)에서 위 끝(tt)으로 찬다
-  ui.jumpCenter = { x: xy(pol([86, -56]))[0], y: xy(pol([86, -56]))[1] }; ui.jumpTop = { x: xy(pts[0])[0], y: xy(pts[0])[1] };
-  ui.jumpHit = { rMin: (PPT.attack.r + 10) * u, rMax: Math.max(j.hit.rMax * u, ...P.map(q => Math.hypot(q[0] - a.x, q[1] - a.y) + 8 * u)), a0: j.hit.a0 * D, a1: j.hit.a1 * D, e0: j.hit.ext.a0 * D, eMax: j.hit.ext.rMax * u };
-  // 칸 나눔 홈의 바깥 끝: 가운데 각도로 쏜 선이 바깥 테두리와 만나는 거리(넓힌 모양에 맞춘다)
-  const sm = (ui.jumpArc.tb + ui.jumpArc.tt) / 2, dx = Math.cos(sm), dy = Math.sin(sm); ui.jumpNotchR = j.ro * u;
-  for (let i = 0; i < P.length - 1; i++) { const [x1, y1] = P[i], [x2, y2] = P[i + 1], ex = x2 - x1, ey = y2 - y1, den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
-    const s = ((x1 - a.x) * ey - (y1 - a.y) * ex) / den, q = ((x1 - a.x) * dy - (y1 - a.y) * dx) / den; if (s > 0 && q >= 0 && q <= 1) { ui.jumpNotchR = s; break; } }
+  const b = ui.btn; b.x = W - PPT.btn.right * u; b.y = H - PPT.btn.bottom * u - view.safeB; b.r = PPT.btn.r * u;
+  ui.attack = ui.jumpCenter = b; ui.jumpTop = { x: b.x, y: b.y - b.r };   // 예전 이름(시험·안내 글자 자리)도 같은 버튼을 가리킨다
   input.resetStickVisual();
 };
 
@@ -203,38 +184,27 @@ const input = {
   keys: { l: false, r: false, a: false, j: false }, blockUntil: 0,
   resetStickVisual() { const s = this.stick; if (s.id !== null) return; s.knobX = s.centerX = s.baseX = ui.stickHome.x; s.knobY = s.centerY = s.baseY = ui.stickHome.y; },
   inZone(x, y) { const z = ui.zone; return x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1; },
-  hitAttack(x, y, pad = 0) {
-    const a = ui.attack, d = Math.hypot(x - a.x, y - a.y); if (d <= a.r + PPT.attack.r * .14 * view.u + pad) return true;
-    const e = PPT.attack.ext; if (d > e.r * view.u + pad) return false;
-    const an = (Math.atan2(y - a.y, x - a.x) * 180 / Math.PI + 360) % 360; return an >= e.a0 && an <= e.a1;
-  },
   hitJump(x, y, pad = 0) {
-    const a = ui.attack, h = ui.jumpHit, d = Math.hypot(x - a.x, y - a.y);
-    const an = Math.atan2(y - a.y, x - a.x), rMax = an >= h.e0 ? Math.max(h.rMax, h.eMax) : h.rMax;
-    if (d < h.rMin - pad || d > rMax + pad) return false;
-    return an >= h.a0 && an <= h.a1;
+    const b = ui.btn, B = PPT.btn; if (Math.hypot(x - b.x, y - b.y) <= b.r * B.hitR + pad) return true;
+    return x > ui.zone.x1 && x >= b.x - b.r * B.ext.left - pad && y >= b.y - b.r * B.ext.up - pad;
   },
   down(e) {
     sfx.init();
     if (performance.now() < this.blockUntil || game.state !== 'play') return;
     const r = stage.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     let role = null;
-    if (this.hitAttack(x, y)) role = 'attack'; else if (this.hitJump(x, y)) role = 'jump';
+    if (this.hitJump(x, y)) role = 'jump';
     else if (this.stick.id === null && this.inZone(x, y)) role = 'stick';
     if (!role) return;
     this.ptr.set(e.pointerId, { role, x, y });
     if (role === 'stick') this.beginStick(e.pointerId, x, y);
-    else { if (role === 'jump') this.jumpEdge = true; else this.attackEdge = true; this.syncButtons(); }
+    else { this.jumpEdge = true; btnAnim.ring = 1; this.syncButtons(); }
   },
   move(e) {
     const p = this.ptr.get(e.pointerId); if (!p) return;
     const r = stage.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     p.x = x; p.y = y;
-    if (p.role === 'stick') { this.stick.dx = x - this.stick.ox; return; }
-    const pad = 16 * view.u; let next = p.role;
-    if (p.role === 'attack' && !this.hitAttack(x, y, pad) && this.hitJump(x, y)) next = 'jump';
-    else if (p.role === 'jump' && !this.hitJump(x, y, pad) && this.hitAttack(x, y)) next = 'attack';
-    if (next !== p.role) { p.role = next; if (next === 'jump') this.jumpEdge = true; else this.attackEdge = true; this.syncButtons(); }
+    if (p.role === 'stick') this.stick.dx = x - this.stick.ox;
   },
   up(e) { const p = this.ptr.get(e.pointerId); if (!p) return; this.ptr.delete(e.pointerId); if (p.role === 'stick') this.endStick(); else this.syncButtons(); },
   beginStick(id, x, y) {
@@ -244,7 +214,7 @@ const input = {
     s.centerX = s.baseX = s.knobX = ax; s.centerY = s.baseY = s.knobY = ay; s.baseAlpha = .35; s.pop = 0;
   },
   endStick() { const s = this.stick; s.id = null; s.dx = 0; s.centerX = ui.stickHome.x; s.centerY = ui.stickHome.y; },
-  syncButtons() { let a = false, j = false; for (const p of this.ptr.values()) { if (p.role === 'attack') a = true; if (p.role === 'jump') j = true; } this.attackHeld = a; this.jumpHeld = j; },
+  syncButtons() { let j = false; for (const p of this.ptr.values()) if (p.role === 'jump') j = true; this.attackHeld = false; this.jumpHeld = j; },
   clearAll() { this.ptr.clear(); this.attackHeld = this.jumpHeld = this.jumpEdge = this.attackEdge = false; if (this.stick.id !== null) this.endStick(); this.keys.l = this.keys.r = this.keys.a = this.keys.j = false; },
   update(dt) {
     const s = this.stick; let axis = 0;
@@ -280,8 +250,8 @@ addEventListener('keydown', e => {
   if (e.repeat) return;
   // 모달: 왼쪽·오른쪽으로 고르고 공격 키로 결정
   if (game.state !== 'play') { modalKey(k); return; }
-  if (k === 'j' && !input.keys.j) input.jumpEdge = true;
-  if (k === 'a' && !input.keys.a) input.attackEdge = true;
+  if (k === 'j' && !input.keys.j) { input.jumpEdge = true; btnAnim.ring = 1; }
+  if (k === 'a' && !input.keys.a) input.attackEdge = true;   // O 키 = 문·좌판·휴식 물건 쓰기(시험용). 버튼으로는 그 앞 바닥에서 점프 버튼
   input.keys[k] = true;
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) input.keys[k] = false; });
@@ -520,74 +490,109 @@ function drawChevron(x, y, R, dir, alpha) {
     ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(cx - dir * size * .45, y - size); ctx.lineTo(cx + dir * size * .55, y); ctx.lineTo(cx - dir * size * .45, y + size); ctx.stroke();
   }
 }
-const btnAnim = { a: 0, j: 0, air: 1 };
+/* 점프 버튼(v30): 금빛 테두리 메달 + 청금석 면 + 날개 도약 무늬. 공격 버튼과 합쳐 공중에 있으면 저절로 공격한다.
+   층: 그림자 → 금 테두리 → 게이지 홈(2칸: 왼쪽 반원 1칸 · 오른쪽 반원 2칸, 아래에서 위로 찬다) → 면 → 안쪽 그늘 → 무늬 → 광택 → 눌림 고리.
+   문·좌판·휴식 물건 앞 바닥에서는 면이 금빛으로 바뀌고 무늬 대신 할 일(들어가기·사기 등)을 적는다 */
+const btnAnim = { j: 0, act: 0, fire: 0, ring: 0, dim: 0, actLab: '' };
+function wingPath(cx, cy, f, s) {
+  // 한쪽 날개(s=1 오른쪽, -1 왼쪽). f = 면 반지름. 깃 세 갈래가 바깥 위로 뻗는다
+  const P = (x, y) => [cx + s * x * f, cy + y * f];
+  ctx.moveTo(...P(.07, .12));
+  ctx.quadraticCurveTo(...P(.30, .02), ...P(.60, -.30));
+  ctx.quadraticCurveTo(...P(.56, -.13), ...P(.47, -.07));
+  ctx.quadraticCurveTo(...P(.53, .01), ...P(.43, .08));
+  ctx.quadraticCurveTo(...P(.46, .15), ...P(.34, .19));
+  ctx.quadraticCurveTo(...P(.20, .24), ...P(.07, .21));
+  ctx.closePath();
+}
 function drawButtons(dt) {
-  const a = ui.attack, u = view.u, p = game.p, aOn = input.attackHeld || input.keys.a, jOn = input.jumpHeld || input.keys.j;
-  btnAnim.a = approachSnap(btnAnim.a, aOn ? 1 : 0, 30, dt); btnAnim.j = approachSnap(btnAnim.j, jOn ? 1 : 0, 30, dt);
-  // 공격 버튼은 공중에서만 켜진다. 방 안 물건 앞과 문 앞에서는 쓸 수 있으니 켜 둔다
-  const armed = !p || !p.onGround || !!(game.room && roomItemNear()) || !!doorNear() || !!(game.rest && restNear());
-  btnAnim.air = approachSnap(btnAnim.air, armed ? 1 : 0, 22, dt);
-  const lit = btnAnim.air, fade = .38 + .62 * lit;
-  const canJump = p && p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS;
+  const b = ui.btn, p = game.p, on = input.jumpHeld || input.keys.j;
+  const act = typeof interactNear === 'function' ? interactNear() : null;
+  if (act) btnAnim.actLab = act;
+  btnAnim.j = approachSnap(btnAnim.j, on ? 1 : 0, 30, dt);
+  btnAnim.act = approachSnap(btnAnim.act, act ? 1 : 0, 14, dt);
+  btnAnim.fire = approachSnap(btnAnim.fire, p && p.fireGlow > 0 ? 1 : 0, p && p.fireGlow > 0 ? 30 : 8, dt);
+  btnAnim.ring = Math.max(0, btnAnim.ring - dt * 3.2);
+  const gf = p ? clamp(p.gauge / T.gaugeCost, 0, 2) : 2, canJump = !p || (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS);
+  btnAnim.dim = approachSnap(btnAnim.dim, canJump || act ? 0 : 1, 12, dt);
+  const R = b.r * (1 - .06 * btnAnim.j), x = b.x, y = b.y, fR = R * .72, A = btnAnim.act;
   ctx.save();
-  const jk = 1 - .05 * btnAnim.j, jc = ui.jumpCenter;
-  ctx.translate(jc.x, jc.y); ctx.scale(jk, jk); ctx.translate(-jc.x, -jc.y);
-  // 점프 버튼 자체가 게이지(2칸): 빈 칸은 어두운 남색, 차는 중인 칸은 옅은 파랑, 찬 칸은 진한 파랑. 아래 칸부터 위로 찬다
-  ctx.fillStyle = 'rgba(16,26,58,.74)'; ctx.fill(ui.jumpPath);
-  const J = ui.jumpArc, cells = 2, gf = p ? clamp(p.gauge / T.gaugeCost, 0, cells) : cells;
-  ctx.save(); ctx.clip(ui.jumpPath);
-  for (let i = 0; i < cells; i++) {
+  // 그림자
+  ctx.fillStyle = 'rgba(4,6,18,.45)'; ctx.beginPath(); ctx.ellipse(x, y + R * .1, R * 1.03, R * 1.01, 0, 0, 7); ctx.fill();
+  // 금 테두리: 위가 밝고 아래가 어두운 금속
+  const rim = ctx.createLinearGradient(x, y - R, x, y + R);
+  rim.addColorStop(0, '#fff3c4'); rim.addColorStop(.32, '#eab955'); rim.addColorStop(.68, '#a9691e'); rim.addColorStop(1, '#5e330c');
+  ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fill();
+  // 게이지 홈
+  const gR = R * .845, gW = R * .13, gap = .2, span_ = Math.PI - gap * 2, H2 = Math.PI / 2;
+  ctx.lineCap = 'butt'; ctx.lineWidth = gW; ctx.strokeStyle = '#120c26'; ctx.beginPath(); ctx.arc(x, y, gR, 0, 7); ctx.stroke();
+  for (let i = 0; i < 2; i++) {
     const f = clamp(gf - i, 0, 1); if (f <= 0) continue;
-    const s0 = J.tb + (J.tt - J.tb) * i / cells, s1 = J.tb + (J.tt - J.tb) * (i + f) / cells;
-    let fs;
-    if (f >= 1) { fs = ctx.createLinearGradient(jc.x, jc.y - 80 * u, jc.x, jc.y + 80 * u); fs.addColorStop(0, jOn ? 'rgba(170,232,255,.97)' : 'rgba(118,205,245,.86)'); fs.addColorStop(1, jOn ? 'rgba(70,160,235,.97)' : 'rgba(44,124,210,.86)'); }
-    else fs = 'rgba(96,150,200,.62)';
-    ctx.fillStyle = fs; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.arc(a.x, a.y, J.R, s0, s1, true); ctx.closePath(); ctx.fill();
-    if (f < 1) { ctx.strokeStyle = 'rgba(200,240,255,.9)'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + Math.cos(s1) * J.R, a.y + Math.sin(s1) * J.R); ctx.stroke(); }
-  }
-  // 칸 나눔: 화살표를 가리지 않게 안쪽·바깥 가장자리에 짧은 홈만
-  const sm = (J.tb + J.tt) / 2, cs_ = Math.cos(sm), sn_ = Math.sin(sm), ri = PPT.jump.ri * u, ro = ui.jumpNotchR; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(2, 3.2 * u); ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(a.x + cs_ * (ri - 4 * u), a.y + sn_ * (ri - 4 * u)); ctx.lineTo(a.x + cs_ * (ri + 18 * u), a.y + sn_ * (ri + 18 * u));
-  ctx.moveTo(a.x + cs_ * (ro - 20 * u), a.y + sn_ * (ro - 20 * u)); ctx.lineTo(a.x + cs_ * (ro + 6 * u), a.y + sn_ * (ro + 6 * u)); ctx.stroke();
-  ctx.restore();
-  ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.6, 2.4 * u); ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.stroke(ui.jumpPath);
-  const ax = jc.x + 3 * u, ay = jc.y + 2 * u, as = 17 * u;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(ax - as, ay + as * .3); ctx.lineTo(ax, ay - as * .75); ctx.lineTo(ax + as, ay + as * .3);
-  ctx.lineWidth = 11 * u; ctx.strokeStyle = 'rgba(10,30,70,.35)'; ctx.stroke();
-  ctx.lineWidth = 7 * u; ctx.strokeStyle = canJump ? '#fff' : 'rgba(255,255,255,.55)';
-  ctx.beginPath(); ctx.moveTo(ax - as, ay + as * .3); ctx.lineTo(ax, ay - as * .75); ctx.lineTo(ax + as, ay + as * .3); ctx.stroke();
-  ctx.restore();
-  const ar = a.r * (1 - .06 * btnAnim.a), empty = p && p.ammo <= 0;
-  const ag = ctx.createRadialGradient(a.x - ar * .3, a.y - ar * .4, ar * .1, a.x, a.y, ar);
-  if (empty) { ag.addColorStop(0, 'rgba(170,175,190,.82)'); ag.addColorStop(1, 'rgba(92,98,120,.82)'); }
-  else { ag.addColorStop(0, aOn ? 'rgba(255,240,170,.98)' : 'rgba(255,226,130,.84)'); ag.addColorStop(1, aOn ? 'rgba(242,150,30,.98)' : 'rgba(226,132,24,.84)'); }
-  ctx.globalAlpha = lit; ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(a.x, a.y, ar, 0, 7); ctx.fill();
-  if (lit < 1) { const dg = ctx.createRadialGradient(a.x - ar * .3, a.y - ar * .4, ar * .1, a.x, a.y, ar); dg.addColorStop(0, 'rgba(120,124,142,.5)'); dg.addColorStop(1, 'rgba(66,70,88,.5)'); ctx.globalAlpha = 1 - lit; ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(a.x, a.y, ar, 0, 7); ctx.fill(); }
-  ctx.globalAlpha = fade; ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.lineWidth = Math.max(1.6, 2.4 * u); ctx.beginPath(); ctx.arc(a.x, a.y, ar, 0, 7); ctx.stroke();
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 7 * u;
-  const cs = 16 * u;
-  ctx.beginPath(); ctx.moveTo(a.x - cs, a.y - cs * .75); ctx.lineTo(a.x, a.y + cs * .15); ctx.lineTo(a.x + cs, a.y - cs * .75); ctx.stroke();
-  ctx.lineWidth = 5.6 * u; ctx.globalAlpha = .75 * fade; ctx.beginPath(); ctx.moveTo(a.x - cs * .7, a.y + cs * .35); ctx.lineTo(a.x, a.y + cs); ctx.lineTo(a.x + cs * .7, a.y + cs * .35); ctx.stroke(); ctx.globalAlpha = 1;
-  // 탄 게이지: 공격 버튼 바깥 둘레에 칸으로 표시. 위에서 시계 방향으로 찬다
-  if (p) {
-    const n = p.maxAmmo, ringR = (PPT.attack.r + 10) * u, gap = n > 14 ? .03 : .07, a0 = -Math.PI / 2;
-    ctx.lineCap = 'butt'; ctx.lineWidth = Math.max(4, 7 * u); ctx.globalAlpha = fade;
-    if (p.ammoFlash > 0) { ctx.strokeStyle = 'rgba(255,90,90,.55)'; ctx.beginPath(); ctx.arc(a.x, a.y, ringR, 0, 7); ctx.stroke(); }
-    for (let i = 0; i < n; i++) {
-      ctx.strokeStyle = i < p.ammo ? (p.ammo <= 2 ? '#ff8a6b' : '#fff2b0') : 'rgba(12,16,30,.72)';
-      ctx.beginPath(); ctx.arc(a.x, a.y, ringR, a0 + Math.PI * 2 * i / n + gap, a0 + Math.PI * 2 * (i + 1) / n - gap); ctx.stroke();
+    const a0 = i ? H2 - gap : H2 + gap, a1 = i ? a0 - span_ * f : a0 + span_ * f, ccw = !!i;
+    if (f >= 1) {
+      ctx.lineWidth = gW * 1.5; ctx.strokeStyle = 'rgba(110,210,255,.28)'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
+      const cg = ctx.createLinearGradient(x, y + gR, x, y - gR); cg.addColorStop(0, '#2f8cf0'); cg.addColorStop(1, '#aef0ff');
+      ctx.lineWidth = gW * .78; ctx.strokeStyle = cg; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
+    } else {
+      ctx.lineWidth = gW * .7; ctx.strokeStyle = '#4a7fb4'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
+      ctx.fillStyle = '#d8f6ff'; ctx.beginPath(); ctx.arc(x + Math.cos(a1) * gR, y + Math.sin(a1) * gR, gW * .36, 0, 7); ctx.fill();
     }
+  }
+  // 면: 청금석. 할 일이 있으면 금빛으로 바뀐다
+  const fg = ctx.createRadialGradient(x - fR * .25, y - fR * .45, fR * .1, x, y, fR);
+  fg.addColorStop(0, '#5f95f6'); fg.addColorStop(.55, '#2a52ad'); fg.addColorStop(1, '#122760');
+  ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(x, y, fR, 0, 7); ctx.fill();
+  if (A > .01) {
+    const ag = ctx.createRadialGradient(x - fR * .25, y - fR * .45, fR * .1, x, y, fR);
+    ag.addColorStop(0, '#fff0a8'); ag.addColorStop(.55, '#e4a12a'); ag.addColorStop(1, '#7a4508');
+    ctx.globalAlpha = A; ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(x, y, fR, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  if (btnAnim.fire > .01) { ctx.globalAlpha = btnAnim.fire * .3; ctx.fillStyle = '#bfe6ff'; ctx.beginPath(); ctx.arc(x, y, fR, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+  // 안쪽 그늘(면이 테두리 안으로 들어가 보이게): 위는 어둡고 아래는 밝은 얇은 고리
+  const ig = ctx.createLinearGradient(x, y - fR, x, y + fR); ig.addColorStop(0, 'rgba(0,0,0,.55)'); ig.addColorStop(.5, 'rgba(0,0,0,.12)'); ig.addColorStop(1, 'rgba(255,240,200,.35)');
+  ctx.lineWidth = R * .045; ctx.strokeStyle = ig; ctx.beginPath(); ctx.arc(x, y, fR - R * .02, 0, 7); ctx.stroke();
+  // 무늬
+  const ic = 1 - A;
+  if (ic > .01) {
+    ctx.globalAlpha = ic * (1 - .45 * btnAnim.dim);
+    const cy = y + fR * .1;
+    ctx.fillStyle = 'rgba(8,20,60,.4)'; ctx.beginPath(); wingPath(x, cy + fR * .06, fR, 1); wingPath(x, cy + fR * .06, fR, -1); ctx.fill();
+    const wg = ctx.createLinearGradient(x, cy - fR * .3, x, cy + fR * .25); wg.addColorStop(0, '#ffffff'); wg.addColorStop(1, '#cfe0ff');
+    ctx.fillStyle = wg; ctx.beginPath(); wingPath(x, cy, fR, 1); wingPath(x, cy, fR, -1); ctx.fill();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const chev = (dy, w) => { ctx.beginPath(); ctx.moveTo(x - fR * .2, cy + dy * fR + fR * .2); ctx.lineTo(x, cy + dy * fR); ctx.lineTo(x + fR * .2, cy + dy * fR + fR * .2); ctx.lineWidth = w; ctx.stroke(); };
+    ctx.strokeStyle = 'rgba(8,20,60,.45)'; chev(-.48, fR * .2); ctx.strokeStyle = '#fff'; chev(-.52, fR * .13);
+    // 아래로 쏘는 표시: 평소엔 흐리고, 공중에서 쏘는 동안 밝게 깜빡인다
+    const fa = .32 + .68 * btnAnim.fire * (.65 + .35 * Math.sin(game.t * 40));
+    ctx.globalAlpha = ic * fa; ctx.strokeStyle = '#ffe9a0'; ctx.lineWidth = fR * .09;
+    ctx.beginPath(); ctx.moveTo(x - fR * .12, cy + fR * .4); ctx.lineTo(x, cy + fR * .52); ctx.lineTo(x + fR * .12, cy + fR * .4); ctx.stroke();
     ctx.globalAlpha = 1;
   }
+  if (A > .01) {
+    ctx.globalAlpha = A; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const fs = Math.max(13, Math.min(fR * .5, fR * 1.86 / Math.max(2, btnAnim.actLab.length)));   // 글자 15px 안팎, 면 폭 안에 들어가게
+    ctx.font = `${fs}px ${FONT}`; ctx.lineJoin = 'round'; ctx.lineWidth = fs * .26; ctx.strokeStyle = 'rgba(90,45,0,.85)';
+    ctx.strokeText(btnAnim.actLab, x, y + fR * .06); ctx.fillStyle = '#fffbe8'; ctx.fillText(btnAnim.actLab, x, y + fR * .06);
+    // 할 일이 있을 때 바깥으로 퍼지는 금빛 고리(누를 수 있다는 표시)
+    const k = (game.t * 1.4) % 1; ctx.globalAlpha = A * (1 - k) * .8; ctx.strokeStyle = '#ffd86a'; ctx.lineWidth = R * .06;
+    ctx.beginPath(); ctx.arc(x, y, R * (1 + k * .32), 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  // 광택: 면 위쪽에 얇은 초승달
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, fR, 0, 7); ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.ellipse(x - fR * .1, y - fR * .62, fR * .82, fR * .42, -.12, 0, 7); ctx.fill(); ctx.restore();
+  // 점프를 쓸 수 없을 때(게이지 부족)는 면을 어둡게
+  if (btnAnim.dim > .01) { ctx.globalAlpha = btnAnim.dim * .38; ctx.fillStyle = '#0a0a1c'; ctx.beginPath(); ctx.arc(x, y, fR, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+  // 누른 순간 퍼지는 고리
+  if (btnAnim.ring > 0) { const k = 1 - btnAnim.ring; ctx.globalAlpha = btnAnim.ring * .9; ctx.strokeStyle = A > .5 ? '#ffe39a' : '#bff0ff'; ctx.lineWidth = R * .07 * btnAnim.ring + 1; ctx.beginPath(); ctx.arc(x, y, R * (1 + k * .38), 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+  ctx.restore();
 }
 function drawDebug() {
   const z = ui.zone;
   if ($('optZone').checked) { ctx.fillStyle = 'rgba(255,80,80,.18)'; ctx.fillRect(z.x0, z.y0, z.x1 - z.x0, z.y1 - z.y0); ctx.strokeStyle = 'rgba(255,60,60,.8)'; ctx.lineWidth = 1; ctx.strokeRect(z.x0, z.y0, z.x1 - z.x0, z.y1 - z.y0); }
   if ($('optHit').checked) {
-    const a = ui.attack, h = ui.jumpHit; ctx.strokeStyle = 'rgba(255,255,0,.9)'; ctx.lineWidth = 1.5;
-    const D = Math.PI / 180, e = PPT.attack.ext, rb = a.r + PPT.attack.r * .14 * view.u;
-    ctx.beginPath(); ctx.arc(a.x, a.y, rb, e.a1 * D, e.a0 * D + Math.PI * 2); ctx.arc(a.x, a.y, e.r * view.u, e.a0 * D, e.a1 * D); ctx.closePath(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(a.x, a.y, h.rMax, h.a0, h.e0); ctx.arc(a.x, a.y, h.eMax, h.e0, h.a1); ctx.arc(a.x, a.y, h.rMin, h.a1, h.a0, true); ctx.closePath(); ctx.stroke();
+    const b = ui.btn, B = PPT.btn; ctx.strokeStyle = 'rgba(0,255,255,.9)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r * B.hitR, 0, 7); ctx.stroke();
+    const ex = Math.max(ui.zone.x1, b.x - b.r * B.ext.left), ey = b.y - b.r * B.ext.up; ctx.strokeRect(ex, ey, view.W - ex, view.H - ey);
     const p = game.p; if (p) { ctx.strokeStyle = '#0f0'; ctx.strokeRect(wx(p.x - p.w / 2), wy(p.y - p.h / 2), p.w * view.s, p.h * view.s); }
   }
 }

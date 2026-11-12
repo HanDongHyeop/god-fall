@@ -16,7 +16,7 @@ function enterRoom(d) {
   refill(p);
   const room = g.room = { kind: d.kind, floorY, side, items: [], t: 0, exit: { x: side ? WORLD_W - TILE : TILE, y: floorY - 40, side, used: false }, crystal: null, title: ROOM_TITLE[d.fake || d.kind] };
   // 값은 이번 판에 내려온 깊이로 오른다. 파편은 판마다 새로 모으기 때문
-  const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .9 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
+  const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .7 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
   const price = n => Math.round(n * disc);
   if (d.kind === 'mini') {
     startMini(room);
@@ -243,7 +243,7 @@ function doorNear() {
 function drawDoorPrompt() {
   // 회복 문구와 겹치지 않게 회복 효과가 끝난 뒤 띄운다
   const d = doorNear(); if (!d || game.hpFlash > .3) return;
-  const s = view.s, lab = game.room ? '공격 버튼으로 나가기' : '공격 버튼으로 들어가기';
+  const s = view.s, lab = game.room ? '버튼을 눌러 나가기' : '버튼을 눌러 들어가기';
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const tw = ctx.measureText(lab).width + 18 * s, x = clamp(wx(d.x) + (d.side ? -1 : 1) * tw * .32, tw / 2 + 6 * s, view.W - tw / 2 - 6 * s), y = wy(d.y) - 62 * s;
   ctx.fillStyle = 'rgba(10,8,22,.92)'; rr(x - tw / 2, y - 11 * s, tw, 22 * s, 7 * s); ctx.fill(); ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1.6 * s; ctx.stroke();
@@ -316,7 +316,7 @@ function drawRoomFront() {
     ctx.textAlign = 'center'; ctx.font = `${13.5 * s}px ${FONT}`; ctx.fillStyle = '#ffe9b0'; ctx.fillText(near.name, x + bw / 2, y + 13 * s);
     ctx.font = `${10.5 * s}px ${FONT}`; ctx.fillStyle = '#fff';
     const lines = wrapText(near.sub, bw - 14 * s).slice(0, 2); lines.forEach((l, i) => ctx.fillText(l, x + bw / 2, y + 28 * s + i * 12 * s));
-    ctx.font = `${10 * s}px ${FONT}`; ctx.fillStyle = '#ffd24a'; ctx.fillText(lines.length > 1 ? '' : '공격 버튼으로 가져가기', x + bw / 2, y + 46 * s);
+    ctx.font = `${10 * s}px ${FONT}`; ctx.fillStyle = '#ffd24a'; ctx.fillText(lines.length > 1 ? '' : '버튼을 눌러 가져가기', x + bw / 2, y + 46 * s);
     if (noteL.length) { ctx.font = `${10.5 * s}px ${FONT}`; ctx.fillStyle = '#ff7a7a'; noteL.forEach((l, i) => ctx.fillText(l, x + bw / 2, y + 58 * s + i * 12 * s)); }
   }
 }

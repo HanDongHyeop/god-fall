@@ -1,6 +1,6 @@
 /* 휴식 판(2026-11-06): 챕터의 3번째 판. 궁수의 전설 2의 보너스 룰렛·천사 판처럼 싸움 사이에 숨을 돌린다.
    몬스터 없이 짧게 떨어진 뒤 바닥에서 한 가지를 만난다. 표는 data.js의 REST.
-   wheel 행운의 룰렛: 바퀴 앞에서 공격 버튼 → 2.8초 돌아 멈춘 칸의 보상 → 포탈
+   wheel 행운의 룰렛: 바퀴 앞 바닥에서 점프 버튼 → 2.8초 돌아 멈춘 칸의 보상 → 포탈
    nymph 님프의 샘: 두 샘 중 하나를 골라 마신다 → 포탈
    gold  황금 낙하: 항아리와 파편 덩어리가 가득한 긴 낙하. 바닥에 바로 포탈 */
 'use strict';
@@ -102,7 +102,7 @@ function drawRest() {
 }
 function drawRestPrompt() {
   const t = restNear(); if (!t) return;
-  const g = game, s = view.s, r = g.rest, lab = r.kind === 'wheel' ? '공격 버튼으로 돌리기' : '공격 버튼으로 마시기', x = wx(r.kind === 'wheel' ? r.x : t.x), y = wy(r.y) - (r.kind === 'wheel' ? 186 : 116) * s;
+  const g = game, s = view.s, r = g.rest, lab = r.kind === 'wheel' ? '버튼을 눌러 돌리기' : '버튼을 눌러 마시기', x = wx(r.kind === 'wheel' ? r.x : t.x), y = wy(r.y) - (r.kind === 'wheel' ? 186 : 116) * s;
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const tw = ctx.measureText(lab).width + 18 * s, cx = clamp(x, tw / 2 + 6 * s, view.W - tw / 2 - 6 * s);
   ctx.fillStyle = 'rgba(10,8,22,.92)'; rr(cx - tw / 2, y - 11 * s, tw, 22 * s, 7 * s); ctx.fill(); ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1.6 * s; ctx.stroke();
