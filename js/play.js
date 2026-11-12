@@ -394,7 +394,7 @@ const SHOT = {
 function fireBullet(x, y, vx, vy, up = false, ox = 0, o = {}) {
   const g = game, p = g.p, kind = o.kind || g.god_.shot, S = SHOT[kind], { dmg, crit } = rollDamage(o.mul || 1);
   const k = Math.hypot(vx, vy) / 1150;
-  g.bullets.push({ x, y, px: x, py: y, vx: vx * S.v / 1150, vy: vy * S.v / 1150, y0: y, range: (has('apollo') ? 1.6 : 1) * S.range, r: S.r * (godMode() ? 1.5 : 1) * (has('heavy') ? 1.4 : 1) * (o.big ? 1.6 : 1), dmg, crit, up, ox, t: 0, wob: Math.random() * 6, kind, pierce: (g.st.pierce || 0) + (has('pierce') ? 2 : 0), bounce: o.bounce || 0, hits: [], dist: 0, seekR: o.seekR || 0, seekTurn: o.seekTurn || 0 });
+  g.bullets.push({ x, y, px: x, py: y, vx: vx * S.v / 1150, vy: vy * S.v / 1150, y0: y, range: (has('apollo') ? 1.6 : 1) * S.range, r: S.r * (godMode() ? 1.5 : 1) * (has('heavy') ? 1.4 : 1) * (has('apollo') ? 1.3 : 1) * (o.big ? 1.6 : 1), dmg, crit, up, ox, t: 0, wob: Math.random() * 6, kind, pierce: (g.st.pierce || 0) + (has('pierce') ? 2 : 0), bounce: o.bounce || 0, hits: [], dist: 0, seekR: o.seekR || 0, seekTurn: o.seekTurn || 0 });
 }
 function smite(x0) {
   const g = game, top = g.cam, bot = g.cam + view.worldH; let t = null, d = 1e9;
@@ -470,7 +470,7 @@ function tick(dt) {
   if (p.buffer > 0) {
     const fromGround = p.coyote > 0 && p.jumps === 0;
     if (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS) {
-      p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++;
+      p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 저절로 공격)
       if (fromGround) {
         p.vy = -T.jumpV;
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
@@ -487,9 +487,9 @@ function tick(dt) {
   p.fireT -= dt; p.attackPose = Math.max(0, p.attackPose - dt); p.throwT = Math.max(0, p.throwT - dt);
   const nearItem = g.room ? roomItemNear() : null;
   if (nearItem && attackTap) { roomBuy(nearItem); }
-  // 공격(v30): 점프 버튼과 합쳤다. 공중에 있으면 저절로 쏜다. 땅에서는 쏘지 않는다.
+  // 공격(v30): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지 저절로 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
   // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
-  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = !locked && !p.onGround && !isSolid(below);
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = !locked && !p.onGround && p.jumpState && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
   if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
@@ -531,7 +531,7 @@ function tick(dt) {
       p.vy = 0; p.onGround = true;
     }
   }
-  if (p.onGround) { refill(p); if (p.combo) endCombo(); }
+  if (p.onGround) { refill(p); p.jumpState = false; if (p.combo) endCombo(); }
   p.squash = approachSnap(p.squash, 0, 14, dt);
   p.hurtT = Math.max(0, p.hurtT - dt); p.landT = Math.max(0, p.landT - dt); p.hitFlash = Math.max(0, (p.hitFlash || 0) - dt);
   p.flip = approachSnap(p.flip, p.face > 0 ? 1 : -1, 60, dt);
@@ -665,7 +665,7 @@ function updateEnemies(dt, jumpHeld) {
         // 밟기: 약한 적은 한 번에, 체력이 많아진 뒤에는 크게 깎는다
         const sd = Math.max((e.maxHp || e.hp) * .65, atkNow() * 1.6 * (1 + g.st.stompPct));
         p.vy = jumpHeld ? -T.stompHoldV : -T.stompV;
-        refill(p); p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
+        refill(p); p.jumpState = true; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
         e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2;
         if (e.hp <= 0) killEnemy(e, true);
         else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); inkBurst(e.x, e.y, e.r * .7, ENEMY[k].col, false); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 7); }

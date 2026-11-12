@@ -11,7 +11,7 @@ const CARDS = [
   { id: 'might', name: '힘의 팔찌', tier: '일반', desc: '공격력 +15%. 여러 번 얻을 수 있습니다.', repeat: true, apply: p => { p.atk = Math.round(p.atk * 1.15); } },
   { id: 'rapid1', name: '날랜 손', tier: '일반', fam: 'rate', lv: 1, desc: '발사 간격 -12%, 탄창 +1.', apply: p => { p.maxAmmo += 1; p.ammo = p.maxAmmo; } },   // 공중 자동 공격에서는 탄이 금방 떨어져 연사만으로는 이득이 작다(측정) → 탄창을 같이 준다
   { id: 'seek1', name: '바람 길잡이', tier: '일반', fam: 'seek', lv: 1, desc: '탄이 날아가다 40 거리 안의 적 쪽으로 살짝 휘어 갑니다.', noMini: true, note: '보스와 중간 보스는 따라가지 않습니다' },
-  { id: 'apollo', name: '아폴론의 시야', tier: '일반', desc: '탄이 1.6배 멀리 날아갑니다.' },
+  { id: 'apollo', name: '아폴론의 시야', tier: '일반', desc: '탄이 1.6배 멀리 날아가고 30% 커집니다.' },
   { id: 'mag', name: '탄창 확장', tier: '일반', desc: '탄창이 3칸 늘어납니다. 여러 번 얻을 수 있습니다.', repeat: true, apply: p => { p.maxAmmo += 3; p.ammo = p.maxAmmo; } },
   { id: 'ambrosia', name: '암브로시아', tier: '일반', desc: '최대 체력의 40% 회복. 넘친 만큼 최대 체력이 오릅니다.', noMini: true, repeat: true, apply: () => healBy(game.p.maxHp * .4, true) },
   { id: 'hebe', name: '헤베의 잔', tier: '일반', desc: '체력 20% 회복. 앞으로 카드 선택지가 1장 늘어납니다.', noMini: true, apply: p => { healBy(p.maxHp * .2); game.choiceBonus = Math.min(1, game.choiceBonus + 1); } },

@@ -395,7 +395,7 @@ function drawHints() {
   const g = game; if (!(g.hintT > 0) || g.state !== 'play') return;
   const al = clamp(g.hintT, 0, 1), s = view.s;
   ctx.globalAlpha = al; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`;
-  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프 · 공중에선 자동 공격', clamp(ui.btn.x, 90 * s, view.W - 90 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
+  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프하면 자동 공격', clamp(ui.btn.x, 90 * s, view.W - 90 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
   ctx.globalAlpha = 1;
 }
 function render(dt) {
