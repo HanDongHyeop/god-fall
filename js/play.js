@@ -63,7 +63,7 @@ function startRun(opt = {}) {
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
-  g.minis = null; g.hpFlash = 0;
+  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 };
   beginWave(opt.noIntro ? 0 : DESCENT.first); g.hintT = Meta.s.seenTip ? 0 : 4;
   Meta.s.seenTip = true;
   input.blockUntil = performance.now() + 150;
@@ -271,7 +271,7 @@ function killEnemy(e, byStomp) {
   const g = game, p = g.p, E = ENEMY[e.kind], st = g.st;
   e.alive = false; g.kills++;
   if (!p.onGround) { p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo); p.comboPop = 1; if (st.comboStrike && p.combo % 8 === 0) smite(); }
-  spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));
+  if (!g.tut) spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));   // v31 연습 방: 재화 없음
   // 처치: 하얗게 커졌다가 터진다
   g.fx.push({ type: 'corpse', name: E.frames[0], x: e.x, y: e.y, h: E.h, flip: e.face, t: 0, life: .07 });
   inkBurst(e.x, e.y, e.r, E.col, byStomp);
@@ -332,13 +332,14 @@ function hurt(from, dmg0) {
   if (st.dodge && Math.random() < st.dodge) { p.inv = .5; popup(p.x, p.y - 26, '흘림', '#e5b8ff', true); sfx.flap(); return; }
   if (p.olive) { p.olive = false; p.inv = 1.2; popup(p.x, p.y - 26, '올리브 관', '#b8ffb0', true); g.fx.push({ type: 'ring', x: p.x, y: p.y - 10, r: 60, col: 'rgba(170,255,160,.95)', t: 0, life: .35 }); sfx.ping(); return; }
   const dmg = Math.max(1, Math.round(dmg0 * (1 - st.dmgCut)));
-  p.hp -= dmg; p.inv = (has('aegis') ? 1.8 : 1) * (1 + st.invPct); p.hurtT = .34; p.spin = 0; p.attackPose = 0; p.throwT = 0; p.hitFlash = .12;
+  // v31 연습 방(g.tut): 맞는 모습은 그대로, 체력은 줄지 않는다
+  if (!g.tut) p.hp -= dmg; p.inv = (has('aegis') ? 1.8 : 1) * (1 + st.invPct); p.hurtT = .34; p.spin = 0; p.attackPose = 0; p.throwT = 0; p.hitFlash = .12;
   feathers(p.x, p.y - 20, 3, 120);
   chunks(p.x, p.y - 10, 6, ['#ff6c7b', '#ffffff'], 240, 3.4);
   g.fx.push({ type: 'ring', x: p.x, y: p.y - 10, r: 64, col: 'rgba(255,90,110,.95)', t: 0, life: .25 });
   g.shake = 14; g.flash = 0; g.vign = 1; g.hitStop = 7 / 60; g.kick = -7; vibrate(45);
   p.vy = Math.min(p.vy, -260); p.vx = (p.x < from ? -1 : 1) * 160;
-  popup(p.x, p.y - 30, '-' + dmg, '#ff5068', true); sfx.hurt();
+  popup(p.x, p.y - 30, g.tut ? '연습' : '-' + dmg, g.tut ? '#ffd6a0' : '#ff5068', true); sfx.hurt();
   if (st.thorns) for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 90) hitEnemy(e, Math.round(p.atk), false, e.x, e.y);
   if (p.hp <= 0) {
     if (p.lastStand) { p.lastStand = false; p.hp = 1; popup(p.x, p.y - 50, '버텼다!', '#ffe27a', true); p.inv = 2; return; }
@@ -472,33 +473,33 @@ function tick(dt) {
   const target = axis * run, acc = T.accel * dt;
   p.vx += clamp(target - p.vx, -acc, acc);
   if (Math.abs(axis) > .001) p.face = Math.sign(axis);
-  // 점프 게이지
-  const regen = T.gaugeRegen * (1 + (has('wings') ? .6 : 0) + st.gaugePct);
-  if (p.gauge < 100) p.gauge = Math.min(100, p.gauge + regen * dt);
+  // 점프 게이지(v31): 공중에서 차지 않는다. 남은 점프 칸 = (jumpMax - jumps)
+  p.gauge = Math.max(0, 100 - p.jumps * gaugeCost());
   p.gaugeFlash = Math.max(0, p.gaugeFlash - dt);
   p.coyote = p.onGround ? COYOTE : Math.max(0, p.coyote - dt);
   p.buffer = Math.max(0, p.buffer - dt);
   if (p.buffer > 0) {
     const fromGround = p.coyote > 0 && p.jumps === 0;
-    if (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS) {
-      p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 버튼을 누르고 있으면 공격)
+    if (p.jumps < jumpMax()) {
+      p.buffer = 0; p.jumps++; p.gauge = Math.max(0, 100 - p.jumps * gaugeCost()); g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 버튼을 누르고 있으면 공격)
       if (fromGround) {
-        p.vy = -T.jumpV; p.pressFire = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
+        p.vy = -T.jumpV * Math.sqrt(1 + (st.jumpPct || 0)); p.pressFire = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
       } else {
         p.pressJumped = true;   // 이 누르기로 공중 점프를 했다 → 계속 누르고 있으면 HOLD_FIRE 뒤부터 쏜다
-        p.vy = p.vy < 0 ? Math.max(p.vy - T.jumpV * T.airAdd, -T.jumpV * T.airCap) : -T.jumpV * Math.max(T.airAdd, .95);
+        const jv = T.jumpV * Math.sqrt(1 + (st.jumpPct || 0));
+        p.vy = p.vy < 0 ? Math.max(p.vy - jv * T.airAdd, -jv * T.airCap) : -jv * Math.max(T.airAdd, .95);
         gust(p.x, p.y + p.h / 2 + 2, 36); feathers(p.x, p.y - 22, 3, 90); sfx.flap();
         p.spin = 1;
-        if (st.jumpWave) explode(p.x, p.y + 16, 46, { tiles: false, dmg: Math.round(p.atk * .6) });
       }
+      if (st.jumpWave) explode(p.x, p.y + 16, 46, { tiles: false, dmg: Math.round(p.atk * .6) });   // v31: 점프가 1회라 땅 점프에도 충격파
       p.coyote = 0; p.onGround = false; p.squash = -.28; sfx.jump(p.jumps - 1);
     } else if (!p.onGround && p.buffer < BUFFER - dt) { p.gaugeFlash = .25; if (!p.jumpState) sfx.fizzle(); p.buffer = 0; }   // 점프 상태에서 게이지 없이 누르면 공격 누르기라 헛소리는 내지 않는다(게이지 칸만 깜빡)
   }
   // v30.4: 공중에서 눌러 바로 뛴 누르기가 HOLD_FIRE를 넘겨 '꾹 누름(공격)'이 되면 그 점프는 공격 시작의 작은 도약으로 바꾼다 —
   // 게이지·점프 횟수를 돌려주고 올라가던 힘을 거의 멈춘다. 그래야 '점프 → 꾹 공격 → 떼고 탭'에서 탭이 다시 제대로 뛴다
   if (jumpHeld && p.pressFire && p.pressJumped && !p.holdConv && p.holdT >= HOLD_FIRE) {
-    p.holdConv = true; p.gauge = Math.min(100, p.gauge + T.gaugeCost); p.jumps = Math.max(1, p.jumps - 1);
+    p.holdConv = true; p.jumps = Math.max(0, p.jumps - 1); p.gauge = Math.max(0, 100 - p.jumps * gaugeCost());
     if (p.vy < 0) p.vy *= .25;
   }
   if (!jumpHeld) p.holdConv = false;
@@ -543,6 +544,8 @@ function tick(dt) {
   const wasGround = p.onGround; p.onGround = false;
   moveX(p, p.vx * dt);
   const hit = moveY(p, p.vy * dt);
+  // v31 보이지 않는 천장: 보스·중간 보스·연습 방은 위를 벽돌로 막지 않고 화면 위 끝에서 멈춘다
+  if (g.room || (g.isBossWave && g.camLock) || g.tut) { const top = g.cam + 6; if (p.y - p.h / 2 < top) { p.y = top + p.h / 2; if (p.vy < 0) p.vy = 0; } }
   if (hit !== null && p.vy >= 0) {
     // 무적 시간에는 가시를 바닥처럼 밟는다. 좁은 틈에서 계속 튕기며 맞는 일을 막는다
     if (hit === SPIKE && p.inv <= 0 && !g.god) { hurt(p.x + (p.x % TILE < TILE / 2 ? 30 : -30), Math.round(25 * DIFF.dmg(g.wave))); p.vy = -400; if (g.state === 'dying') return; }
@@ -616,7 +619,7 @@ function updateEnemies(dt, jumpHeld) {
   const g = game, p = g.p, top = g.cam - 160, bot = g.cam + view.worldH + 200, spd = DIFF.speed(g.wave);
   for (const e of g.enemies) {
     if (!e.alive || e.y < top || e.y > bot) continue;
-    e.flash = Math.max(0, e.flash - dt); e.pop = Math.max(0, e.pop - dt * 9); e.hbT = Math.max(0, e.hbT - dt);
+    e.flash = Math.max(0, e.flash - dt); e.pop = Math.max(0, e.pop - dt * 9); e.hbT = Math.max(0, e.hbT - dt); if (e.buttT > 0) e.buttT -= dt;
     if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .2)), false, e.x, e.y); if (!e.alive) continue; }
     if (e.frz > 0) { e.frz -= dt; continue; }   // 원소 구슬(얼음): 잠깐 얼어 움직이지도 닿지도 않는다
     const tt = g.t + (e.ph || 0), k = e.kind, ox0 = e.x, oy0 = e.y;
@@ -660,7 +663,8 @@ function updateEnemies(dt, jumpHeld) {
       else if (far || d >= SHADE.sight) { const hx = e.homeX - e.baseX, hy = e.homeY - e.baseY, hd = Math.hypot(hx, hy); if (hd > 4) { e.baseX += hx / hd * 70 * dt; e.baseY += hy / hd * 70 * dt; } }
       e.x = e.baseX + Math.sin(tt * 2.4) * 8; e.y = e.baseY; e.face = Math.sign(dx) || 1;
     } else if (k === 'bat') {
-      if (e.sleep) {
+      if (e.anchor) { e.x = e.anchor.x + Math.sin(tt * 2.2) * 4; e.y = e.anchor.y + Math.sin(tt * 3.1) * 6; e.face = Math.sign(p.x - e.x) || 1; }   // v31 연습 방: 제자리를 지킨다
+      else if (e.sleep) {
         if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.lvM * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.lvM * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
       } else if (e.dashT > 0 && batDashTick(e, dt, spd)) { e.x += Math.sin(tt * 40) * .6; } else {
         e.x += e.vx * dt + Math.sin(tt * 12) * 1.2; e.y += e.vy * dt;
@@ -692,6 +696,16 @@ function updateEnemies(dt, jumpHeld) {
         if (has('titan')) explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: '#8a5a2a', cols: ['#ffd27a', '#c08040', '#ffffff'] });
         if (g.st.stompWave) explode(e.x, e.y, 54, { tiles: false, dmg: Math.round(p.atk * .7) });
       } else { if (p.inv <= 0) refill(p); hurt(e.x, e.dmg); p.vy = -340; if (g.state === 'dying') return; }
+    } else if (e.stomp && p.y - e.y > e.r * .4 && famLv('butt') >= 2) {
+      // v31 들이받기(미노타우로스의 뿔·포세이돈의 황소): 몸이 적보다 아래에서 닿으면 다치지 않고 밟기와 같은 피해. 올라가던 힘은 멈춘다
+      if (e.buttT > 0) continue;
+      const lv = famLv('butt'), sd = Math.max((e.maxHp || e.hp) * .65, atkNow() * 1.6 * (1 + g.st.stompPct)) * (lv >= 3 ? 1.5 : 1);
+      e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2; e.buttT = .25; if (p.vy < 60) p.vy = 60; p.squash = .22; g.kick = -4;
+      g.fx.push({ type: 'ring', x: p.x, y: p.y - p.h / 2, r: 40 + lv * 8, col: lv >= 3 ? 'rgba(255,90,110,.95)' : 'rgba(255,214,120,.95)', t: 0, life: .22 });
+      chunks(p.x, p.y - p.h / 2, 6, lv >= 3 ? ['#ff6c7b', '#ffffff', '#7fe8ff'] : ['#ffd27a', '#ffffff', '#c08040'], 260, 3);
+      if (lv >= 3) { const n = Math.max(1, Math.round(Math.min(sd, (e.maxHp || sd)) * .2)); healBy(n); popup(p.x, p.y - 40, '+' + n, '#ff8aa0'); }
+      if (e.hp <= 0) killEnemy(e, true);
+      else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 6); }
     } else if (p.inv <= 0) { refill(p); hurt(e.x, e.dmg); if (g.state === 'dying') return; }
   }
   if (g.enemies.length > 60) g.enemies = g.enemies.filter(e => e.alive);

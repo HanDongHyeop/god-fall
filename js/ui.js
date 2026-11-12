@@ -87,9 +87,10 @@ const UI = {
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
     setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>
       <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
+      <div class="startbar"><button class="tutTog ${TUT.on ? 'on' : ''}" id="bTut" aria-pressed="${TUT.on}">튜토리얼 <b>${TUT.on ? 'ON' : 'OFF'}</b></button><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
     el.onclick = e => {
       const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
+      if (e.target.closest('#bTut')) { sfx.tap(); setTut(!TUT.on); this.r_battle(); return; }   // v31 임시: 나중에 지울 버튼
       if (e.target.closest('#bStart')) this.start();
     };
   },
@@ -99,7 +100,7 @@ const UI = {
     if (!s.equip.weapon) { this.toast('무기를 장착해야 출발할 수 있습니다'); this.sub = 'gear'; this.go('gear'); return; }
     if (s.energy < 5) { this.toast('에너지가 모자랍니다. 상점에서 채울 수 있습니다'); return; }
     Meta.spendEnergy(); s.chapter = this.chapterView; Meta.save(); sfx.start();
-    startRun({ chapter: this.chapterView });
+    if (TUT.on) startTutorial({ chapter: this.chapterView }); else startRun({ chapter: this.chapterView });
   },
   enterGame() { $('lobby').classList.remove('on'); $('pause').classList.add('on'); $('mResult').classList.remove('on'); },
   backToLobby() { game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); },
@@ -278,7 +279,7 @@ const UI = {
   },
   statPop() {
     const o = Meta.stats();
-    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">능력치</div><button class="x" data-close>✕</button><div class="ip-sk"><div>전투력 ${o.power}</div><div>모든 신 보너스: 공격력 +${(Meta.accountBonus().atk * 100).toFixed(1)}% · 체력 +${(Meta.accountBonus().hp * 100).toFixed(1)}%</div><div>공격력 ${o.atk} · 체력 ${o.hp}</div><div>치명타 확률 ${Math.round(o.crit * 100)}% · 치명타 피해 +${Math.round((.5 + o.critDmg) * 100)}%</div><div>받는 피해 -${Math.round(o.dmgCut * 100)}%</div><div>파편 획득 +${Math.round(o.shardPct * 100)}% · 이동 속도 +${Math.round(o.runPct * 100)}%</div><div>탄창 ${o.god.ammo + o.ammo}칸 · 점프 회복 +${Math.round(o.gaugePct * 100)}%</div></div><div class="note">장비 칸을 업그레이드하고, 대장간에서 합성해 더 높은 등급을 만드세요.</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">능력치</div><button class="x" data-close>✕</button><div class="ip-sk"><div>전투력 ${o.power}</div><div>모든 신 보너스: 공격력 +${(Meta.accountBonus().atk * 100).toFixed(1)}% · 체력 +${(Meta.accountBonus().hp * 100).toFixed(1)}%</div><div>공격력 ${o.atk} · 체력 ${o.hp}</div><div>치명타 확률 ${Math.round(o.crit * 100)}% · 치명타 피해 +${Math.round((.5 + o.critDmg) * 100)}%</div><div>받는 피해 -${Math.round(o.dmgCut * 100)}%</div><div>파편 획득 +${Math.round(o.shardPct * 100)}% · 이동 속도 +${Math.round(o.runPct * 100)}%</div><div>탄창 ${o.god.ammo + o.ammo}칸 · 점프 높이 +${Math.round(o.jumpPct * 100)}%</div></div><div class="note">장비 칸을 업그레이드하고, 대장간에서 합성해 더 높은 등급을 만드세요.</div></div>`);
   },
 
   /* ───── 대장간 ───── */

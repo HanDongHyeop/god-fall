@@ -251,8 +251,9 @@ function drawHero() {
   }
   if (p.gauge < 100 || p.gaugeFlash > 0) {
     const bw = 15 * s, bh = 3.4 * s, gap = 2 * s, x0 = wx(p.x) - bw - gap / 2, y0 = wy(p.y) - 46 * s;
-    for (let i = 0; i < 2; i++) {
-      const x = x0 + i * (bw + gap), fill = clamp(p.gauge / T.gaugeCost - i, 0, 1);
+    const nJ = jumpMax();
+    for (let i = 0; i < nJ; i++) {
+      const x = x0 + (nJ === 1 ? (bw + gap) / 2 : i * (bw + gap)), fill = clamp(p.gauge / gaugeCost() - i, 0, 1);
       ctx.fillStyle = 'rgba(12,16,30,.75)'; ctx.fillRect(x - 1, y0 - 1, bw + 2, bh + 2);
       ctx.fillStyle = p.gaugeFlash > 0 ? '#ff6c7b' : fill >= 1 ? '#8fe4ff' : '#4d8fb6'; ctx.fillRect(x, y0, bw * fill, bh);
     }
@@ -395,7 +396,7 @@ function drawHints() {
   const g = game; if (!(g.hintT > 0) || g.state !== 'play') return;
   const al = clamp(g.hintT, 0, 1), s = view.s;
   ctx.globalAlpha = al; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`;
-  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프 후 다시 꾹 누르면 공격', clamp(ui.btn.x, view.W / 2, view.W - ctx.measureText('점프 후 다시 꾹 누르면 공격').width / 2 - 10 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
+  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프 후 다시 누르면 공격', clamp(ui.btn.x, view.W / 2, view.W - ctx.measureText('점프 후 다시 누르면 공격').width / 2 - 10 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
   ctx.globalAlpha = 1;
 }
 function render(dt) {

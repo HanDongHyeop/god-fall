@@ -46,9 +46,9 @@ const GEAR = {
   armor_b: { slot: 'armor', name: '신성 대리석 갑옷', icon: 'armor_b', desc: '신전 기둥을 깎아 만들었다.',
     skills: [[1, '최대 체력 +8%', 'hpPct', .08], [2, '회복 효과 +30%', 'healPct', .3], [3, '받는 피해 -12%', 'dmgCut', .12]] },
   boots_a: { slot: 'boots', name: '낡은 가죽 샌들', icon: 'boots_a', desc: '끈이 몇 번 끊어졌던 샌들.',
-    skills: [[1, '이동 속도 +5%', 'runPct', .05], [2, '최대 체력 +6%', 'hpPct', .06], [3, '점프 게이지 회복 +30%', 'gaugePct', .3]] },
+    skills: [[1, '이동 속도 +5%', 'runPct', .05], [2, '최대 체력 +6%', 'hpPct', .06], [3, '점프 높이 +8%', 'jumpPct', .08]] },
   boots_b: { slot: 'boots', name: '황금 날개 샌들', icon: 'boots_b', desc: '헤르메스의 여벌 신발이다. 말없이 빌렸다.',
-    skills: [[1, '점프 게이지 회복 +15%', 'gaugePct', .15], [2, '이동 속도 +8%', 'runPct', .08], [3, '공중 점프 때 충격파', 'jumpWave', 1]] },
+    skills: [[1, '점프 높이 +5%', 'jumpPct', .05], [2, '이동 속도 +8%', 'runPct', .08], [3, '점프할 때 충격파', 'jumpWave', 1]] },
 };
 const GEAR_BY_SLOT = {}; for (const k in GEAR) (GEAR_BY_SLOT[GEAR[k].slot] = GEAR_BY_SLOT[GEAR[k].slot] || []).push(k);
 
@@ -73,7 +73,7 @@ const GOD_LV_MAX = 4, GOD_UNLOCK = 50;
 const GOD_LV_COST = { '레어': [100, 200, 400], '에픽': [100, 200, 400], '전설': [50, 100, 200] };   // 전설은 조각이 귀해 적게 든다
 const GOD_LV_BONUS = .15;   // 레벨 1개당 공격력·체력
 const GOD_LV = {
-  hermes: [['점프 게이지 회복 +20%', { gaugePct: .2 }], ['판 보상 골드 +20%', { goldPct: .2 }], ['탄창 +2', { ammo: 2 }]],
+  hermes: [['점프 높이 +6%', { jumpPct: .06 }], ['판 보상 골드 +20%', { goldPct: .2 }], ['탄창 +2', { ammo: 2 }]],
   artemis: [['치명타 피해 +30%', { critDmg: .3 }], ['발사 간격 -12%', { firePct: -.12 }], ['화살 관통 +1', { pierce: 1 }]],
   dionysus: [['회피 확률 +10%', { dodge: .1 }], ['폭발 범위 +16', { splash: 16 }], ['웨이브 시작 시 체력 5% 회복', { waveHeal: .05 }]],
   hephaestus: [['탄창 +1', { ammo: 1 }], ['공격력 +10%', { atkPct: .1 }], ['폭발 범위 +20', { splash: 20 }]],
@@ -174,7 +174,7 @@ const BIOMES = [
 const BOSSES = [
   { name: '심연의 입', sub: '올림포스를 삼킨 것', frames: ['b1_shut', 'b1_open'], w: 150, h: 112, col: ['#2b1626', '#e8dfc9', '#e88a80'], sig: '빨아들이기', weights: { inhale: 4, hop: 3, spit: 2, erupt: 2 }, p2: { summon: 2, inhale: 1 }, minion: 'mound', hpMul: 1 },
   { name: '망자의 종', sub: '스틱스 밑바닥을 떠도는 것', frames: ['b2_shut', 'b2_open'], w: 150, h: 130, col: ['#123036', '#a8ffd8', '#5ad8a8'], sig: '종소리', weights: { toll: 4, spiral: 3, laser: 2, dive: 1 }, p2: { summon: 2, spiral: 1 }, minion: 'shade', hpMul: 1.25, float: true, laser: 'v', split: 'star' },
-  { name: '티탄의 심장', sub: '아직도 뛰고 있다', frames: ['b3_shut', 'b3_open'], w: 150, h: 130, col: ['#3a1212', '#ff9a50', '#c23c1e'], sig: '박동', weights: { geyser: 4, laser: 3, floor: 2, hop: 2 }, p2: { split: 3, geyser: 1 }, minion: 'bat', hpMul: 1.55, laser: 'h', split: 'cross' },
+  { name: '티탄의 심장', sub: '아직도 뛰고 있다', frames: ['b3_shut', 'b3_open'], w: 150, h: 130, col: ['#3a1212', '#ff9a50', '#c23c1e'], sig: '박동', weights: { geyser: 4, laser: 3, floor: 2, ring: 2 }, p2: { split: 3, geyser: 1 }, minion: 'bat', hpMul: 1.55, laser: 'h', split: 'cross', float: true },   // v31: 바닥에만 있지 않고 떠서 오르내린다(뛰기 hop → 박동 고리 ring)
   { name: '얼어붙은 왕', sub: '코키토스 얼음 속에서 눈을 뜬 것', frames: ['b4_shut', 'b4_open'], w: 150, h: 130, col: ['#12263a', '#bfeaff', '#5ad0f0'], sig: '고드름 비', weights: { icicle: 4, sweep: 3, ring: 2, erupt: 1 }, p2: { split: 3, icicle: 1 }, minion: 'bat', hpMul: 1.3, laser: 'h', split: 'cross' },
   { name: '썩은 어머니', sub: '낙원을 먹어 치운 곰팡이', frames: ['b5_shut', 'b5_open'], w: 160, h: 130, col: ['#1e2610', '#e4f08a', '#b8d040'], sig: '포자', weights: { spore: 4, spit: 2, hop: 2, brood: 2 }, p2: { brood: 2, spore: 1 }, minion: 'sac', hpMul: 1.4, split: 'star' },
   { name: '첫 번째 어둠', sub: '빛이 생기기 전부터 있던 것', frames: ['b6_shut', 'b6_open'], w: 160, h: 140, col: ['#160f26', '#e8ccff', '#b070f0'], sig: '순간이동', weights: { blink: 4, orbs: 3, laser: 2, split: 2 }, p2: { dark: 3 }, minion: 'shade', hpMul: 1.5, float: true, laser: 'v', split: 'star' },
@@ -265,4 +265,7 @@ const TIER = {
 /* 등급 사다리(2026-11-06): 카드 한 장마다 일반에서 시작해 확률에 걸리면 한 칸씩 오른다. [일반→희귀, 희귀→영웅, 영웅→전설]
    기본: 장당 희귀 이상 45%, 영웅 이상 15.8%, 전설 4.7% → 3장 중 전설이 1장이라도 나올 확률 약 13.5%(궁수의 전설 2처럼 후하게)
    boost(보스 전리품·함정 방): 장당 희귀 이상 62%, 영웅 이상 27.9%, 전설 10.6% */
-const CARD_UP = { base: [.45, .35, .30], boost: [.62, .45, .38] };
+/* v31(2026-11-12) 등급 사다리 확률 상향: 희귀·영웅·전설이 잘 안 보인다는 피드백. 카드 1장 기준 영웅 이상 16%→27%, 전설 4.7%→9.5%(보스·함정 전리품 18.6%)
+   + 연속 보정 CARD_PITY: 카드 창 2번 연속 영웅 이상이 없으면 다음부터 희귀→영웅 +25%p씩, 전설이 2번 연속 없으면 영웅→전설 +20%p씩(희귀→영웅도 +10%p씩) */
+const CARD_UP = { base: [.60, .45, .35], boost: [.75, .55, .45] };
+const CARD_PITY = { after: 2, hero: .25, legend: .2 };

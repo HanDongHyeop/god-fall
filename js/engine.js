@@ -22,23 +22,24 @@ const TUNE_DEFAULT = {
   accel: 9000,       // 가속. 클수록 미끄러지지 않는다
   grav: 1500,
   maxFall: 560,      // 다운웰 빠른 낙하 200~320 논리px/초
-  jumpV: 620,        // 땅 점프 약 3칸
+  jumpV: 707,        // v31(2026-11-12): 점프 1회로 줄이며 높이 +30%(속도 ×√1.3 = 620→707). 예전 약 3칸 → 약 4칸
   airAdd: .82,       // 공중 점프: 상승 중 더해지는 비율 → 더 높이 간다
   airCap: 1.15,      // 공중 점프 최대 상승 속도 비율. 크면 빠른 2회가 느린 3회보다 높아진다
-  gaugeCost: 50,     // 점프 1회에 깎이는 게이지(한 칸). 100이면 2회
-  gaugeRegen: 42.3,  // 초당 회복(47에서 10% 늦춤). 한 칸(50)이 차는 데 약 1.2초
+  // v31: 점프는 1회(날개 신발이면 2회). 게이지는 남은 점프 칸 표시일 뿐 공중에서 차지 않는다 — 땅에 닿거나 적을 밟으면 다시 찬다(refill)
   fireEvery: .12,    // 다운웰 머신건 측정값
   stompV: 430, stompHoldV: 600,
 };
 const TUNE_UI = [
   ['run', '좌우 속도', 150, 340, 5], ['grav', '중력', 900, 2400, 50], ['maxFall', '최대 낙하', 300, 800, 10],
-  ['jumpV', '점프 힘', 400, 860, 10], ['airAdd', '공중 점프 추가', .4, 1.2, .02], ['gaugeRegen', '게이지 회복', 20, 120, 1],
+  ['jumpV', '점프 힘', 400, 860, 10], ['airAdd', '공중 점프 추가', .4, 1.2, .02], 
   ['stompV', '밟기 반동', 250, 700, 10], ['fireEvery', '발사 간격', .06, .24, .01],
 ];
 const T = Object.assign({}, TUNE_DEFAULT);
-try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete saved.gaugeRegen; delete saved.recoil; delete saved.recoilFall; Object.assign(T, saved); } catch (e) {}
+try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete saved.gaugeRegen; delete saved.jumpV; delete saved.recoil; delete saved.recoilFall; Object.assign(T, saved); } catch (e) {}
 
-const MAX_JUMPS = 3, HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
+const HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
+// v31: 점프 횟수 = 1(날개 신발 +1). 게이지 한 칸 = 점프 1회
+const jumpMax = () => 1 + (typeof has === 'function' && has('wings') ? 1 : 0), gaugeCost = () => 100 / jumpMax();
 const COYOTE = .08, BUFFER = .11;
 const HOLD_FIRE = .12;   // v30.4: 점프 상태로 공중에서 눌러 바로 뛴 누르기를 이만큼(초) 넘게 누르고 있으면 그때부터 공격(짧은 탭은 점프만). 못 뛴 누르기(게이지 없음)는 바로 공격
 const WORLD_W = 360, TILE = 40, COLS = 9;
@@ -514,7 +515,7 @@ function drawButtons(dt) {
   btnAnim.act = approachSnap(btnAnim.act, act ? 1 : 0, 14, dt);
   btnAnim.fire = approachSnap(btnAnim.fire, p && p.fireGlow > 0 ? 1 : 0, p && p.fireGlow > 0 ? 30 : 8, dt);
   btnAnim.ring = Math.max(0, btnAnim.ring - dt * 3.2);
-  const gf = p ? clamp(p.gauge / T.gaugeCost, 0, 2) : 2, canJump = !p || (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS);
+  const nJ = jumpMax(), gf = p ? clamp(p.gauge / gaugeCost(), 0, nJ) : nJ, canJump = !p || p.jumps < nJ || (p.jumpState && !p.onGround);   // v31: 공중 점프 상태에서는 누르면 공격이라 어둡게 하지 않는다
   btnAnim.dim = approachSnap(btnAnim.dim, canJump || act ? 0 : 1, 12, dt);
   const R = b.r * (1 - .06 * btnAnim.j), x = b.x, y = b.y, fR = R * .72, A = btnAnim.act;
   ctx.save();
@@ -528,7 +529,7 @@ function drawButtons(dt) {
   const gR = R * .845, gW = R * .13, gap = .2, span_ = Math.PI - gap * 2, H2 = Math.PI / 2;
   ctx.lineCap = 'butt'; ctx.lineWidth = gW; ctx.strokeStyle = '#120c26'; ctx.beginPath(); ctx.arc(x, y, gR, 0, 7); ctx.stroke();
   for (let i = 0; i < 2; i++) {
-    const f = clamp(gf - i, 0, 1); if (f <= 0) continue;
+    const f = nJ === 1 ? clamp(gf, 0, 1) : clamp(gf - i, 0, 1); if (f <= 0) continue;   // 점프 1회면 양쪽 반원이 함께 한 칸
     const a0 = i ? H2 - gap : H2 + gap, a1 = i ? a0 - span_ * f : a0 + span_ * f, ccw = !!i;
     if (f >= 1) {
       ctx.lineWidth = gW * 1.5; ctx.strokeStyle = 'rgba(110,210,255,.28)'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();

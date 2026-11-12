@@ -9,6 +9,8 @@ function buildArena(F, top) {
     for (const [c0, c1] of layout[i]) for (let c = c0; c <= c1; c++) lvl.set(c, r, ONEWAY);
   }
 }
+/* v31: 싸움터 위 끝(보이지 않는 천장). 화면 맨 위 + 위쪽 정보 막대 아래. 보스 공격 범위·뜨는 보스 높이의 기준 */
+function bossTopY() { const g = game; return Math.max((g.arenaTop || 0) * TILE, g.cam + (view.safeT || 0) / view.s + 56); }
 function startBossIntro() {
   const g = game, p = g.p, b = BOSSES[g.biome.boss];
   g.state = 'intro'; input.clearAll(); g.camLock = true; g.bossCam = Math.max(0, g.levelH + TILE - view.worldH); g.bullets = [];
@@ -93,7 +95,7 @@ function bossTick(dt) {
   b.sx = approachSnap(b.sx, 1, 10, dt); b.sy = approachSnap(b.sy, 1, 10, dt);
   if (!b.mini) { if (g.darkT > 0) g.darkT -= dt; g.dark = approachSnap(g.dark || 0, g.darkT > 0 ? 1 : 0, 3, dt, .01); }
   // moveK = 몸의 움직임, speedK = 공격 박자. 중간 보스는 움직임만 진짜 보스와 같고 공격은 느리다
-  const moveK = (b.phase === 2 ? 1.22 : 1) * Math.min(1.4, DIFF.speed(g.wave)), speedK = moveK * (b.mini ? MINI.tempo : 1) * (b.easy || 1), floorY = b.floorY, topY = g.arenaTop * TILE + 40;
+  const moveK = (b.phase === 2 ? 1.22 : 1) * Math.min(1.4, DIFF.speed(g.wave)), speedK = moveK * (b.mini ? MINI.tempo : 1) * (b.easy || 1), floorY = b.floorY, topY = bossTopY() + 40;
   const hh = b.drawH || b.h;
   if (b.state === 'intro') {
     g.introT += dt; const t = g.introT; g.cine = approachSnap(g.cine, t < 3.45 ? 1 : 0, 8, dt);
@@ -106,8 +108,7 @@ function bossTick(dt) {
     if (t > 2.9) b.open = 0;
     if (t > 3.55) {
       b.state = 'idle'; b.t = 0; b.cool = .7; g.state = 'play'; g.cine = 0; p.inv = .8; b.barK = 1;
-      // 위쪽을 막는다
-      for (let c = 1; c < COLS - 1; c++) lvl.set(c, g.arenaTop, HARD);
+      // v31: 위쪽을 벽돌로 막지 않는다 — 화면 위 끝의 보이지 않는 천장(playerCeil)이 막는다
       input.blockUntil = performance.now() + 60;
     }
     return;
@@ -138,7 +139,11 @@ function bossTick(dt) {
   if (s === 'idle' || s === 'rage') {
     b.open = s === 'rage' && b.t < .6 ? 1 : 0;
     if (b.mini) miniRoam(b, dt, moveK);
-    else if (b.def.float) { b.y = approachSnap(b.y, floorY - 150 + Math.sin(g.t * 1.3) * 60, 2, dt); b.x += Math.sin(g.t * .9) * 26 * dt; }
+    else if (b.def.float) {
+      // v31: 뜨는 보스는 넓어진 싸움터 전체 높이를 천천히 오르내린다(예전엔 바닥 위 150±60에만 있었다)
+      const lo = floorY - 60, hi = Math.min(lo - 60, topY - 30 + hh), mid = (lo + hi) / 2, amp = (lo - hi) / 2;
+      b.y = approachSnap(b.y, mid + Math.sin(g.t * .75 + b.idx) * amp, 1.6, dt); b.x = clamp(b.x + Math.sin(g.t * .9) * 40 * dt, TILE + b.w * .42, WORLD_W - TILE - b.w * .42);
+    }
     if (!b.air && b.t > (s === 'rage' ? .8 : b.cool) / speedK) { bossSet(pickAttack(b)); b.cool = b.mini ? 2.7 + Math.random() * .8 : .7 + Math.random() * .7; }
     return;
   }
@@ -295,7 +300,7 @@ function bossTick(dt) {
   }
   if (s === 'geyser') {
     // 박동(티탄의 심장): 심장이 뛸 때마다 바닥 기둥 몇 줄이 붉게 예고되고 → 용암이 솟는다. 줄은 박동마다 엇갈린다
-    const H = b.mini ? 150 : 215, beat = (b.phase === 2 ? .78 : .95) / speedK, warnT = .6 / speedK;
+    const H = Math.max(b.mini ? 150 : 215, floorY - topY + 40), beat = (b.phase === 2 ? .78 : .95) / speedK, warnT = .6 / speedK;
     if (b.step === 0) { b.n = b.mini ? 2 : b.phase === 2 ? 4 : 3; b.k = 0; b.step = 1; b.t = beat; b.open = 1; b.par = Math.random() < .5 ? 1 : 0; }
     else if (b.step === 1 && b.t >= beat) {
       b.t = 0; b.step = 2; b.fired = false; const par = (b.k + b.par) % 2; b.cols = [];

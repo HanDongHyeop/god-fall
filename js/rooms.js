@@ -8,7 +8,9 @@ function enterRoom(d) {
   g.saved = { haz: g.haz, grid: lvl.grid, hp: lvl.hp, rows: lvl.rows, enemies: g.enemies, jars: g.jars, shards: g.shards, decor: g.decor, portal: g.portal, levelH: g.levelH, cam: g.cam, px: p.x, py: p.y, doors: g.doors, ebul: g.ebul, decals: g.decals, door: d, arenaTop: g.arenaTop, isBossWave: g.isBossWave, floorRow: g.floorRow };
   g.isBossWave = false;
   const rows = Math.max(Math.ceil(view.worldH / TILE) + 1, 14), F = rows - 4; lvl.rows = rows; g.floorRow = F; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
-  for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) { if (r < F - 9 || r >= F || c === 0 || c === COLS - 1) lvl.set(c, r, HARD); }
+  // v31: 위를 깰 수 없는 벽으로 막지 않는다(화면 밖 맨 윗줄만). 보이지 않는 천장은 화면 위 끝(playerCeil)
+  for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) { if (r < 1 || r >= F || c === 0 || c === COLS - 1) lvl.set(c, r, HARD); }
+  g.arenaTop = 1;
   if (d.kind === 'mini') buildMiniRoom(F);
   g.levelH = (rows - 1) * TILE; g.enemies = []; g.jars = []; g.shards = []; g.decor = []; g.portal = null; g.doors = []; g.ebul = []; g.decals = []; g.bullets = []; g.haz = []; g.later = [];
   const side = d.side, floorY = F * TILE;
@@ -51,7 +53,7 @@ function enterRoom(d) {
 /* 중간 보스 방의 발판: 들어갈 때마다 새로 짠다. 같은 챕터·같은 웨이브여도 구조가 달라진다.
    모양 → 좌우 반전 → 위치·길이·재질·두께를 무작위로 고른 뒤, 모든 발판에 오르내릴 수 있는 판만 쓴다.
    h = 바닥에서 몇 칸 위(바닥 두 칸은 항상 비운다), th = 두께(위로 자란다) */
-const MINI_ROOM = { minH: 3, maxH: 7, jump: 3, reachUp: [3, 3, 3, 2], reachDown: 4 };
+const MINI_ROOM = { minH: 3, maxH: 7, jump: 3, reachUp: [3, 3, 3, 2], reachDown: 4, upper: 5 };   // upper = 위층 발판을 아래층 모양에서 몇 칸 올려 까는지(v31 방을 화면 전체로 넓힘)
 const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const MINI_SHAPES = {
   // 양쪽 선반 + 가운데 높은 발판
@@ -81,16 +83,16 @@ function miniMatPicker(mode) {
 }
 const miniLast = { shape: '', sig: '' };
 /* 칸 모음 → 오르내리기 판정. 땅 점프(3칸)만으로 모든 발판에 닿고, 어디서든 바닥으로 돌아올 수 있어야 한다 */
-function miniRoomOk(cells) {
+function miniRoomOk(cells, top = 9) {
   // 같은 칸 위아래로 겹칠 때: 바위끼리 붙은 두께는 괜찮고, 그 밖에는 사이에 두 칸을 비운다(끼인 발판 방지)
-  for (let c = 1; c <= 7; c++) { let last = 0, lastT = 0; for (let h = 1; h <= MINI_ROOM.maxH; h++) { const t = cells[h + ':' + c]; if (!t) continue; if (last) { const gap = h - last - 1; if (gap === 0 ? t === ONEWAY || lastT === ONEWAY : gap < 2) return false; } last = h; lastT = t; } }
-  const solid = (c, h) => { const t = cells[h + ':' + c]; return t === HARD || t === BREAK; }, free = (c, h) => c >= 1 && c <= 7 && h <= 9 && !solid(c, h);
+  for (let c = 1; c <= 7; c++) { let last = 0, lastT = 0; for (let h = 1; h <= top; h++) { const t = cells[h + ':' + c]; if (!t) continue; if (last) { const gap = h - last - 1; if (gap === 0 ? t === ONEWAY || lastT === ONEWAY : gap < 2) return false; } last = h; lastT = t; } }
+  const solid = (c, h) => { const t = cells[h + ':' + c]; return t === HARD || t === BREAK; }, free = (c, h) => c >= 1 && c <= 7 && h <= top && !solid(c, h), maxH = top - 2;
   const spots = [];
-  for (let c = 1; c <= 7; c++) { spots.push({ c, s: 0 }); for (let h = 1; h <= MINI_ROOM.maxH + 3; h++) if (cells[h + ':' + c] && free(c, h + 1) && free(c, h + 2)) spots.push({ c, s: h }); }
+  for (let c = 1; c <= 7; c++) { spots.push({ c, s: 0 }); for (let h = 1; h <= maxH + 1; h++) if (cells[h + ':' + c] && free(c, h + 1) && free(c, h + 2)) spots.push({ c, s: h }); }
   const clearH = (c0, c1, s) => { for (let c = Math.min(c0, c1); c <= Math.max(c0, c1); c++) if (!free(c, s + 1) || !free(c, s + 2)) return false; return true; };
   const clearV = (c, s0, s1) => { for (let h = s0 + 1; h <= s1 + 2; h++) if (!free(c, h)) return false; return true; };
   // 점프는 높이가 정해져 있어 항상 3칸 넘게 솟는다. 지나가는 칸의 머리 위까지 비어야 한다
-  const arcClear = (a, b) => { for (let c = Math.min(a.c, b.c); c <= Math.max(a.c, b.c); c++) for (let h = Math.max(a.s, b.s) + 1; h <= Math.min(9, a.s + 5); h++) if (!free(c, h)) return false; return true; };
+  const arcClear = (a, b) => { for (let c = Math.min(a.c, b.c); c <= Math.max(a.c, b.c); c++) for (let h = Math.max(a.s, b.s) + 1; h <= Math.min(top, a.s + 5); h++) if (!free(c, h)) return false; return true; };
   const go = (a, b) => {
     const dc = Math.abs(a.c - b.c);
     if (b.s > a.s) { const up = b.s - a.s; return up <= MINI_ROOM.jump && dc <= MINI_ROOM.reachUp[up] && clearV(a.c, a.s, b.s) && arcClear(a, b); }
@@ -108,7 +110,7 @@ function miniRoomOk(cells) {
   return spots.length > floor.length + 2;
 }
 let miniPick = 0;
-function makeMiniLayout() {
+function makeMiniLayout(top = 9) {
   miniPick = ri(0, Object.keys(MINI_SHAPES).length - 2);
   const roll = Math.random(), mode = roll < MINI_MIX.thin ? 'thin' : roll < MINI_MIX.thin + MINI_MIX.thick ? 'thick' : 'mix';
   // 모양을 먼저 뽑고 그 모양 안에서 맞는 판을 찾는다. 까다로운 모양도 고르게 나오게 한다
@@ -120,8 +122,13 @@ function makeMiniLayout() {
       const th = mat === ONEWAY ? 1 : th0 || ri(1, 2);
       for (let c = c0; c <= c1; c++) for (let k = 0; k < th; k++) { const hh = h + k; if (hh > MINI_ROOM.maxH) continue; cells[hh + ':' + (flip ? 8 - c : c)] = mat; }
     }
+    // v31 위층: 방이 높으면 다른 모양 하나를 얇은 발판으로 MINI_ROOM.upper칸 올려 깐다(위로 올라가 싸울 자리)
+    if (top >= 13 && tries < 150) {
+      const up = names[ri(0, names.length - 1)], fl2 = ri(0, 1);
+      for (const [c0, c1, h] of MINI_SHAPES[up](() => ONEWAY, () => ONEWAY)) { const hh = h + MINI_ROOM.upper; if (hh > top - 3) continue; for (let c = c0; c <= c1; c++) { const k = hh + ':' + (fl2 ? 8 - c : c); if (!cells[k]) cells[k] = ONEWAY; } }
+    }
     const sig = Object.keys(cells).sort().map(k => k + '=' + cells[k]).join(',');
-    if (sig === miniLast.sig || !miniRoomOk(cells)) continue;
+    if (sig === miniLast.sig || !miniRoomOk(cells, top)) continue;
     miniLast.shape = shape; miniLast.sig = sig;
     return { shape, sig, cells };
   }
@@ -131,7 +138,7 @@ function makeMiniLayout() {
   return { shape: 'base', sig: 'base', cells };
 }
 function buildMiniRoom(F) {
-  const L = makeMiniLayout(), hp = Math.round(20 * DIFF.hp(game.wave));
+  const L = makeMiniLayout(Math.max(9, F - 2)), hp = Math.round(20 * DIFF.hp(game.wave));
   for (const k in L.cells) { const [h, c] = k.split(':').map(Number), r = F - h; lvl.set(c, r, L.cells[k]); if (L.cells[k] === BREAK) lvl.hp[r * COLS + c] = hp; }
   game.miniLayout = L;
 }
@@ -141,7 +148,7 @@ function miniRoam(b, dt, k) {
   b.roamT = (b.roamT === undefined ? .3 : b.roamT) - dt;
   if (b.def.float) {
     // 뜨는 보스는 플레이어 양옆을 번갈아 스쳐 지나간다
-    if (b.roamT <= 0) { b.roamSide = -(b.roamSide || 1); b.roamX = clamp(p.x + b.slot * 70 + b.roamSide * (50 + Math.random() * 100), minX, maxX); b.roamY = b.floorY - 40 - Math.random() * 190; b.roamT = .38 + Math.random() * .3; }
+    if (b.roamT <= 0) { b.roamSide = -(b.roamSide || 1); b.roamX = clamp(p.x + b.slot * 70 + b.roamSide * (50 + Math.random() * 100), minX, maxX); b.roamY = b.floorY - 40 - Math.random() * Math.max(190, b.floorY - bossTopY() - (b.drawH || b.h) - 40); b.roamT = .38 + Math.random() * .3; }
     if (b.roamX === undefined) return;
     b.vx = approachSnap(b.vx, clamp((b.roamX - b.x) * 4, -320, 320) * k, 8, dt);
     b.x = clamp(b.x + b.vx * dt, minX, maxX); b.y = approachSnap(b.y, b.roamY, 3.2 * k, dt);
@@ -273,15 +280,17 @@ function roomTick(dt) {
   const g = game, r = g.room, p = g.p; r.t += dt;
   if (r.crystal && r.crystal.shake > 0) r.crystal.shake = Math.max(0, r.crystal.shake - dt * 6);
   if (r.kind === 'mini') { miniTick(dt, r); if (g.state === 'dying') return; }
+  if (r.kind === 'tut' && tutTick(dt)) return;
   if (r.winT > 0) { r.winT -= dt; if (r.winT <= 0) { r.locked = false; r.exit.used = false; fullHeal(); } }
   g.cam = Math.max(0, g.levelH + TILE - view.worldH);
 }
 function drawRoomBack() {
   const g = game, r = g.room, s = view.s;
   // 안쪽 벽을 어둡게 해서 바깥과 다른 공간처럼 보이게 한다
-  ctx.fillStyle = 'rgba(6,5,14,.42)'; ctx.fillRect(wx(TILE), wy(r.floorY - 9 * TILE), (WORLD_W - 2 * TILE) * s, 9 * TILE * s);
+  const roomTop = Math.min(r.floorY - 9 * TILE, g.cam), rh = r.floorY - roomTop;   // v31: 방이 화면 전체로 넓어졌다
+  ctx.fillStyle = 'rgba(6,5,14,.42)'; ctx.fillRect(wx(TILE), wy(roomTop), (WORLD_W - 2 * TILE) * s, rh * s);
   const gl = ctx.createRadialGradient(view.W / 2, wy(r.floorY - 40), 10 * s, view.W / 2, wy(r.floorY - 40), 170 * s);
-  gl.addColorStop(0, 'rgba(255,214,140,.22)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = gl; ctx.fillRect(0, wy(r.floorY - 9 * TILE), view.W, 9 * TILE * s);
+  gl.addColorStop(0, 'rgba(255,214,140,.22)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = gl; ctx.fillRect(0, wy(roomTop), view.W, rh * s);
   if (r.crystal && r.crystal.hp > 0) {
     const c = r.crystal, im = c.ruby ? IMG.r_ruby : IMG.o_gold; if (ok(im)) { const h = (c.ruby ? 80 : 74) * s, w = h * im.naturalWidth / im.naturalHeight, jx = (Math.random() - .5) * c.shake * 6 * s; ctx.drawImage(im, wx(c.x) - w / 2 + jx, wy(c.y) - h / 2 - 2 * s, w, h); }
   }
@@ -297,7 +306,7 @@ function drawRoomBack() {
   }
 }
 function drawRoomFront() {
-  const g = game, r = g.room, s = view.s, p = g.p, top = wy(r.floorY - 9 * TILE) + 26 * s;
+  const g = game, r = g.room, s = view.s, p = g.p, top = Math.min(wy(r.floorY - 9 * TILE) + 26 * s, view.safeT + (g.minis ? 112 : 92) * s);   // v31: 넓어진 방에서는 화면 위쪽(정보 막대 아래)
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `${19 * s}px ${FONT}`; textOut(r.title[0], view.W / 2, top, '#ffe9b0', 3.6);
   ctx.font = `${12 * s}px ${FONT}`; textOut(r.title[1], view.W / 2, top + 21 * s, '#fff', 2.6);
