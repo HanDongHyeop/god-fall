@@ -424,7 +424,7 @@ function onBulletHit(b, e) {
   if (e && has('burn')) e.burn = Math.max(e.burn || 0, 3);
   // 히드라의 독니: 맞은 자리에서 작은 탄 2발이 양옆 아래로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
   // 히드라의 독니(전설): 맞은 자리에서 적을 쫓는 독니 3발로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
-  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .5, seekR: 140, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
+  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .8, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
 }
 

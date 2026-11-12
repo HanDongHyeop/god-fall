@@ -9,7 +9,7 @@ const SEEK = [null, { r: 40, turn: 4, col: '#9ff5d0' }, { r: 80, turn: 6, col: '
 const ORB = [null,
   { n: 2, R: 40, size: 5.5, dmg: .4, spd: 3.6, block: false },
   { n: 3, R: 46, size: 7, dmg: .6, spd: 4, block: true },
-  { n: 4, R: 56, size: 9.5, dmg: .9, spd: 4.4, block: true, el: ['fire', 'ice', 'bolt', 'wind'] }];
+  { n: 4, R: 56, size: 9.5, dmg: 1.4, spd: 4.4, block: true, el: ['fire', 'ice', 'bolt', 'wind'] }];
 const ORB_COL = { fire: ['#ff8a3a', '#ffe2a0'], ice: ['#7fd8ff', '#e8fbff'], bolt: ['#ffe14a', '#fffbd0'], wind: ['#e8f4ff', '#ffffff'], blue: ['#4aa8ff', '#e0f4ff'] };
 const godMode = () => { const p = game.p; return !!(p && (p.high || has('avatar'))); };   // 신성 폭주 상태(신의 현현은 판 내내)
 
