@@ -40,7 +40,7 @@ try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete 
 
 const MAX_JUMPS = 3, HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
 const COYOTE = .08, BUFFER = .11;
-const HOLD_FIRE = .12;   // v30.3: 점프 상태로 공중에서 누른 뒤 이만큼(초) 안에 떼면 탭 = 점프, 넘기면 꾹 누름 = 그 순간부터 공격(뛰지 않음). v30.2의 .16은 느리다는 피드백
+const HOLD_FIRE = .12;   // v30.4: 점프 상태로 공중에서 눌러 바로 뛴 누르기를 이만큼(초) 넘게 누르고 있으면 그때부터 공격(짧은 탭은 점프만). 못 뛴 누르기(게이지 없음)는 바로 공격
 const WORLD_W = 360, TILE = 40, COLS = 9;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const approachSnap = (v, target, rate, dt, eps = .004) => {

@@ -455,18 +455,17 @@ function tick(dt) {
   const act = locked ? null : interactNear();
   let attackTap = !locked && input.attackEdge; input.attackEdge = false;
   // v30.2: 이번 누르기가 공격이 될 수 있는지는 누른 순간에 정한다 — 이미 점프 상태로 공중에 있을 때 누른 것만 공격이 된다(땅·그냥 떨어지는 중에 누르면 끝까지 점프만).
-  // v30.3: 점프 상태로 공중에서 누르면 바로 뛰지 않고 탭인지 꾹 누름인지 본다 — HOLD_FIRE 전에 떼면(탭) 그때 점프, 넘기면 공격(뛰지 않음 = 게이지를 안 씀).
-  // 땅·그냥 떨어지는 중에 누르면 기다리지 않고 바로 점프(공격이 될 수 없는 누르기)
+  // v30.4: 누르면 어디서든 바로 점프(공중 탭·더블탭·떼고 다시 탭이 즉시 반응해야 한다는 피드백 — v30.3의 '뗄 때 점프'는 늦고, 긴 탭이 꾹 누름으로 읽혀 점프가 빠졌다).
+  // 공격은 점프 상태로 공중에서 시작한 누르기를 누르고 있을 때만: 그 누르기로 뛰었으면 HOLD_FIRE초부터, 게이지가 없어 못 뛰었으면(공격밖에 뜻이 없음) 바로 쏜다
   if (input.jumpEdge) {
     if (!locked) {
       if (act) attackTap = true;
-      else { const air = !p.onGround && p.jumpState; p.pressFire = air; p.tapPending = air; if (!air) p.buffer = BUFFER; }
+      else { p.pressFire = !p.onGround && p.jumpState; p.pressJumped = false; p.holdConv = false; p.buffer = BUFFER; }
       p.holdT = 0;
     }
     input.jumpEdge = false;
   }
-  if (jumpHeld) { p.holdT = (p.holdT || 0) + dt; if (p.tapPending && p.holdT >= HOLD_FIRE) p.tapPending = false; }
-  else { if (p.tapPending && !locked) p.buffer = BUFFER; p.tapPending = false; p.holdT = 0; p.pressFire = false; }
+  if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; p.pressFire = false; }
   const st = g.st;
   // 좌우
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
@@ -487,6 +486,7 @@ function tick(dt) {
         p.vy = -T.jumpV; p.pressFire = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
       } else {
+        p.pressJumped = true;   // 이 누르기로 공중 점프를 했다 → 계속 누르고 있으면 HOLD_FIRE 뒤부터 쏜다
         p.vy = p.vy < 0 ? Math.max(p.vy - T.jumpV * T.airAdd, -T.jumpV * T.airCap) : -T.jumpV * Math.max(T.airAdd, .95);
         gust(p.x, p.y + p.h / 2 + 2, 36); feathers(p.x, p.y - 22, 3, 90); sfx.flap();
         p.spin = 1;
@@ -495,6 +495,13 @@ function tick(dt) {
       p.coyote = 0; p.onGround = false; p.squash = -.28; sfx.jump(p.jumps - 1);
     } else if (!p.onGround && p.buffer < BUFFER - dt) { p.gaugeFlash = .25; if (!p.jumpState) sfx.fizzle(); p.buffer = 0; }   // 점프 상태에서 게이지 없이 누르면 공격 누르기라 헛소리는 내지 않는다(게이지 칸만 깜빡)
   }
+  // v30.4: 공중에서 눌러 바로 뛴 누르기가 HOLD_FIRE를 넘겨 '꾹 누름(공격)'이 되면 그 점프는 공격 시작의 작은 도약으로 바꾼다 —
+  // 게이지·점프 횟수를 돌려주고 올라가던 힘을 거의 멈춘다. 그래야 '점프 → 꾹 공격 → 떼고 탭'에서 탭이 다시 제대로 뛴다
+  if (jumpHeld && p.pressFire && p.pressJumped && !p.holdConv && p.holdT >= HOLD_FIRE) {
+    p.holdConv = true; p.gauge = Math.min(100, p.gauge + T.gaugeCost); p.jumps = Math.max(1, p.jumps - 1);
+    if (p.vy < 0) p.vy *= .25;
+  }
+  if (!jumpHeld) p.holdConv = false;
   // 공격
   p.fireT -= dt; p.attackPose = Math.max(0, p.attackPose - dt); p.throwT = Math.max(0, p.throwT - dt);
   const nearItem = g.room ? roomItemNear() : null;
@@ -502,7 +509,7 @@ function tick(dt) {
   // 공격(v30.1): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지, 버튼을 누르고 있는 동안 쏜다.
   // 한 번 뛰고 계속 누르면 쏘고, 손을 뗐다 다시 누르면 게이지가 있을 때 한 번 더 뛰고 그대로 누르고 있으면 또 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
   // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
-  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && p.pressFire && p.holdT >= HOLD_FIRE && !p.onGround && p.jumpState && !isSolid(below);
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && p.pressFire && (!p.pressJumped || p.holdT >= HOLD_FIRE) &&!p.onGround && p.jumpState && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
   if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
