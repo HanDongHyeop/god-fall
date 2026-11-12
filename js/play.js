@@ -470,7 +470,7 @@ function tick(dt) {
   if (p.buffer > 0) {
     const fromGround = p.coyote > 0 && p.jumps === 0;
     if (p.gauge >= T.gaugeCost && p.jumps < MAX_JUMPS) {
-      p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 저절로 공격)
+      p.buffer = 0; p.gauge -= T.gaugeCost; p.jumps++; g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 버튼을 누르고 있으면 공격)
       if (fromGround) {
         p.vy = -T.jumpV;
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
@@ -481,15 +481,16 @@ function tick(dt) {
         if (st.jumpWave) explode(p.x, p.y + 16, 46, { tiles: false, dmg: Math.round(p.atk * .6) });
       }
       p.coyote = 0; p.onGround = false; p.squash = -.28; sfx.jump(p.jumps - 1);
-    } else if (!p.onGround && p.buffer < BUFFER - dt) { p.gaugeFlash = .25; sfx.fizzle(); p.buffer = 0; }
+    } else if (!p.onGround && p.buffer < BUFFER - dt) { p.gaugeFlash = .25; if (!p.jumpState) sfx.fizzle(); p.buffer = 0; }   // 점프 상태에서 게이지 없이 누르면 공격 누르기라 헛소리는 내지 않는다(게이지 칸만 깜빡)
   }
   // 공격
   p.fireT -= dt; p.attackPose = Math.max(0, p.attackPose - dt); p.throwT = Math.max(0, p.throwT - dt);
   const nearItem = g.room ? roomItemNear() : null;
   if (nearItem && attackTap) { roomBuy(nearItem); }
-  // 공격(v30): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지 저절로 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
+  // 공격(v30.1): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지, 버튼을 누르고 있는 동안 쏜다.
+  // 한 번 뛰고 계속 누르면 쏘고, 손을 뗐다 다시 누르면 게이지가 있을 때 한 번 더 뛰고 그대로 누르고 있으면 또 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
   // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
-  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = !locked && !p.onGround && p.jumpState && !isSolid(below);
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && !p.onGround && p.jumpState && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
   if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
