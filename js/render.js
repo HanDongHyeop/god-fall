@@ -244,11 +244,7 @@ function drawHero() {
   const blink = p.inv > 0 && p.hurtT <= 0 && Math.floor(g.t * 14) % 2 === 0;
   if ((p.hitFlash > 0 || blink) && ok(wim)) { ctx.globalAlpha = p.hitFlash > 0 ? 1 : .6; ctx.drawImage(wim, dx, dy, dw, dh); ctx.globalAlpha = 1; }
   ctx.restore();
-  if (!p.onGround && (p.ammo < p.maxAmmo || p.ammoFlash > 0)) {
-    const n = p.maxAmmo, d = Math.min(4.2, 70 / n) * s, w = d * .72, y0 = wy(p.y) - 40 * s, x0 = wx(p.x) - n * d / 2;
-    ctx.fillStyle = 'rgba(12,16,30,.7)'; ctx.fillRect(x0 - 1.2 * s, y0 - 1.2 * s, n * d + 2.4 * s - (d - w), w + 2.4 * s);
-    for (let i = 0; i < n; i++) { ctx.fillStyle = i < p.ammo ? (p.ammo <= 2 ? '#ff8a6b' : '#fff2b0') : p.ammoFlash > 0 ? '#ff5068' : 'rgba(255,255,255,.14)'; ctx.fillRect(x0 + i * d, y0, w, w); }
-  }
+  // v32: 머리 위 탄창 칸은 뺐다(탄 수 제한 없음). 아래는 점프 게이지
   if (p.gauge < 100 || p.gaugeFlash > 0) {
     const bw = 15 * s, bh = 3.4 * s, gap = 2 * s, x0 = wx(p.x) - bw - gap / 2, y0 = wy(p.y) - 46 * s;
     const nJ = jumpMax();

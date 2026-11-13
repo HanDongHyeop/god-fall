@@ -4,7 +4,8 @@
 'use strict';
 const famLv = fam => { let n = 0; for (const id of game.cards) { const c = CARD_BY[id]; if (c && c.fam === fam) n = Math.max(n, c.lv); } return n; };
 /* 유도: 탄이 사라지기 전까지, 탄에서 r 안에 있는 일반 몬스터 쪽으로 휜다. turn = 초당 꺾이는 각도(라디안) */
-const SEEK = [null, { r: 40, turn: 4, col: '#9ff5d0' }, { r: 80, turn: 6, col: '#7fc4ff' }, { r: 240, turn: 10, col: '#e6a8ff' }];
+// v32: 영웅(사냥매의 눈) 칸을 넣어 4단. 일반 40 · 희귀 80 · 영웅 150 · 전설 240
+const SEEK = [null, { r: 40, turn: 4, col: '#9ff5d0' }, { r: 80, turn: 6, col: '#7fc4ff' }, { r: 150, turn: 8, col: '#5ee8ff' }, { r: 240, turn: 10, col: '#e6a8ff' }];
 /* 궤도 구슬: n개, 반지름 R, 크기 size, 공격력 배율 dmg, 적 탄 막기 block. 전설은 불·얼음·번개·바람 4원소 */
 const ORB = [null,
   { n: 2, R: 40, size: 5.5, dmg: .4, spd: 3.6, block: false },
@@ -21,7 +22,7 @@ function fireVolley(x, y, hand, mul, big) {
   if (lv === 2) { fireBullet(x, y, 0, 1150, false, hand, { mul, big }); for (const s of [-1, 1]) fireBullet(x, y, s * 330, 1100, false, hand, { mul: mul * .85, big }); return; }
   for (const vx of [-600, -300, 0, 300, 600]) { fireBullet(x, y, vx, 1100 - Math.abs(vx) * .12, false, hand, { mul: mul * .9, big }); game.bullets[game.bullets.length - 1].fan = true; }
 }
-/* 유도 값: 카드(바람 길잡이·사냥꾼의 눈·아르테미스의 표식), 하데스의 영혼불, 올빼미·히드라 탄 중 가장 센 것 */
+/* 유도 값: 카드(바람 길잡이·사냥꾼의 눈·사냥매의 눈·사냥 여신의 표식), 하데스의 영혼불, 올빼미·히드라 탄 중 가장 센 것 */
 function seekOf(b) {
   const lv = famLv('seek'); let r = 0, turn = 0, tier = lv;
   if (lv) { r = SEEK[lv].r; turn = SEEK[lv].turn; }
@@ -78,12 +79,15 @@ function stormTick(dt) {
   chainFrom(e, 2, Math.round(atkNow() * 1.6));
 }
 /* ───── 그림 ───── */
-/* 유도탄 꼬리: 일반 = 옅은 민트 실, 희귀 = 파란 줄, 전설 = 보라·금 소용돌이. 전설은 노린 적에 표식 */
+/* 유도탄 꼬리: 일반 = 옅은 민트 실, 희귀 = 파란 줄, 영웅 = 빛나는 하늘색 띠, 전설 = 보라·금 소용돌이. 전설은 노린 적에 표식 */
 function drawSeekTrail(b, x, y) {
   const s = view.s, tier = b.sk || 0; if (!tier) return;
-  const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, L = (tier === 3 ? 38 : tier === 2 ? 30 : 20) * s;
+  const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, L = (tier >= 4 ? 38 : tier === 3 ? 34 : tier === 2 ? 30 : 20) * s;
   ctx.lineCap = 'round';
   if (tier === 3) {
+    ctx.strokeStyle = 'rgba(80,220,255,.35)'; ctx.lineWidth = 9 * s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ux * L, y + uy * L); ctx.stroke();
+    ctx.strokeStyle = 'rgba(200,250,255,.95)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ux * L * .8, y + uy * L * .8); ctx.stroke();
+  } else if (tier >= 4) {
     ctx.strokeStyle = 'rgba(200,120,255,.5)'; ctx.lineWidth = 9 * s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + ux * L, y + uy * L); ctx.stroke();
     ctx.strokeStyle = 'rgba(255,220,130,.95)'; ctx.lineWidth = 2.2 * s; ctx.beginPath();
     for (let i = 0; i <= 8; i++) { const k = i / 8, w = Math.sin(b.t * 40 + k * 7) * 5 * s * k; ctx.lineTo(x + ux * L * k - uy * w, y + uy * L * k + ux * w); } ctx.stroke();
@@ -101,7 +105,7 @@ function drawSkillsBack() {
 function drawSkillsFront() {
   const g = game, p = g.p, s = view.s; if (!p) return;
   // 유도 전설: 노리는 적에게 조여드는 표식
-  if (famLv('seek') === 3) {
+  if (famLv('seek') === 4) {
     const seen = new Set(); for (const b of g.bullets) if (b.tgt && b.tgt.alive) seen.add(b.tgt);
     for (const e of seen) { const x = wx(e.x), y = wy(e.y), r = (e.r + 10) * s * (1 + .15 * Math.sin(g.t * 14)); ctx.strokeStyle = 'rgba(230,160,255,.95)'; ctx.lineWidth = 2 * s;
       for (let q = 0; q < 4; q++) { const a = q * Math.PI / 2 + g.t * 3; ctx.beginPath(); ctx.arc(x, y, r, a - .35, a + .35); ctx.stroke(); } }

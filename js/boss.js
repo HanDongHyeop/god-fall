@@ -131,8 +131,8 @@ function bossTick(dt) {
   const feet = p.y + p.h / 2, topB = b.y - hh * .92, overX = Math.abs(p.x - b.x) < b.w * .42 + p.w / 2, overY = p.y + p.h / 2 > topB && p.y - p.h / 2 < b.y - 4;
   if (overX && overY && b.y - hh * .5 < floorY && !b.hidden) {
     if (p.vy > -40 && feet - topB < 26) {
-      // 머리 밟기(v31.1): 튕겨 오르며 고정 밟기 피해(STOMP.dmg)를 준다. 재장전은 없다(탄이 주 공격)
-      if (!(b.stompT > 0)) { b.stompT = .2; hitBoss(STOMP.dmg, false, p.x, p.y + p.h / 2, true); }
+      // 머리 밟기(v32): 밟기만으로는 보스 45번, 중간 보스 무리 전체 18번(data.js STOMP). 재장전은 없다(탄이 주 공격)
+      if (!(b.stompT > 0)) { b.stompT = .2; const n = b.mini ? Math.max(1, Math.round(STOMP.mini / ((g.minis && g.minis.length) || 1))) : STOMP.boss; hitBoss(Math.ceil(b.maxHp / n), false, p.x, p.y + p.h / 2, true); }
       p.vy = (input.jumpHeld || input.keys.j ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0)); p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.land(); g.shake = Math.max(g.shake, 4);
     } else if (p.inv <= 0) { refill(p); hurt(b.x, Math.round(28 * DIFF.dmg(g.wave))); if (g.state === 'dying') return; }
   }
@@ -321,7 +321,8 @@ function bossTick(dt) {
     if (b.step === 1 && !b.ice) {
       const n = b.mini ? 4 : b.phase === 2 ? 8 : 6, xs = [];
       if (Math.random() < .7) xs.push(clamp(p.x, TILE + 14, WORLD_W - TILE - 14));   // 한 줄은 주인공 머리 위
-      for (let k = 0; k < 60 && xs.length < n; k++) { const x = TILE + 14 + Math.random() * (WORLD_W - TILE * 2 - 28); if (xs.every(o => Math.abs(o - x) > 30)) xs.push(x); }
+      for (let k = 0; k < 400 && xs.length < n; k++) { const x = TILE + 14 + Math.random() * (WORLD_W - TILE * 2 - 28); if (xs.every(o => Math.abs(o - x) > 30)) xs.push(x); }
+      while (xs.length < n) xs.push(TILE + 14 + Math.random() * (WORLD_W - TILE * 2 - 28));   // v32: 자리가 엉켜 못 채우면(약 1%) 간격 없이 채운다. 예전엔 가끔 한 줄이 빠졌다
       b.ice = xs; b.t = 0; for (const x of xs) g.fx.push({ type: 'warn', x0: x - 7, x1: x + 7, y0: g.cam, y1: floorY, x: 0, y: 0, t: 0, life: .75 / speedK });
     } else if (b.step === 1 && b.t > .75 / speedK) {
       // 천장(막힌 줄) 바로 아래에서 떨어진다

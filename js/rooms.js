@@ -25,7 +25,7 @@ function enterRoom(d) {
   } else if (d.kind === 'shop') {
     const stock = [
       { id: 'heal', name: '암브로시아', sub: '체력 35% 회복', icon: 'ambrosia', cost: price(70 + sec * 30), buy: () => healBy(p.maxHp * .35) },
-      { id: 'ammo', name: '탄창 보강', sub: '탄창 +2', icon: 'mag', cost: price(100 + sec * 40), buy: () => { p.maxAmmo += 2; p.ammo = p.maxAmmo; } },
+      { id: 'rate', name: '연사 부적', sub: '발사 간격 -6%', icon: 'rapid1', cost: price(100 + sec * 40), buy: () => { game.st.firePct -= .06; } },
       { id: 'hp', name: '넥타르', sub: '최대 체력 +20', icon: 'feast', cost: price(130 + sec * 50), buy: () => { p.maxHp += 20; p.hp += 20; } },
       { id: 'atk', name: '단련', sub: '공격력 +12%', icon: 'heavy', cost: price(160 + sec * 60), buy: () => { p.atk = Math.round(p.atk * 1.12); } },
       { id: 'card', name: '신탁', sub: '무작위 카드 1장', icon: 'member', cost: price(220 + sec * 70), buy: () => grantRandomCard() },
@@ -44,7 +44,7 @@ function enterRoom(d) {
     pick.forEach((c, i) => room.items.push({ id: 'c_' + c.id, name: c.name, sub: c.desc, note: c.note, icon: c.id, cost: 0, tier: c.tier, card: c, once: true, buy: () => applyCard(c), hpCost: i === 2 ? .2 : 0 }));
     room.items.forEach((it, i) => { it.x = spots[i]; it.y = floorY; });
   } else if (d.kind === 'spring') {
-    room.items.push({ id: 'spring', name: '샘물', sub: '체력 50% 회복, 탄창 +1', icon: 'ambrosia', cost: 0, once: true, buy: () => { healBy(p.maxHp * .5); p.maxAmmo++; p.ammo = p.maxAmmo; }, x: WORLD_W / 2, y: floorY });
+    room.items.push({ id: 'spring', name: '샘물', sub: '체력 50% 회복', icon: 'ambrosia', cost: 0, once: true, buy: () => { healBy(p.maxHp * .5); }, x: WORLD_W / 2, y: floorY });
   }
   for (const it of room.items) if (it.icon) loadImg('c_' + it.icon, `assets/card/${it.icon}.webp`);
   g.cam = Math.max(0, g.levelH + TILE - view.worldH);
@@ -126,6 +126,8 @@ function makeMiniLayout(top = 9) {
     if (top >= 13 && tries < 150) {
       const up = names[ri(0, names.length - 1)], fl2 = ri(0, 1);
       for (const [c0, c1, h] of MINI_SHAPES[up](() => ONEWAY, () => ONEWAY)) { const hh = h + MINI_ROOM.upper; if (hh > top - 4) continue; /* 화면 위 제목 줄과 떨어지게 */ for (let c = c0; c <= c1; c++) { const k = hh + ':' + (fl2 ? 8 - c : c); if (!cells[k]) cells[k] = ONEWAY; } }
+      // v32: 고른 모양이 낮은 조각뿐이면 위층이 비었다 → 9칸 이상 높이에 발판 하나는 꼭 깐다
+      if (!Object.keys(cells).some(k => +k.split(':')[0] >= 9)) { const hh = Math.min(top - 4, 10), c0 = ri(0, 1) ? 1 : 5; for (let c = c0; c < c0 + 3; c++) cells[hh + ':' + c] = ONEWAY; }
     }
     const sig = Object.keys(cells).sort().map(k => k + '=' + cells[k]).join(',');
     if (sig === miniLast.sig || !miniRoomOk(cells, top)) continue;
@@ -134,6 +136,7 @@ function makeMiniLayout(top = 9) {
   }
   // 전부 실패하면 검증된 기본 구조
   const cells = {}; for (const [c0, c1, h] of [[1, 2, 3], [6, 7, 3], [3, 5, 6]]) for (let c = c0; c <= c1; c++) cells[h + ':' + c] = ONEWAY;
+  if (top >= 13) for (let c = 1; c <= 3; c++) cells[Math.min(top - 4, 10) + ':' + c] = ONEWAY;   // v32: 기본 구조에도 위층 발판
   miniLast.shape = 'base'; miniLast.sig = 'base';
   return { shape: 'base', sig: 'base', cells };
 }

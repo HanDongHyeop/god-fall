@@ -22,7 +22,7 @@ const TUNE_DEFAULT = {
   accel: 9000,       // 가속. 클수록 미끄러지지 않는다
   grav: 1500,
   maxFall: 560,      // 다운웰 빠른 낙하 200~320 논리px/초
-  jumpV: 707,        // v31(2026-11-12): 점프 1회로 줄이며 높이 +30%(속도 ×√1.3 = 620→707). 예전 약 3칸 → 약 4칸
+  jumpV: 663,        // v31(2026-11-12): 점프 1회로 줄이며 높이 +30%(620→707). v32(2026-11-13): 높이 -12%(속도 ×√0.88 = 707→663)
   airAdd: .82,       // 공중 점프: 상승 중 더해지는 비율 → 더 높이 간다
   airCap: 1.15,      // 공중 점프 최대 상승 속도 비율. 크면 빠른 2회가 느린 3회보다 높아진다
   // v31: 점프는 1회(날개 신발이면 2회). 게이지는 남은 점프 칸 표시일 뿐 공중에서 차지 않는다 — 땅에 닿거나 적을 밟으면 다시 찬다(refill)
@@ -278,7 +278,7 @@ const has = id => game.cards.has(id);
 function newPlayer() {
   return {
     x: WORLD_W / 2, y: 40, vx: 0, vy: 0, w: 20, h: 34, face: 1, onGround: false,
-    hp: 100, maxHp: 100, ammo: 8, maxAmmo: 8, gauge: 100, jumps: 0, gaugeFlash: 0,
+    hp: 100, maxHp: 100, gauge: 100, jumps: 0, gaugeFlash: 0,
     coyote: 0, buffer: 0, fireT: 0, inv: 0, combo: 0, shards: 0, gemChain: 0, gemT: 0, high: false,
     attackPose: 0, throwT: 0, shotN: 0, hurtT: 0, landT: 0, tilt: 0, flip: -1, breath: 0, glide: 3, squash: 0, emptyT: 0, spin: 0, walk: 0,
   };
@@ -380,7 +380,7 @@ function moveY(p, dy) {
 }
 
 // 바닥이나 몬스터에 닿으면 탄과 점프가 둘 다 리셋된다
-function refill(p) { p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.glide = 3; }
+function refill(p) { p.gauge = 100; p.jumps = 0; p.glide = 3; }
 
 /* ───── 1프레임(1/60초) 갱신 ───── */
 function fxUpdate(dt) {
