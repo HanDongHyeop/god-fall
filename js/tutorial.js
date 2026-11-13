@@ -9,8 +9,9 @@ const TUT = { on: false, respawn: 3 };
 try { TUT.on = localStorage.getItem('gf_tut') === '1'; } catch (e) {}
 function setTut(on) { TUT.on = !!on; try { localStorage.setItem('gf_tut', TUT.on ? '1' : '0'); } catch (e) {} }
 /* 발판 [c0, c1, h(바닥 위 칸), 재질], 박쥐 [칸, 바닥 위 높이(칸)]. 점프 1회 ≈ 4칸, 발판 간격 3칸 */
-const TUT_PLAT = [[5, 7, 3, 'ONEWAY'], [1, 3, 6, 'ONEWAY'], [4, 6, 9, 'ONEWAY'], [1, 2, 12, 'ONEWAY'], [6, 7, 12, 'HARD']];
-const TUT_BATS = [[3.5, 1.6], [6, 4.7], [2, 7.7], [5, 10.7], [6.5, 13.6]];
+// v31.1: 너무 촘촘해 뛰기 연습이 안 된다는 피드백 → 아래 발판 2개·아래쪽 박쥐 2마리만
+const TUT_PLAT = [[5, 7, 3, 'ONEWAY'], [1, 3, 6, 'ONEWAY']];
+const TUT_BATS = [[3.5, 1.6], [6, 4.7]];
 function startTutorial(opt) {
   startRun(Object.assign({}, opt, { noIntro: true }));
   const g = game, p = g.p;

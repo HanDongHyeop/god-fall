@@ -687,8 +687,8 @@ function updateEnemies(dt, jumpHeld) {
     if (p.vy > -60 && feet - e.y < e.r * 1.0) {
       if (e.stomp) {
         // 밟기: 약한 적은 한 번에, 체력이 많아진 뒤에는 크게 깎는다
-        const sd = Math.max((e.maxHp || e.hp) * .65, atkNow() * 1.6 * (1 + g.st.stompPct));
-        p.vy = jumpHeld ? -T.stompHoldV : -T.stompV;
+        const sd = STOMP.dmg;   // v31.1: 고정(공격력·카드로 세지지 않는다)
+        p.vy = (jumpHeld ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0));
         refill(p); p.jumpState = true; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
         e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2;
         if (e.hp <= 0) killEnemy(e, true);
@@ -696,10 +696,10 @@ function updateEnemies(dt, jumpHeld) {
         if (has('titan')) explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: '#8a5a2a', cols: ['#ffd27a', '#c08040', '#ffffff'] });
         if (g.st.stompWave) explode(e.x, e.y, 54, { tiles: false, dmg: Math.round(p.atk * .7) });
       } else { if (p.inv <= 0) refill(p); hurt(e.x, e.dmg); p.vy = -340; if (g.state === 'dying') return; }
-    } else if (e.stomp && p.y - e.y > e.r * .4 && famLv('butt') >= 2) {
+    } else if (p.y - e.y > e.r * .4 && famLv('butt') >= 2) {   // 가시 달린 적도 들이받을 수 있다(v31.1)
       // v31 들이받기(미노타우로스의 뿔·포세이돈의 황소): 몸이 적보다 아래에서 닿으면 다치지 않고 밟기와 같은 피해. 올라가던 힘은 멈춘다
       if (e.buttT > 0) continue;
-      const lv = famLv('butt'), sd = Math.max((e.maxHp || e.hp) * .65, atkNow() * 1.6 * (1 + g.st.stompPct)) * (lv >= 3 ? 1.5 : 1);
+      const lv = famLv('butt'), sd = STOMP.dmg * (lv >= 3 ? 1.5 : 1);
       e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2; e.buttT = .25; if (p.vy < 60) p.vy = 60; p.squash = .22; g.kick = -4;
       g.fx.push({ type: 'ring', x: p.x, y: p.y - p.h / 2, r: 40 + lv * 8, col: lv >= 3 ? 'rgba(255,90,110,.95)' : 'rgba(255,214,120,.95)', t: 0, life: .22 });
       chunks(p.x, p.y - p.h / 2, 6, lv >= 3 ? ['#ff6c7b', '#ffffff', '#7fe8ff'] : ['#ffd27a', '#ffffff', '#c08040'], 260, 3);

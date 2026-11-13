@@ -90,7 +90,7 @@ const Meta = {
   /* 내 능력치: 기본 + 장비 + 슬롯 레벨 + 등급 스킬 + 재능 + 신 */
   stats(godId) {
     const s = this.s, god = GOD_BY[godId || s.god], lv = this.godLv(god.id) || 1;
-    const o = { atk: 10, hp: 100, atkPct: 0, hpPct: 0, firePct: 0, crit: .05, critDmg: .5, shardPct: 0, goldPct: 0, runPct: 0, jumpPct: 0, stompPct: 0, dmgCut: 0, invPct: 0, healPct: 0, highPct: 0, bossPct: 0, ammo: 0, waveHeal: 0, pierce: 0, heavy: 0, every8: 0, stompWave: 0, jumpWave: 0, lastShot: 0, lastStand: 0, thorns: 0, splash: 0, dodge: 0, breaker: 0, homing: 0, leech: 0, chain: 0, comboStrike: 0 };
+    const o = { atk: 10, hp: 100, atkPct: 0, hpPct: 0, firePct: 0, crit: .05, critDmg: .5, shardPct: 0, goldPct: 0, runPct: 0, jumpPct: 0, stompBounce: 0, dmgCut: 0, invPct: 0, healPct: 0, highPct: 0, bossPct: 0, ammo: 0, waveHeal: 0, pierce: 0, heavy: 0, every8: 0, stompWave: 0, jumpWave: 0, lastShot: 0, lastStand: 0, thorns: 0, splash: 0, dodge: 0, breaker: 0, homing: 0, leech: 0, chain: 0, comboStrike: 0 };
     const addEff = (k, v) => { if (k in o) o[k] += v; };
     for (const S of SLOTS) {
       const it = this.equipped(S.id, god.id); if (!it) continue;

@@ -64,9 +64,9 @@ function drawBossBits() {
   for (const q of b.bits) { ctx.save(); ctx.translate(wx(q.x), wy(q.y)); ctx.rotate(q.a + Math.PI / 2); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore(); }
 }
 function bossHitTest(bu) { if (game.boss.hidden) return false; const b = game.boss, hh = b.drawH || b.h; return Math.abs(bu.x - b.x) < b.w * .42 + bu.r && bu.y > b.y - hh * .95 - bu.r && bu.y < b.y && b.y - hh * .4 < b.floorY + 4; }
-function hitBoss(dmg, crit, x, y) {
+function hitBoss(dmg, crit, x, y, raw) {
   const g = game, b = g.boss; if (!b || !b.alive || b.state === 'intro' || b.state === 'dead') return;
-  const d = Math.round(dmg * (1 + (g.st.bossPct || 0)) * (b.open > .5 ? 1.25 : 1));
+  const d = raw ? dmg : Math.round(dmg * (1 + (g.st.bossPct || 0)) * (b.open > .5 ? 1.25 : 1));   // raw = 밟기(고정 피해, 보스 피해 보너스·입 벌림 배율 없음)
   b.hp -= d; b.flash = .06; b.pop = 1; b.hitC = (b.hitC || 0) + 1;
   dmgNum(x, y - 6, d, crit || b.open > .5);
   g.fx.push({ type: 'hit', x, y, r: crit ? 16 : 11, t: 0, life: .1, rot: Math.random() * 3 });
@@ -91,7 +91,7 @@ function pickAttack(b) {
 function bossShot(x, y, vx, vy, b, gv = 0) { game.ebul.push({ x, y, vx, vy, g: gv, r: 7, dmg: Math.round(22 * DIFF.dmg(game.wave)), t: 0, col: b.def.col[2], ghost: true }); }
 function bossTick(dt) {
   const g = game, b = g.boss, p = g.p; if (!b) return;
-  b.t += dt; b.flash = Math.max(0, b.flash - dt); b.pop = Math.max(0, b.pop - dt * 8);
+  b.t += dt; if (b.stompT > 0) b.stompT -= dt; b.flash = Math.max(0, b.flash - dt); b.pop = Math.max(0, b.pop - dt * 8);
   b.sx = approachSnap(b.sx, 1, 10, dt); b.sy = approachSnap(b.sy, 1, 10, dt);
   if (!b.mini) { if (g.darkT > 0) g.darkT -= dt; g.dark = approachSnap(g.dark || 0, g.darkT > 0 ? 1 : 0, 3, dt, .01); }
   // moveK = 몸의 움직임, speedK = 공격 박자. 중간 보스는 움직임만 진짜 보스와 같고 공격은 느리다
@@ -131,8 +131,9 @@ function bossTick(dt) {
   const feet = p.y + p.h / 2, topB = b.y - hh * .92, overX = Math.abs(p.x - b.x) < b.w * .42 + p.w / 2, overY = p.y + p.h / 2 > topB && p.y - p.h / 2 < b.y - 4;
   if (overX && overY && b.y - hh * .5 < floorY && !b.hidden) {
     if (p.vy > -40 && feet - topB < 26) {
-      // 머리 밟기: 튕겨 오르기만 한다. 보스 체력은 줄지 않고 재장전도 없다(공격으로만 잡는다)
-      p.vy = input.jumpHeld || input.keys.j ? -T.stompHoldV : -T.stompV; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.land(); g.shake = Math.max(g.shake, 4);
+      // 머리 밟기(v31.1): 튕겨 오르며 고정 밟기 피해(STOMP.dmg)를 준다. 재장전은 없다(탄이 주 공격)
+      if (!(b.stompT > 0)) { b.stompT = .2; hitBoss(STOMP.dmg, false, p.x, p.y + p.h / 2, true); }
+      p.vy = (input.jumpHeld || input.keys.j ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0)); p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.land(); g.shake = Math.max(g.shake, 4);
     } else if (p.inv <= 0) { refill(p); hurt(b.x, Math.round(28 * DIFF.dmg(g.wave))); if (g.state === 'dying') return; }
   }
   const s = b.state;
@@ -142,7 +143,7 @@ function bossTick(dt) {
     else if (b.def.float) {
       // v31: 뜨는 보스는 넓어진 싸움터 전체 높이를 천천히 오르내린다(예전엔 바닥 위 150±60에만 있었다)
       const lo = floorY - 60, hi = Math.min(lo - 60, topY - 30 + hh), mid = (lo + hi) / 2, amp = (lo - hi) / 2;
-      b.y = approachSnap(b.y, mid + Math.sin(g.t * .75 + b.idx) * amp, 1.6, dt); b.x = clamp(b.x + Math.sin(g.t * .9) * 40 * dt, TILE + b.w * .42, WORLD_W - TILE - b.w * .42);
+      b.y = approachSnap(b.y, mid + Math.sin(g.t * 1.05 + b.idx) * amp, 2.4, dt); b.x = clamp(b.x + Math.sin(g.t * .9) * 40 * dt, TILE + b.w * .42, WORLD_W - TILE - b.w * .42);
     }
     if (!b.air && b.t > (s === 'rage' ? .8 : b.cool) / speedK) { bossSet(pickAttack(b)); b.cool = b.mini ? 2.7 + Math.random() * .8 : .7 + Math.random() * .7; }
     return;

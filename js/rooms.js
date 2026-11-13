@@ -125,7 +125,7 @@ function makeMiniLayout(top = 9) {
     // v31 위층: 방이 높으면 다른 모양 하나를 얇은 발판으로 MINI_ROOM.upper칸 올려 깐다(위로 올라가 싸울 자리)
     if (top >= 13 && tries < 150) {
       const up = names[ri(0, names.length - 1)], fl2 = ri(0, 1);
-      for (const [c0, c1, h] of MINI_SHAPES[up](() => ONEWAY, () => ONEWAY)) { const hh = h + MINI_ROOM.upper; if (hh > top - 3) continue; for (let c = c0; c <= c1; c++) { const k = hh + ':' + (fl2 ? 8 - c : c); if (!cells[k]) cells[k] = ONEWAY; } }
+      for (const [c0, c1, h] of MINI_SHAPES[up](() => ONEWAY, () => ONEWAY)) { const hh = h + MINI_ROOM.upper; if (hh > top - 4) continue; /* 화면 위 제목 줄과 떨어지게 */ for (let c = c0; c <= c1; c++) { const k = hh + ':' + (fl2 ? 8 - c : c); if (!cells[k]) cells[k] = ONEWAY; } }
     }
     const sig = Object.keys(cells).sort().map(k => k + '=' + cells[k]).join(',');
     if (sig === miniLast.sig || !miniRoomOk(cells, top)) continue;
