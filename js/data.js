@@ -36,7 +36,7 @@ const GEAR = {
   ring_a: { slot: 'ring', name: '올리브 인장', icon: 'ring_a', desc: '평화 협정을 찍던 은 반지.',
     skills: [[1, '밟기 반동 +15%', 'stompBounce', .15], [2, '공격력 +6%', 'atkPct', .06], [3, '밟을 때 주변에 충격파', 'stompWave', 1]] },
   ring_b: { slot: 'ring', name: '헤스티아의 불씨', icon: 'ring_b', desc: '꺼지지 않는 화덕 불을 담은 반지.',
-    skills: [[1, '공격력 +5%', 'atkPct', .05], [2, '발사 간격 -8%', 'firePct', -.08], [3, '치명타 피해 +40%', 'critDmg', .4]] },   // v32: 탄창 능력 대신
+    skills: [[1, '탄창 +1', 'ammo', 1], [2, '탄창 +1', 'ammo', 1], [3, '탄이 비면 다음 공격 강화', 'lastShot', 1]] },
   helm_a: { slot: 'helm', name: '찌그러진 청동 투구', icon: 'helm_a', desc: '여러 번 맞았지만 아직 쓸 만하다.',
     skills: [[1, '최대 체력 +6%', 'hpPct', .06], [2, '맞은 뒤 무적 +20%', 'invPct', .2], [3, '웨이브 시작 시 체력 10% 회복', 'waveHeal', .1]] },
   helm_b: { slot: 'helm', name: '올림포스 깃털 투구', icon: 'helm_b', desc: '근위대장이 버리고 간 투구.',
@@ -54,17 +54,17 @@ const GEAR_BY_SLOT = {}; for (const k in GEAR) (GEAR_BY_SLOT[GEAR[k].slot] = GEA
 
 /* ───── 신 6종. fire=발사 간격 배율, dmg=피해 배율, recoil=반동(작을수록 잘 뜸), shot=탄 종류 ───── */
 const GODS = [
-  { id: 'hermes', name: '헤르메스', rank: '레어', rankCol: '#3478e6', title: '늦은 전령', shot: 'letter', fire: 1, dmg: 1, recoil: .2, weapon: '날개 편지',
+  { id: 'hermes', name: '헤르메스', rank: '레어', rankCol: '#3478e6', title: '늦은 전령', shot: 'letter', fire: 1, dmg: 1, recoil: .2, ammo: 8, weapon: '날개 편지',
     passive: '파편 획득 +15%. 공중에서 더 빠르게 움직인다.', p: { shardPct: .15, runPct: .08 } },
-  { id: 'artemis', name: '아르테미스', rank: '레어', rankCol: '#3478e6', title: '달의 사냥꾼', shot: 'arrow', fire: 1.25, dmg: 1.35, recoil: .26, weapon: '초승달 활',
+  { id: 'artemis', name: '아르테미스', rank: '레어', rankCol: '#3478e6', title: '달의 사냥꾼', shot: 'arrow', fire: 1.25, dmg: 1.35, recoil: .26, ammo: 8, weapon: '초승달 활',
     passive: '화살이 적을 1번 관통한다. 치명타 확률 +15%.', p: { pierce: 1, crit: .15 } },
-  { id: 'dionysus', name: '디오니소스', rank: '에픽', rankCol: '#a040e6', title: '끝나도 즐거운 신', shot: 'wine', fire: 1.5, dmg: 1.3, recoil: .34, weapon: '포도주 항아리',
+  { id: 'dionysus', name: '디오니소스', rank: '에픽', rankCol: '#a040e6', title: '끝나도 즐거운 신', shot: 'wine', fire: 1.5, dmg: 1.3, recoil: .34, ammo: 7, weapon: '포도주 항아리',
     passive: '술이 터져 주변까지 맞힌다. 20% 확률로 피해를 흘려 넘긴다.', p: { splash: 34, dodge: .2 } },
-  { id: 'hephaestus', name: '헤파이스토스', rank: '에픽', rankCol: '#a040e6', title: '아무도 안 믿는 대장장이', shot: 'bomb', fire: 2.4, dmg: 2.6, recoil: .08, weapon: '대장간 망치',
+  { id: 'hephaestus', name: '헤파이스토스', rank: '에픽', rankCol: '#a040e6', title: '아무도 안 믿는 대장장이', shot: 'bomb', fire: 2.4, dmg: 2.6, recoil: .08, ammo: 5, weapon: '대장간 망치',
     passive: '불씨 폭탄이 넓게 터지고 블록을 부순다. 반동이 가장 강하다.', p: { splash: 52, breaker: 1 } },
-  { id: 'hades', name: '하데스', rank: '전설', rankCol: '#e0a020', title: '지친 명계 관리자', shot: 'soul', fire: 1.3, dmg: 1.05, recoil: .24, weapon: '영혼 등불',
+  { id: 'hades', name: '하데스', rank: '전설', rankCol: '#e0a020', title: '지친 명계 관리자', shot: 'soul', fire: 1.3, dmg: 1.05, recoil: .24, ammo: 8, weapon: '영혼 등불',
     passive: '영혼불이 적을 따라간다. 처치할 때마다 체력 1 회복.', p: { homing: 1, leech: 1 } },
-  { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.15, recoil: .24, weapon: '번개',
+  { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.15, recoil: .24, ammo: 8, weapon: '번개',
     passive: '번개가 가까운 적 2마리에게 옮겨 간다. 콤보 8마다 낙뢰.', p: { chain: 2, comboStrike: 1 } },
 ];
 const GOD_BY = Object.fromEntries(GODS.map(g => [g.id, g]));
@@ -73,10 +73,10 @@ const GOD_LV_MAX = 4, GOD_UNLOCK = 50;
 const GOD_LV_COST = { '레어': [100, 200, 400], '에픽': [100, 200, 400], '전설': [50, 100, 200] };   // 전설은 조각이 귀해 적게 든다
 const GOD_LV_BONUS = .15;   // 레벨 1개당 공격력·체력
 const GOD_LV = {
-  hermes: [['점프 높이 +6%', { jumpPct: .06 }], ['판 보상 골드 +20%', { goldPct: .2 }], ['발사 간격 -10%', { firePct: -.1 }]],
+  hermes: [['점프 높이 +6%', { jumpPct: .06 }], ['판 보상 골드 +20%', { goldPct: .2 }], ['탄창 +2', { ammo: 2 }]],
   artemis: [['치명타 피해 +30%', { critDmg: .3 }], ['발사 간격 -12%', { firePct: -.12 }], ['화살 관통 +1', { pierce: 1 }]],
   dionysus: [['회피 확률 +10%', { dodge: .1 }], ['폭발 범위 +16', { splash: 16 }], ['웨이브 시작 시 체력 5% 회복', { waveHeal: .05 }]],
-  hephaestus: [['발사 간격 -8%', { firePct: -.08 }], ['공격력 +10%', { atkPct: .1 }], ['폭발 범위 +20', { splash: 20 }]],
+  hephaestus: [['탄창 +1', { ammo: 1 }], ['공격력 +10%', { atkPct: .1 }], ['폭발 범위 +20', { splash: 20 }]],
   hades: [['체력 +10%', { hpPct: .1 }], ['처치 회복 +1', { leech: 1 }], ['판마다 한 번, 쓰러질 때 체력 1로 버틴다', { lastStand: 1 }]],
   zeus: [['보스 피해 +15%', { bossPct: .15 }], ['번개 전이 +1', { chain: 1 }], ['치명타 확률 +10%', { crit: .1 }]],
 };
@@ -210,7 +210,7 @@ const REST = {
     { id: 'heal', name: '체력 40% 회복', icon: 'c_ambrosia', col: '#2f9e48', w: 2, apply: p => healBy(p.maxHp * .4) },
     { id: 'atk', name: '공격력 +8%', icon: 'c_heavy', col: '#d8572a', w: 2, apply: p => { p.atk = Math.round(p.atk * 1.08); } },
     { id: 'hp', name: '최대 체력 +20', icon: 'c_giant', col: '#b8306e', w: 2, apply: p => { p.maxHp += 20; p.hp += 20; } },
-    { id: 'rate', name: '발사 간격 -6%', icon: 'c_rapid1', col: '#2f6fd8', w: 1.5, apply: () => { game.st.firePct -= .06; } },
+    { id: 'ammo', name: '탄창 +2', icon: 'c_mag', col: '#2f6fd8', w: 1.5, apply: p => { p.maxAmmo += 2; p.ammo = p.maxAmmo; } },
     { id: 'card', name: '신의 선물', icon: 'c_olympus', col: '#9038d8', w: 1 },
   ],
   nymph: [

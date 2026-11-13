@@ -57,7 +57,7 @@ function startRun(opt = {}) {
   loadGod(g.godId);
   const st = runStats();
   g.p = newPlayer();
-  const p = g.p; p.god = g.godId; p.atk = st.atk; p.maxHp = p.hp = st.hp;   // v32: 탄창 제한 없음(점프가 1회라 탄 수로 묶을 필요가 없다)
+  const p = g.p; p.god = g.godId; p.atk = st.atk; p.maxHp = p.hp = st.hp; p.maxAmmo = p.ammo = g.god_.ammo + st.ammo;
   p.gemMul = 1 + st.shardPct; p.reviveUsed = false; p.lastStand = !!st.lastStand; p.olive = false; p.shots = 0; p.feastN = 0;
   g.wave = opt.wave || (1 + g.chapter * STAGES); g.startWave = g.wave; g.clear = false; g.cards = new Set(); g.cardList = []; g.choiceBonus = 0; g.kills = 0; g.maxCombo = 0; g.shardTotal = 0; g.bosses = 0;
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
@@ -225,7 +225,7 @@ function buildWave() {
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   const p = g.p;
-  p.x = WORLD_W / 2; p.y = 120; p.vx = 0; p.vy = 0; p.onGround = false; p.gauge = 100; p.jumps = 0; p.olive = has('olive');
+  p.x = WORLD_W / 2; p.y = 120; p.vx = 0; p.vy = 0; p.onGround = false; p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.olive = has('olive');
   if (g.st.waveHeal) healBy(p.maxHp * g.st.waveHeal);
   g.cam = 0; g.dust = [];
   for (let i = 0; i < 28; i++) g.dust.push({ x: R() * WORLD_W, y: R() * view.worldH, z: .35 + R() * .6, r: .8 + R() * 1.6 });
@@ -351,11 +351,11 @@ function gameOver() {
   const g = game; g.state = 'dying'; g.overT = 1.0; input.clearAll(); sfx.over(); g.vign = 1; g.timeScale = .3; g.whiteout = .35;
   chunks(g.p.x, g.p.y, 16, ['#ffffff', '#ff6c7b'], 340, 4);
 }
-/* 이어하기: 체력 절반, 3초 무적, 주변 적과 적 탄 제거. 호출 전에 비용을 낸다 */
+/* 이어하기: 체력 절반, 탄창 가득, 3초 무적, 주변 적과 적 탄 제거. 호출 전에 비용을 낸다 */
 function revive() {
   const g = game, p = g.p;
   g.state = 'play'; g.overT = 0; g.timeScale = 1; g.vign = 0; g.whiteout = .5; g.contN++; g.hitStop = 0;
-  p.hp = Math.max(1, Math.round(p.maxHp * .5)); p.inv = 3; p.hurtT = 0; p.vx = 0; p.vy = -260; p.onGround = false;
+  p.hp = Math.max(1, Math.round(p.maxHp * .5)); p.ammo = p.maxAmmo; p.inv = 3; p.hurtT = 0; p.vx = 0; p.vy = -260; p.onGround = false;
   g.ebul = [];
   for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 170) e.alive = false;
   g.fx.push({ type: 'ring', x: p.x, y: p.y - 10, r: 170, col: 'rgba(255,240,170,.95)', t: 0, life: .45 });
@@ -372,9 +372,9 @@ function finishRun(gaveUp) {
 function endCombo() {
   const p = game.p, c = p.combo;
   if (c >= 8) {
-    const sh = c >= 15 ? 150 : 100;   // v32: 콤보 15 보상이던 탄창 +1 대신 파편 +50
-    let t = `${c} 콤보! 파편 +${sh}`;
-    p.shards += sh; game.shardTotal += sh;
+    let t = `${c} 콤보! 파편 +100`;
+    p.shards += 100; game.shardTotal += 100;
+    if (c >= 15) { p.maxAmmo++; p.ammo = p.maxAmmo; t += ' · 탄창 +1'; }
     if (c >= 25) { healBy(10); t += ' · 체력 +10'; }
     popup(p.x, p.y - 40, t, '#ffe27a', true); sfx.reward();
     game.fx.push({ type: 'ring', x: p.x, y: p.y, r: 60, col: 'rgba(255,230,130,.95)', t: 0, life: .35 });
@@ -385,6 +385,7 @@ function gainShard(s) {
   const p = game.p;
   p.shards += s.v; game.shardTotal += s.v; p.gemChain += s.v; p.gemT = (p.high ? 4 : 2.2) * (1 + game.st.highPct + (has('overload') ? .8 : 0)); sfx.gem(p.gemChain);
   if (!p.high && p.gemChain >= 100) { p.high = true; popup(p.x, p.y - 30, '신성 폭주!', '#ffe27a', true); game.fx.push({ type: 'ring', x: p.x, y: p.y, r: 70, col: 'rgba(255,230,130,.95)', t: 0, life: .4 }); sfx.reward(); }
+  if (has('cell') && p.ammo < p.maxAmmo) p.ammo++;
 }
 /* ───── 탄: 신마다 모양과 판정이 다르다 ───── */
 const SHOT = {
@@ -511,12 +512,14 @@ function tick(dt) {
   // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
   const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && p.pressFire && (!p.pressJumped || p.holdT >= HOLD_FIRE) &&!p.onGround && p.jumpState && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
-  if (firing && p.fireT <= 0) {   // v32: 탄 수 제한 없음
+  if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
     p.fireT = every; p.fireGlow = every + .05;
+    const wasLast = p.ammo === 1;
+    p.ammo--;
     p.attackPose = Math.max(.12, every); p.throwT = Math.max(.06, every * .5); p.shotN++; p.shots++;
     const by = p.y + p.h / 2 + 3, hand = -p.flip * HAND_X;
-    const buff = st.every8 && p.shots % 8 === 0;
+    const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
     const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
     fireVolley(p.x, by, hand, mul, buff);
     if (has('echo') && p.shots % 2 === 0) fireBullet(p.x, by - 18, 0, 1150, false, hand, { mul });
@@ -531,7 +534,11 @@ function tick(dt) {
     const rec = g.god_.recoil * (has('heavy') ? .7 : 1);
     if (p.vy > 0) p.vy = p.vy * rec - 30;
     p.squash = Math.max(p.squash, .12);
-  }
+  } else if (firing && p.ammo <= 0 && p.emptyT <= 0) { p.emptyT = .6; p.ammoFlash = .25; }
+  p.emptyT = Math.max(0, p.emptyT - dt);
+  // 아틀라스의 짐: 공중에서 0.6초마다 탄 1발
+  if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .3) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
+  if (p.ammoFlash) p.ammoFlash = Math.max(0, p.ammoFlash - dt);
   // 이동
   p.vy = Math.min(p.vy + T.grav * dt, T.maxFall);
   const wasGround = p.onGround; p.onGround = false;

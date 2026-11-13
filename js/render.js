@@ -244,14 +244,15 @@ function drawHero() {
   const blink = p.inv > 0 && p.hurtT <= 0 && Math.floor(g.t * 14) % 2 === 0;
   if ((p.hitFlash > 0 || blink) && ok(wim)) { ctx.globalAlpha = p.hitFlash > 0 ? 1 : .6; ctx.drawImage(wim, dx, dy, dw, dh); ctx.globalAlpha = 1; }
   ctx.restore();
-  // v32: 머리 위 탄창 칸은 뺐다(탄 수 제한 없음). 아래는 점프 게이지
-  if (p.gauge < 100 || p.gaugeFlash > 0) {
-    const bw = 15 * s, bh = 3.4 * s, gap = 2 * s, x0 = wx(p.x) - bw - gap / 2, y0 = wy(p.y) - 46 * s;
-    const nJ = jumpMax();
+  // v32.1: 탄창은 점프 버튼 테두리에 보인다. 머리 위에는 점프가 2회 이상일 때(날개 신발)만 남은 점프를 작은 점으로 — 뛸 때마다 하나씩 꺼지고 땅에 닿으면 다시 켜진다
+  const nJ = jumpMax();
+  if (nJ >= 2) {
+    const left = clamp(nJ - p.jumps, 0, nJ), r = 2.7 * s, d = 8.5 * s, y0 = wy(p.y) - 42 * s, x0 = wx(p.x) - (nJ - 1) * d / 2, fl = p.gaugeFlash > 0;
     for (let i = 0; i < nJ; i++) {
-      const x = x0 + (nJ === 1 ? (bw + gap) / 2 : i * (bw + gap)), fill = clamp(p.gauge / gaugeCost() - i, 0, 1);
-      ctx.fillStyle = 'rgba(12,16,30,.75)'; ctx.fillRect(x - 1, y0 - 1, bw + 2, bh + 2);
-      ctx.fillStyle = p.gaugeFlash > 0 ? '#ff6c7b' : fill >= 1 ? '#8fe4ff' : '#4d8fb6'; ctx.fillRect(x, y0, bw * fill, bh);
+      const on = i < left, x = x0 + i * d;
+      ctx.fillStyle = 'rgba(8,12,28,.78)'; ctx.beginPath(); ctx.arc(x, y0, r + 1.3 * s, 0, 7); ctx.fill();
+      if (on) { ctx.fillStyle = 'rgba(140,225,255,.35)'; ctx.beginPath(); ctx.arc(x, y0, r + 2.2 * s, 0, 7); ctx.fill(); }
+      ctx.fillStyle = on ? '#bff3ff' : fl ? '#ff5068' : 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.arc(x, y0, r, 0, 7); ctx.fill();
     }
   }
   if (has('owl')) { const im2 = IMG.c_owl, ox = wx(p.x + p.face * -24), oy = wy(p.y - 26 + Math.sin(g.t * 4) * 4); if (ok(im2)) ctx.drawImage(im2, ox - 11 * s, oy - 11 * s, 22 * s, 22 * s); }

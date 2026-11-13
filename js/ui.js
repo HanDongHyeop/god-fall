@@ -109,7 +109,7 @@ const UI = {
     g.state = 'pause'; input.clearAll(); sfx.tap();
     const st = g.st, p = g.p;
     const el = $('mPause'); el.classList.add('on');
-    el.innerHTML = `<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">일시정지</div><div class="ip-st">능력치</div><div class="ip-sk"><div>공격력 ${p.atk} · 체력 ${p.hp}/${p.maxHp}</div><div>챕터 ${chapterOf(g.wave) + 1} · ${stageOf(g.wave)}/${STAGES}판 · 처치 ${g.kills} · 파편 ${p.shards}</div></div><div class="ip-st">얻은 능력</div>${learnedHTML()}<div class="ip-acts"><button class="btn red" id="pQuit">포기</button><button class="btn gray" id="pMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button><button class="btn green" id="pGo">계속</button></div></div>`;
+    el.innerHTML = `<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">일시정지</div><div class="ip-st">능력치</div><div class="ip-sk"><div>공격력 ${p.atk} · 체력 ${p.hp}/${p.maxHp} · 탄창 ${p.maxAmmo}</div><div>챕터 ${chapterOf(g.wave) + 1} · ${stageOf(g.wave)}/${STAGES}판 · 처치 ${g.kills} · 파편 ${p.shards}</div></div><div class="ip-st">얻은 능력</div>${learnedHTML()}<div class="ip-acts"><button class="btn red" id="pQuit">포기</button><button class="btn gray" id="pMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button><button class="btn green" id="pGo">계속</button></div></div>`;
     $('pGo').onclick = () => { el.classList.remove('on'); g.state = 'play'; input.blockUntil = performance.now() + 120; };
     $('pMute').onclick = e => { sfx.setMute(!sfx.muted); e.target.textContent = `소리 ${sfx.muted ? '켜기' : '끄기'}`; };
     $('pQuit').onclick = () => { el.classList.remove('on'); finishRun(true); };
@@ -120,7 +120,7 @@ const UI = {
     g.state = 'continue'; input.clearAll();
     const cost = CONTINUE_COST[n], el = $('mCont'), can = Meta.s.gem >= cost; let left = CONTINUE_SEC, tm = 0;
     el.classList.add('on');
-    el.innerHTML = `<div class="card-pop ct-pop" style="--c:#b0304a;--d:#6a1830"><div class="hd">이어하기</div><div class="ct-n oL" id="ctN">${left}</div><div class="ct-d">체력 50%를 채우고 3초 동안 무적입니다.<br>주변 적과 탄이 사라집니다.</div><div class="ct-l">남은 횟수 ${CONTINUE_COST.length - n}회 · 보유 보석 ${fmt(Meta.s.gem)}</div><div class="ip-acts"><button class="btn gray" id="ctNo">포기</button><button class="btn green" id="ctYes" ${can ? '' : 'disabled'}><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${cost}</span>${can ? '' : '<span class="oL" style="font-size:calc(var(--u)*2.8)">보석 부족</span>'}</button></div></div>`;
+    el.innerHTML = `<div class="card-pop ct-pop" style="--c:#b0304a;--d:#6a1830"><div class="hd">이어하기</div><div class="ct-n oL" id="ctN">${left}</div><div class="ct-d">체력 50%와 탄창을 채우고 3초 동안 무적입니다.<br>주변 적과 탄이 사라집니다.</div><div class="ct-l">남은 횟수 ${CONTINUE_COST.length - n}회 · 보유 보석 ${fmt(Meta.s.gem)}</div><div class="ip-acts"><button class="btn gray" id="ctNo">포기</button><button class="btn green" id="ctYes" ${can ? '' : 'disabled'}><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${cost}</span>${can ? '' : '<span class="oL" style="font-size:calc(var(--u)*2.8)">보석 부족</span>'}</button></div></div>`;
     const close = () => { clearInterval(tm); el.classList.remove('on'); };
     const quit = () => { close(); sfx.tap(); finishRun(false); };
     tm = setInterval(() => { left--; const c = $('ctN'); if (c) c.textContent = left; if (left <= 0) quit(); else if (left <= 3) sfx.tap(); }, 1000);
@@ -189,7 +189,7 @@ const UI = {
     const nextBonus = lv && lv < GOD_LV_MAX ? ` · 다음 레벨 +${Math.round(GOD_LV_BONUS * 100)}%` : '';
     const share = Meta.godShare(cur), all = Meta.accountBonus(), pc = x => (x * 100).toFixed(x * 100 % 1 ? 1 : 0);
     const acc = `<div class="gacc oL"><b>모든 신에게 주는 보너스</b><span>이 신 공격력 +${pc(share.atk)}% · 체력 +${pc(share.hp)}%</span><span>전체 합계 공격력 +${pc(all.atk)}% · 체력 +${pc(all.hp)}%</span></div>`;
-    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}%${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
+    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
     return `<div class="scroll" id="godScroll"><div class="gods">${cards}${soon}</div>${about}${acc}</div>`;
   },
   gearClick(e) {
@@ -279,7 +279,7 @@ const UI = {
   },
   statPop() {
     const o = Meta.stats();
-    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">능력치</div><button class="x" data-close>✕</button><div class="ip-sk"><div>전투력 ${o.power}</div><div>모든 신 보너스: 공격력 +${(Meta.accountBonus().atk * 100).toFixed(1)}% · 체력 +${(Meta.accountBonus().hp * 100).toFixed(1)}%</div><div>공격력 ${o.atk} · 체력 ${o.hp}</div><div>치명타 확률 ${Math.round(o.crit * 100)}% · 치명타 피해 +${Math.round((.5 + o.critDmg) * 100)}%</div><div>받는 피해 -${Math.round(o.dmgCut * 100)}%</div><div>파편 획득 +${Math.round(o.shardPct * 100)}% · 이동 속도 +${Math.round(o.runPct * 100)}%</div><div>점프 높이 +${Math.round(o.jumpPct * 100)}%</div></div><div class="note">장비 칸을 업그레이드하고, 대장간에서 합성해 더 높은 등급을 만드세요.</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">능력치</div><button class="x" data-close>✕</button><div class="ip-sk"><div>전투력 ${o.power}</div><div>모든 신 보너스: 공격력 +${(Meta.accountBonus().atk * 100).toFixed(1)}% · 체력 +${(Meta.accountBonus().hp * 100).toFixed(1)}%</div><div>공격력 ${o.atk} · 체력 ${o.hp}</div><div>치명타 확률 ${Math.round(o.crit * 100)}% · 치명타 피해 +${Math.round((.5 + o.critDmg) * 100)}%</div><div>받는 피해 -${Math.round(o.dmgCut * 100)}%</div><div>파편 획득 +${Math.round(o.shardPct * 100)}% · 이동 속도 +${Math.round(o.runPct * 100)}%</div><div>탄창 ${o.god.ammo + o.ammo}칸 · 점프 높이 +${Math.round(o.jumpPct * 100)}%</div></div><div class="note">장비 칸을 업그레이드하고, 대장간에서 합성해 더 높은 등급을 만드세요.</div></div>`);
   },
 
   /* ───── 대장간 ───── */

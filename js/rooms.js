@@ -25,7 +25,7 @@ function enterRoom(d) {
   } else if (d.kind === 'shop') {
     const stock = [
       { id: 'heal', name: '암브로시아', sub: '체력 35% 회복', icon: 'ambrosia', cost: price(70 + sec * 30), buy: () => healBy(p.maxHp * .35) },
-      { id: 'rate', name: '연사 부적', sub: '발사 간격 -6%', icon: 'rapid1', cost: price(100 + sec * 40), buy: () => { game.st.firePct -= .06; } },
+      { id: 'ammo', name: '탄창 보강', sub: '탄창 +2', icon: 'mag', cost: price(100 + sec * 40), buy: () => { p.maxAmmo += 2; p.ammo = p.maxAmmo; } },
       { id: 'hp', name: '넥타르', sub: '최대 체력 +20', icon: 'feast', cost: price(130 + sec * 50), buy: () => { p.maxHp += 20; p.hp += 20; } },
       { id: 'atk', name: '단련', sub: '공격력 +12%', icon: 'heavy', cost: price(160 + sec * 60), buy: () => { p.atk = Math.round(p.atk * 1.12); } },
       { id: 'card', name: '신탁', sub: '무작위 카드 1장', icon: 'member', cost: price(220 + sec * 70), buy: () => grantRandomCard() },
@@ -44,7 +44,7 @@ function enterRoom(d) {
     pick.forEach((c, i) => room.items.push({ id: 'c_' + c.id, name: c.name, sub: c.desc, note: c.note, icon: c.id, cost: 0, tier: c.tier, card: c, once: true, buy: () => applyCard(c), hpCost: i === 2 ? .2 : 0 }));
     room.items.forEach((it, i) => { it.x = spots[i]; it.y = floorY; });
   } else if (d.kind === 'spring') {
-    room.items.push({ id: 'spring', name: '샘물', sub: '체력 50% 회복', icon: 'ambrosia', cost: 0, once: true, buy: () => { healBy(p.maxHp * .5); }, x: WORLD_W / 2, y: floorY });
+    room.items.push({ id: 'spring', name: '샘물', sub: '체력 50% 회복, 탄창 +1', icon: 'ambrosia', cost: 0, once: true, buy: () => { healBy(p.maxHp * .5); p.maxAmmo++; p.ammo = p.maxAmmo; }, x: WORLD_W / 2, y: floorY });
   }
   for (const it of room.items) if (it.icon) loadImg('c_' + it.icon, `assets/card/${it.icon}.webp`);
   g.cam = Math.max(0, g.levelH + TILE - view.worldH);

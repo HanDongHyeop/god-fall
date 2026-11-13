@@ -278,7 +278,7 @@ const has = id => game.cards.has(id);
 function newPlayer() {
   return {
     x: WORLD_W / 2, y: 40, vx: 0, vy: 0, w: 20, h: 34, face: 1, onGround: false,
-    hp: 100, maxHp: 100, gauge: 100, jumps: 0, gaugeFlash: 0,
+    hp: 100, maxHp: 100, ammo: 8, maxAmmo: 8, gauge: 100, jumps: 0, gaugeFlash: 0,
     coyote: 0, buffer: 0, fireT: 0, inv: 0, combo: 0, shards: 0, gemChain: 0, gemT: 0, high: false,
     attackPose: 0, throwT: 0, shotN: 0, hurtT: 0, landT: 0, tilt: 0, flip: -1, breath: 0, glide: 3, squash: 0, emptyT: 0, spin: 0, walk: 0,
   };
@@ -380,7 +380,7 @@ function moveY(p, dy) {
 }
 
 // 바닥이나 몬스터에 닿으면 탄과 점프가 둘 다 리셋된다
-function refill(p) { p.gauge = 100; p.jumps = 0; p.glide = 3; }
+function refill(p) { p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.glide = 3; }
 
 /* ───── 1프레임(1/60초) 갱신 ───── */
 function fxUpdate(dt) {
@@ -515,7 +515,7 @@ function drawButtons(dt) {
   btnAnim.act = approachSnap(btnAnim.act, act ? 1 : 0, 14, dt);
   btnAnim.fire = approachSnap(btnAnim.fire, p && p.fireGlow > 0 ? 1 : 0, p && p.fireGlow > 0 ? 30 : 8, dt);
   btnAnim.ring = Math.max(0, btnAnim.ring - dt * 3.2);
-  const nJ = jumpMax(), gf = p ? clamp(p.gauge / gaugeCost(), 0, nJ) : nJ, canJump = !p || p.jumps < nJ || (p.jumpState && !p.onGround);   // v31: 공중 점프 상태에서는 누르면 공격이라 어둡게 하지 않는다
+  const nJ = jumpMax(), canJump = !p || p.jumps < nJ || (p.jumpState && !p.onGround);   // v31: 공중 점프 상태에서는 누르면 공격이라 어둡게 하지 않는다
   btnAnim.dim = approachSnap(btnAnim.dim, canJump || act ? 0 : 1, 12, dt);
   const R = b.r * (1 - .06 * btnAnim.j), x = b.x, y = b.y, fR = R * .72, A = btnAnim.act;
   ctx.save();
@@ -525,20 +525,19 @@ function drawButtons(dt) {
   const rim = ctx.createLinearGradient(x, y - R, x, y + R);
   rim.addColorStop(0, '#fff3c4'); rim.addColorStop(.32, '#eab955'); rim.addColorStop(.68, '#a9691e'); rim.addColorStop(1, '#5e330c');
   ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fill();
-  // 게이지 홈
-  const gR = R * .845, gW = R * .13, gap = .2, span_ = Math.PI - gap * 2, H2 = Math.PI / 2;
-  ctx.lineCap = 'butt'; ctx.lineWidth = gW; ctx.strokeStyle = '#120c26'; ctx.beginPath(); ctx.arc(x, y, gR, 0, 7); ctx.stroke();
-  for (let i = 0; i < 2; i++) {
-    const f = nJ === 1 ? clamp(gf, 0, 1) : clamp(gf - i, 0, 1); if (f <= 0) continue;   // 점프 1회면 양쪽 반원이 함께 한 칸
-    const a0 = i ? H2 - gap : H2 + gap, a1 = i ? a0 - span_ * f : a0 + span_ * f, ccw = !!i;
-    if (f >= 1) {
-      ctx.lineWidth = gW * 1.5; ctx.strokeStyle = 'rgba(110,210,255,.28)'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
-      const cg = ctx.createLinearGradient(x, y + gR, x, y - gR); cg.addColorStop(0, '#2f8cf0'); cg.addColorStop(1, '#aef0ff');
-      ctx.lineWidth = gW * .78; ctx.strokeStyle = cg; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
-    } else {
-      ctx.lineWidth = gW * .7; ctx.strokeStyle = '#4a7fb4'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1, ccw); ctx.stroke();
-      ctx.fillStyle = '#d8f6ff'; ctx.beginPath(); ctx.arc(x + Math.cos(a1) * gR, y + Math.sin(a1) * gR, gW * .36, 0, 7); ctx.fill();
-    }
+  // 탄창 홈(v32.1): 점프가 1회라 테두리 홈은 탄창 칸으로 쓴다. 위에서 시계 방향으로 한 칸씩, 쏠 때마다 끝에서부터 꺼진다.
+  // 점프 횟수(날개 신발 2회)는 캐릭터 머리 위 점 2개로 따로 보인다(render.js drawHero)
+  const gR = R * .845, gW = R * .13, H2 = Math.PI / 2;
+  const nA = p ? Math.max(1, p.maxAmmo) : 8, left = p ? p.ammo : nA, sg = Math.min(.07, Math.PI / nA * .22), low = left <= 2;
+  ctx.lineCap = 'butt'; ctx.lineWidth = gW; ctx.strokeStyle = p && p.ammoFlash > 0 ? '#5a1424' : '#120c26'; ctx.beginPath(); ctx.arc(x, y, gR, 0, 7); ctx.stroke();
+  const cg = ctx.createLinearGradient(x, y + gR, x, y - gR);
+  if (low) { cg.addColorStop(0, '#e2503a'); cg.addColorStop(1, '#ffc08a'); } else { cg.addColorStop(0, '#2f8cf0'); cg.addColorStop(1, '#aef0ff'); }
+  for (let i = 0; i < nA; i++) {
+    const a0 = -H2 + Math.PI * 2 * i / nA + sg, a1 = -H2 + Math.PI * 2 * (i + 1) / nA - sg;
+    if (i < left) {
+      ctx.lineWidth = gW * 1.35; ctx.strokeStyle = low ? 'rgba(255,120,90,.26)' : 'rgba(110,210,255,.26)'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1); ctx.stroke();
+      ctx.lineWidth = gW * .78; ctx.strokeStyle = cg; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1); ctx.stroke();
+    } else { ctx.lineWidth = gW * .5; ctx.strokeStyle = 'rgba(120,140,190,.22)'; ctx.beginPath(); ctx.arc(x, y, gR, a0, a1); ctx.stroke(); }
   }
   // 면: 청금석. 할 일이 있으면 금빛으로 바뀐다
   const fg = ctx.createRadialGradient(x - fR * .25, y - fR * .45, fR * .1, x, y, fR);
