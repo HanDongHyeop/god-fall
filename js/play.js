@@ -58,7 +58,7 @@ function startRun(opt = {}) {
   g.p = newPlayer();
   const p = g.p; p.god = g.godId; p.atk = st.atk; p.maxHp = p.hp = st.hp; p.maxAmmo = p.ammo = g.god_.ammo + st.ammo;
   p.gemMul = 1 + st.shardPct; p.reviveUsed = false; p.lastStand = !!st.lastStand; p.olive = false; p.shots = 0; p.feastN = 0;
-  g.wave = opt.wave || (1 + g.chapter * STAGES); g.startWave = g.wave; g.clear = false; g.cards = new Set(); g.cardList = []; g.choiceBonus = 0; g.kills = 0; g.maxCombo = 0; g.shardTotal = 0; g.bosses = 0;
+  g.wave = opt.wave || (1 + g.chapter * STAGES); g.startWave = g.wave; g.clear = false; g.cards = new Set(); g.cardList = []; g.choiceBonus = 0; g.kills = 0; g.maxCombo = 0; g.highN = 0; g.shardTotal = 0; g.bosses = 0;
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
@@ -364,7 +364,7 @@ function revive() {
 function finishRun(gaveUp) {
   const g = game;
   g.state = 'result';
-  const r = { wave: g.wave, startWave: g.startWave, kills: g.kills, bosses: g.bosses, combo: g.maxCombo, chapter: g.chapter, shards: g.shardTotal, gaveUp, clear: !!g.clear };
+  const r = { wave: g.wave, startWave: g.startWave, kills: g.kills, bosses: g.bosses, combo: g.maxCombo, high: g.highN || 0, chapter: g.chapter, shards: g.shardTotal, gaveUp, clear: !!g.clear };
   const reward = Meta.settle(r);
   UI.showResult(r, reward);
 }

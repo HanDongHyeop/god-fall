@@ -176,18 +176,19 @@ function overBig(b, x, y, pad) { const hh = b.drawH || b.h; return Math.abs(x - 
 
 /* ───── v33 콤보 = 몬스터를 밟은 횟수. 땅에 닿을 때만 0으로. 8번(HIGH.combo)마다 신성 폭주 ─────
    예전 콤보(공중 처치 수·착지 보상)와 파편을 이어 먹어 켜지던 신성 폭주는 없앴다(사용자: 개념이 너무 헷갈림).
-   밟을 때마다 작은 'n 콤보' 글자, 5(HIGH.combo)의 배수에서 큰 글자 + 신성 폭주 '빠빰'(1박 = 콤보 글자 쾅, 2박 = 몸에서 금빛 폭발 + 화면 글자) */
+   밟을 때마다 작은 'n 콤보' 글자, 5(HIGH.combo)에서 큰 글자 + 신성 폭주 '빠빰'(1박 = 콤보 글자 쾅, 2박 = 몸에서 금빛 폭발 + 화면 글자) */
 const highDur = () => HIGH.dur * (1 + (game.st.highPct || 0) + (has('overload') ? .8 : 0));
 function addCombo() {
   const g = game, p = g.p; if (!p) return;
-  if (p.high && !has('avatar')) return;   // v34.1 신성 폭주 중에는 콤보를 세지 않는다(사용자). 끝나면 멈춘 수에서 이어 센다. 신의 현현(판 내내 폭주)은 예외로 센다
+  if (p.high && !has('avatar')) return;   // v34.1 신성 폭주 중에는 콤보를 세지 않는다(사용자). v34.2: 콤보는 5까지만, 폭주가 끝나면 0부터. 신의 현현(판 내내 폭주)은 1~5를 돌며 센다
   p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo);
-  if (g.st.comboStrike && p.combo % HIGH.combo === 0) smite();   // 제우스: 콤보 5(HIGH.combo)마다 낙뢰
+  if (g.st.comboStrike && p.combo >= HIGH.combo) smite();   // 제우스: 콤보 5(HIGH.combo)마다 낙뢰
   const list = g.cfx || (g.cfx = []);
   for (const f of list) if (f.kind === 'n') f.dead = true;   // 작은 글자는 하나만
-  if (p.combo % HIGH.combo === 0) {
-    list.push({ kind: 'max', text: p.combo + ' 콤보!', t: 0, life: 1.05 });
+  if (p.combo >= HIGH.combo) {
+    list.push({ kind: 'max', text: p.combo + ' 콤보!', t: 0, life: 1.05 }); g.highN = (g.highN || 0) + 1;   // v34.2 임무·결과 화면의 '신성 폭주 n번'
     if (!has('avatar')) startHigh(p.high ? 'refresh' : 'on');   // 신의 현현은 이미 판 내내 켜져 있다
+    else p.combo = 0;   // 신의 현현: 콤보는 1~5만 돈다
   } else list.push({ kind: 'n', n: p.combo, text: p.combo + ' 콤보', t: 0, life: .8 });
   g.cfx = list.filter(f => !f.dead);
 }
@@ -226,7 +227,7 @@ function highTick(dt) {
     const fi = p.highT <= HIGH.blink ? highFlickAt(p.highT) : -1;   // 전등이 끊기는 순간 지직 소리
     if (fi >= 0 && fi !== p.highFlick) sfx.highFlick();
     p.highFlick = fi;
-    if (p.highT <= 0) { p.high = false; p.highT = 0; p.highEnd = .35; sparks(p.x, p.y - 8, 12, '#ffe59a', 160, .45, 2); sfx.highOff(); }
+    if (p.highT <= 0) { p.high = false; p.highT = 0; p.combo = 0;   /* v34.2 콤보는 5까지만: 폭주가 끝나면 0부터 */ p.highEnd = .35; sparks(p.x, p.y - 8, 12, '#ffe59a', 160, .45, 2); sfx.highOff(); }
   }
   if (p.highEnd > 0) p.highEnd = Math.max(0, p.highEnd - dt);
   if (g.cfx) { for (const f of g.cfx) f.t += dt; g.cfx = g.cfx.filter(f => f.t < f.life); }

@@ -18,7 +18,7 @@ const Meta = {
       god: 'hermes', gods: { hermes: { own: true, level: 1, shard: 0 } }, talent: {},
       chapter: 0, cleared: Array(CHAPTERS).fill(false), best: Array(CHAPTERS).fill(0),
       chest: { god: { freeAt: 0, pity: 0 }, silver: { freeAt: 0, pity: 0 }, obsidian: { freeAt: 0, pity: 0 }, prism: { pity: 0 } },
-      quest: { day: '', runs: 0, kills: 0, bosses: 0, combo: 0, claimed: {} }, total: { kills: 0, bosses: 0, runs: 0, bestWave: 0, bestCombo: 0, claimed: {} },
+      quest: { day: '', runs: 0, kills: 0, bosses: 0, combo: 0, high: 0, claimed: {} }, total: { kills: 0, bosses: 0, runs: 0, bestWave: 0, bestCombo: 0, bestHigh: 0, highN: 0, claimed: {} },
       opt: { mute: false, bgm: true }, seenTip: false,
     };
   },
@@ -49,7 +49,7 @@ const Meta = {
     const s = this.s, now = Date.now(), ev = ENERGY.regenMin * 60 * 1000;
     if (s.energy < 30) { const n = Math.floor((now - s.energyAt) / ev); if (n > 0) { s.energy = Math.min(30, s.energy + n); s.energyAt += n * ev; } } else s.energyAt = now;
     const day = new Date().toISOString().slice(0, 10);
-    if (s.quest.day !== day) s.quest = { day, runs: 0, kills: 0, bosses: 0, combo: 0, claimed: {} };
+    if (s.quest.day !== day) s.quest = { day, runs: 0, kills: 0, bosses: 0, combo: 0, high: 0, claimed: {} };
   },
   item(uid) { return this.s.inv.find(i => i.uid === uid) || null; },
   equipped(slot, god) { const u = slot === 'weapon' && god ? this.weaponOf(god) : this.s.equip[slot]; return u ? this.item(u) : null; },
@@ -255,17 +255,21 @@ const Meta = {
   quests() {
     const q = this.s.quest, t = this.s.total;
     return [
-      { id: 'd_run', daily: true, name: '오늘 1판 통과', cur: q.runs, need: 1, gem: 15, gold: 200 },
-      { id: 'd_kill', daily: true, name: '오늘 괴물 100마리 처치', cur: q.kills, need: 100, gem: 25, gold: 300 },
+      // v34.2(사용자): 하루 임무를 살짝 어렵게(1판 → 2판, 100 → 150마리), 콤보 임무는 '신성 폭주 횟수'로. 보상은 그대로
+      { id: 'd_run', daily: true, name: '오늘 2판 통과', cur: q.runs, need: 2, gem: 15, gold: 200 },
+      { id: 'd_kill', daily: true, name: '오늘 괴물 150마리 처치', cur: q.kills, need: 150, gem: 25, gold: 300 },
       { id: 'd_boss', daily: true, name: '오늘 보스 1체 처치', cur: q.bosses, need: 1, gem: 35, gold: 400 },
-      { id: 'd_combo', daily: true, name: '오늘 5 콤보 달성', cur: q.combo, need: 5, gem: 25, gold: 300 },
+      { id: 'd_high', daily: true, name: '도전 한 번에 신성 폭주 2번', cur: q.high || 0, need: 2, gem: 25, gold: 300 },
       { id: 'a_w3', name: '챕터 1 클리어', cur: this.clearedN(), need: 1, gem: 100, gold: 500 },
       { id: 'a_w6', name: '챕터 3 클리어', cur: this.clearedN(), need: 3, gem: 200, gold: 1000 },
       { id: 'a_w9', name: '챕터 6 클리어', cur: this.clearedN(), need: 6, gem: 300, gold: 2000 },
       { id: 'a_w15', name: '심층 챕터 9 클리어', cur: this.clearedN(), need: 9, gem: 600, gold: 4000 },
       { id: 'a_w36', name: '심층 챕터 12 클리어', cur: this.clearedN(), need: 12, gem: 1000, gold: 8000 },
       { id: 'a_k1000', name: '누적 1000마리 처치', cur: t.kills, need: 1000, gem: 200, gold: 1500 },
-      { id: 'a_c30', name: '10 콤보 달성', cur: t.bestCombo, need: 10, gem: 200, gold: 1500 },
+      { id: 'a_h3', name: '도전 한 번에 신성 폭주 3번', cur: t.bestHigh || 0, need: 3, gem: 150, gold: 1000 },
+      { id: 'a_h6', name: '도전 한 번에 신성 폭주 6번', cur: t.bestHigh || 0, need: 6, gem: 300, gold: 2500 },
+      { id: 'a_hn20', name: '신성 폭주 누적 20번', cur: t.highN || 0, need: 20, gem: 200, gold: 1500 },
+      { id: 'a_hn100', name: '신성 폭주 누적 100번', cur: t.highN || 0, need: 100, gem: 500, gold: 4000 },
     ];
   },
   questClaimed(q) { return q.daily ? !!this.s.quest.claimed[q.id] : !!this.s.total.claimed[q.id]; },
@@ -302,8 +306,8 @@ const Meta = {
     if (r.bosses) s.energy += ENERGY.clearBack;
     // 시작하자마자 포기한 판은 임무·기록에 넣지 않는다
     if (done) q.runs++;
-    q.kills += r.kills; q.bosses += r.bosses; q.combo = Math.max(q.combo, r.combo);
-    t.runs++; t.kills += r.kills; t.bosses += r.bosses; if (done) t.bestWave = Math.max(t.bestWave, r.wave); t.bestCombo = Math.max(t.bestCombo, r.combo);
+    q.kills += r.kills; q.bosses += r.bosses; q.combo = Math.max(q.combo, r.combo || 0); q.high = Math.max(q.high || 0, r.high || 0);
+    t.runs++; t.kills += r.kills; t.bosses += r.bosses; if (done) t.bestWave = Math.max(t.bestWave, r.wave); t.bestCombo = Math.max(t.bestCombo, r.combo || 0); t.bestHigh = Math.max(t.bestHigh || 0, r.high || 0); t.highN = (t.highN || 0) + (r.high || 0);
     if (done) s.best[r.chapter] = r.clear || r.bosses > 0 ? STAGES : Math.min(STAGES, Math.max(s.best[r.chapter] || 0, R.cleared));
     // 첫 보스를 잡으면 다음 챕터가 열린다
     if (r.bosses > 0) { s.cleared[r.chapter] = true; }
