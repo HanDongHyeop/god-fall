@@ -156,6 +156,7 @@ const sfx = {
   highBeat1() { this.tone('square', 520, 780, .08, .2); this.noise(.07, .26, 2400); this.tone('sine', 130, 60, .12, .4); },
   highBeat2() { this.tone('triangle', 520, 1040, .32, .2); this.tone('triangle', 780, 1560, .32, .14, .02); this.tone('square', 1040, 2080, .18, .08, .05); this.noise(.3, .22, 5200); this.tone('sine', 98, 49, .4, .45); },
   highUp() { this.tone('triangle', 880, 1320, .12, .14); this.tone('triangle', 1320, 1760, .12, .1, .06); },
+  highFlick() { this.noise(.05, .07, 3200); this.tone('square', 120, 90, .05, .035); },   // v34 전등이 끊길 때 작게 지직
   highOff() { this.tone('sine', 900, 300, .25, .12); },
   gem(chain) { if (this.limit('g', 28)) this.tone('sine', 900 + Math.min(chain, 100) * 9, 1300 + Math.min(chain, 100) * 9, .05, .09); },
   hurt() { this.tone('sawtooth', 300, 60, .24, .34); this.noise(.16, .3, 1200); },

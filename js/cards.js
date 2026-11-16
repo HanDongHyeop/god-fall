@@ -31,7 +31,7 @@ const CARDS = [
   { id: 'burn', name: '불꽃 탄', tier: '희귀', desc: '맞은 적이 3초 동안 타며 공격력의 180%를 더 입습니다.', noMini: true, note: '보스와 중간 보스에게는 불이 붙지 않습니다' },
   { id: 'corpse', name: '망자의 폭죽', tier: '희귀', desc: '쓰러뜨린 적이 터져 주변 적에게 공격력 70% 피해를 줍니다.', noMini: true, note: '보스와 중간 보스는 폭발하지 않습니다' },
   { id: 'owl', name: '아테나의 올빼미', tier: '희귀', desc: '올빼미가 따라다니며 내가 쏠 때 적을 쫓는 탄을 같이 쏩니다(피해 70%, 내 탄 카드 효과가 모두 붙음).' },
-  { id: 'titan', name: '타이탄 밟기', tier: '희귀', desc: '적을 밟으면 큰 충격파로 주변 적에게 공격력 150% 피해.', noMini: true, note: '밟을 수 없는 몬스터는 데미지를 줄 수 없습니다' },
+  { id: 'titan', name: '타이탄 밟기', tier: '희귀', fam: 'titan', lv: 1, desc: '적을 밟으면 큰 충격파로 주변 적에게 공격력 150% 피해.', noMini: true, note: '밟을 수 없는 몬스터는 데미지를 줄 수 없습니다' },
   { id: 'feast', name: '포식의 제단', tier: '희귀', desc: '적을 8마리 쓰러뜨릴 때마다 체력 8% 회복.', noMini: true },
   { id: 'olive', name: '올리브 관', tier: '희귀', desc: '웨이브마다 피해를 한 번 막아 줍니다.', noMini: true, note: '고른 다음 웨이브부터 적용됩니다' },
   { id: 'interest', name: '이자 신탁', tier: '희귀', desc: '웨이브를 넘길 때 가진 파편의 25%를 더 받습니다.', noMini: true },
@@ -50,6 +50,8 @@ const CARDS = [
   { id: 'wings', name: '날개 신발', tier: '영웅', desc: '공중에서 한 번 더 뛸 수 있습니다(점프 2회).' },
   { id: 'cell', name: '신성 회로', tier: '영웅', desc: '파편을 먹을 때마다 탄이 1 찹니다.', noMini: true },
   { id: 'nike', name: '니케의 월계관', tier: '영웅', desc: '지금 체력 30% 회복. 웨이브를 시작할 때마다 체력 15% 회복.', noMini: true, apply: p => { healBy(p.maxHp * .3); game.st.waveHeal = (game.st.waveHeal || 0) + .15; } },
+  // v34 타이탄 밟기 묶음(titan, 카드표 문서 제안): 영웅 = 가시·그림자처럼 못 밟던 적도 밟는다, 전설 = 거기에 흡혈
+  { id: 'titan2', name: '히페리온의 발구름', tier: '영웅', fam: 'titan', lv: 2, desc: '가시 달린 적·그림자처럼 못 밟던 적도 밟아서 잡고, 밟으면 큰 충격파(공격력 150%)가 터집니다.', noMini: true },
   { id: 'giant', name: '거인의 피', tier: '영웅', desc: '최대 체력 +40%. 체력이 모두 찹니다.', apply: p => { p.maxHp = Math.round(p.maxHp * 1.4); p.hp = p.maxHp; } },
   // ── 전설: 고른 순간 몸과 화면에서 바로 보이는 상시 효과 ──
   { id: 'fan5', name: '헬리오스의 부채', tier: '전설', fam: 'shot', lv: 3, desc: '탄이 금빛 5갈래 부채꼴로 퍼집니다. 1발 피해는 90%.' },
@@ -61,6 +63,7 @@ const CARDS = [
   { id: 'hydra', name: '히드라의 독니', tier: '전설', desc: '공격이 맞으면 적을 쫓는 독니 3발로 갈라집니다. 1발 피해는 80%.' },
   { id: 'thanatos', name: '타나토스의 유예', tier: '전설', desc: '판마다 한 번, 죽는 순간 체력을 모두 채워 되살아나며 주변 적을 쓸어 버립니다.' },
   { id: 'atlas', name: '아틀라스의 짐', tier: '전설', desc: '탄창 +4. 공중에서 0.3초마다 탄이 1발씩 저절로 찹니다.', apply: p => { p.maxAmmo += 4; p.ammo = p.maxAmmo; } },
+  { id: 'titan3', name: '티폰의 굶주린 발', tier: '전설', fam: 'titan', lv: 3, desc: '못 밟던 적까지 밟아 큰 충격파(공격력 150%)를 내고, 밟기·충격파로 준 피해의 20%만큼 체력을 흡혈합니다.', noMini: true },
   { id: 'kronos', name: '크로노스의 모래시계', tier: '전설', desc: '적과 보스, 적의 탄이 40% 느려집니다.' },
 ];
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));

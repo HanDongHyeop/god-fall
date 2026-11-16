@@ -65,7 +65,7 @@ const GODS = [
   { id: 'hades', name: '하데스', rank: '전설', rankCol: '#e0a020', title: '지친 명계 관리자', shot: 'soul', fire: 1.3, dmg: 1.05, recoil: .24, ammo: 8, weapon: '영혼 등불',
     passive: '영혼불이 적을 따라간다. 처치할 때마다 체력 1 회복.', p: { homing: 1, leech: 1 } },
   { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.15, recoil: .24, ammo: 8, weapon: '번개',
-    passive: '번개가 가까운 적 2마리에게 옮겨 간다. 콤보 8마다 낙뢰.', p: { chain: 2, comboStrike: 1 } },
+    passive: '번개가 가까운 적 2마리에게 옮겨 간다. 콤보 5마다 낙뢰.', p: { chain: 2, comboStrike: 1 } },
 ];
 const GOD_BY = Object.fromEntries(GODS.map(g => [g.id, g]));
 /* 신 성장: 레벨 1~4. 올릴 때마다 공격력·체력이 오르고 고유 능력이 강해진다(GOD_LV = 레벨 2·3·4 효과) */
@@ -182,7 +182,7 @@ const BOSSES = [
 
 /* v33(2026-11-16) 신성 폭주: 몬스터를 땅에 닿지 않고 combo번 밟을 때마다 켜진다(이미 켜져 있으면 시간을 다시 가득).
    dur = 기본 지속(초, 장비 '신성 폭주 지속'·카드 '신성 과부하'로 늘어남), blink = 꺼지기 몇 초 전부터 깜박일지, beat = '빠빰'의 두 박 사이(초) */
-const HIGH = { combo: 8, dur: 8, blink: 3, beat: .17 };
+const HIGH = { combo: 5, dur: 8, blink: 3, beat: .17 };
 /* 샛길 문: 웨이브마다 최대 1개, 보스 웨이브에는 없다. 파편이 모인 뒤 만나도록 웨이브 뒤쪽에 둔다.
    mini = 문이 함정(중간 보스)일 확률. 겉모습은 보통 문과 같다 */
 const DOOR = { chance: .8, from: .6, to: .88, mini: .16 };   // 2026-11-06 함정 10% → 16%

@@ -176,12 +176,12 @@ function overBig(b, x, y, pad) { const hh = b.drawH || b.h; return Math.abs(x - 
 
 /* ───── v33 콤보 = 몬스터를 밟은 횟수. 땅에 닿을 때만 0으로. 8번(HIGH.combo)마다 신성 폭주 ─────
    예전 콤보(공중 처치 수·착지 보상)와 파편을 이어 먹어 켜지던 신성 폭주는 없앴다(사용자: 개념이 너무 헷갈림).
-   밟을 때마다 작은 'n 콤보' 글자, 8의 배수에서 큰 글자 + 신성 폭주 '빠빰'(1박 = 콤보 글자 쾅, 2박 = 몸에서 금빛 폭발 + 화면 글자) */
+   밟을 때마다 작은 'n 콤보' 글자, 5(HIGH.combo)의 배수에서 큰 글자 + 신성 폭주 '빠빰'(1박 = 콤보 글자 쾅, 2박 = 몸에서 금빛 폭발 + 화면 글자) */
 const highDur = () => HIGH.dur * (1 + (game.st.highPct || 0) + (has('overload') ? .8 : 0));
 function addCombo() {
   const g = game, p = g.p; if (!p) return;
   p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo);
-  if (g.st.comboStrike && p.combo % 8 === 0) smite();   // 제우스: 콤보 8마다 낙뢰
+  if (g.st.comboStrike && p.combo % HIGH.combo === 0) smite();   // 제우스: 콤보 5(HIGH.combo)마다 낙뢰
   const list = g.cfx || (g.cfx = []);
   for (const f of list) if (f.kind === 'n') f.dead = true;   // 작은 글자는 하나만
   if (p.combo % HIGH.combo === 0) {
@@ -190,7 +190,7 @@ function addCombo() {
   } else list.push({ kind: 'n', n: p.combo, text: p.combo + ' 콤보', t: 0, life: .8 });
   g.cfx = list.filter(f => !f.dead);
 }
-/* 신성 폭주 켜기. mode: 'on' = 처음 켜짐(빠빰), 'refresh' = 켜진 채로 8콤보를 또 채움(시간을 다시 가득), 'free' = 보물 동굴 수정 */
+/* 신성 폭주 켜기. mode: 'on' = 처음 켜짐(빠빰), 'refresh' = 켜진 채로 5콤보를 또 채움(시간을 다시 가득), 'free' = 보물 동굴 수정 */
 function startHigh(mode = 'on') {
   const g = game, p = g.p; if (!p) return;
   const was = p.high; p.high = true; p.highT = highDur(); p.highEnd = 0;
@@ -222,19 +222,25 @@ function highTick(dt) {
   if (p.highFlare) p.highFlare = Math.max(0, p.highFlare - dt * 3);
   if (p.high && !has('avatar')) {
     p.highT -= dt;
+    const fi = p.highT <= HIGH.blink ? highFlickAt(p.highT) : -1;   // 전등이 끊기는 순간 지직 소리
+    if (fi >= 0 && fi !== p.highFlick) sfx.highFlick();
+    p.highFlick = fi;
     if (p.highT <= 0) { p.high = false; p.highT = 0; p.highEnd = .35; sparks(p.x, p.y - 8, 12, '#ffe59a', 160, .45, 2); sfx.highOff(); }
   }
   if (p.highEnd > 0) p.highEnd = Math.max(0, p.highEnd - dt);
   if (g.cfx) { for (const f of g.cfx) f.t += dt; g.cfx = g.cfx.filter(f => f.t < f.life); }
 }
-/* 꺼지기 3초 전부터 깜박임: 3~2초 느리게 반짝, 2~1초 빠르게, 1초 안은 더 빠르게 켜졌다 꺼졌다 */
+/* v34 꺼지는 전등: 꺼지기 3초 전부터 평소엔 켜져 있다가 짧게 '탁' 끊긴다(0.06~0.09초). 처음엔 한 번씩 드문드문,
+   끝으로 갈수록 두 번씩·잦아지고 빛도 조금씩 약해진 뒤 꺼진다. 빠르고 규칙적인 깜박임(초당 4.5~8번)은 눈이 아프고 알아보기 어려워 뺐다.
+   끊기는 때는 남은 시간 기준 고정표(HIGH_FLICK: [가운데 초, 길이 초])라 매번 같은 박자로 읽힌다 */
+const HIGH_FLICK = [[2.65, .07], [2.1, .06], [1.62, .06], [1.5, .08], [1.08, .07], [.96, .06], [.74, .08], [.6, .06], [.5, .07], [.4, .06], [.3, .06], [.2, .06], [.1, .07]];
+const highFlickAt = r => { for (let i = 0; i < HIGH_FLICK.length; i++) { const [c, d] = HIGH_FLICK[i]; if (Math.abs(r - c) < d / 2) return i; } return -1; };
 function highAlpha() {
   const p = game.p; if (has('avatar')) return 1; const r = p.highT;
   if (r > HIGH.blink) return 1;
-  const t = game.t;
-  if (r > 2) return .62 + .38 * Math.cos(t * Math.PI * 2 * 2.2);
-  if (r > 1) return Math.cos(t * Math.PI * 2 * 4.5) > -.2 ? 1 : .25;
-  return Math.cos(t * Math.PI * 2 * 8) > 0 ? 1 : .12;
+  if (highFlickAt(r) >= 0) return .1;
+  const k = r / HIGH.blink, t = game.t;   // 1 → 0: 빛이 조금씩 약해지고, 마지막 1초는 살짝 떨린다
+  return .78 + .22 * k - (r < 1 ? .06 * (1 + Math.sin(t * 31) * Math.sin(t * 9)) : 0);
 }
 /* 아우라(주인공 뒤): 바깥 빛 + 몸을 감싸고 위로 타오르는 불꽃 혀 두 겹(바깥 주황 큰 불꽃, 안쪽 흰빛 작은 불꽃).
    가운데(머리 위) 불꽃이 가장 길다. 오프스크린 캔버스 없이 매번 그린다(아이폰 지침) */
@@ -289,7 +295,7 @@ function drawAuraFront() {
   // 꺼지는 순간: 금빛이 위로 흩어진다
   if (p.highEnd > 0) { const k = 1 - p.highEnd / .35; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k; ctx.strokeStyle = 'rgba(255,220,120,.9)'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.ellipse(X, Y - k * 12 * s, (24 + k * 20) * s, (32 + k * 26) * s, 0, 0, 7); ctx.stroke(); ctx.restore(); }
 }
-/* 콤보·신성 폭주 글자(화면 맨 위층, 흰 섬광 위에 그린다). n = 밟을 때 작게, max = 8의 배수, high = 화면 위쪽 큰 글자, sub = 연장 */
+/* 콤보·신성 폭주 글자(화면 맨 위층, 흰 섬광 위에 그린다). n = 밟을 때 작게, max = 5(HIGH.combo)의 배수, high = 화면 위쪽 큰 글자, sub = 연장 */
 function drawComboFx() {
   const g = game, p = g.p; if (!p || !g.cfx || !g.cfx.length) return;
   const s = view.s, X = wx(p.x), Y = wy(p.y);

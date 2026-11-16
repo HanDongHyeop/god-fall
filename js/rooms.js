@@ -276,7 +276,7 @@ function crystalHit(b) {
   if (c.hp <= 0) {
     g.whiteout = .5; g.shake = 14; sfx.bigBoom(); g.hitStop = 6 / 60;
     imageBits(c.ruby ? 'r_ruby' : 'o_gold', c.x, c.y, 60, 4, 300); spawnShards(c.x, c.y, Math.round(120 * p.gemMul), c.ruby ? 5 : 0);
-    startHigh('on');   // v33: 8콤보와 같은 신성 폭주
+    startHigh('on');   // v33: 5콤보와 같은 신성 폭주
   }
 }
 function roomTick(dt) {

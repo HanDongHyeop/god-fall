@@ -283,6 +283,8 @@ function killEnemy(e, byStomp) {
   if (has('corpse')) g.fx.push({ type: 'delay', x: e.x, y: e.y, t: 0, life: .3, boom: 56 });
   monDeath(e);
 }
+// v34 티폰의 굶주린 발: 충격파 전후 적·보스 체력 합으로 실제 피해를 잰다(쓰러진 적은 남은 체력만큼)
+function foeHpSum() { const g = game; let n = 0; for (const e of g.enemies) if (e.alive) n += Math.max(0, e.hp); if (g.minis) for (const m of g.minis) if (m.alive) n += Math.max(0, m.hp); if (g.boss && g.boss.alive) n += Math.max(0, g.boss.hp); return n; }
 function explode(x, y, r, opt = {}) {
   const g = game;
   g.fx.push({ type: 'burst', x, y, r, t: 0, life: .16, ink: opt.ink || '#ff8a3a' });
@@ -557,7 +559,7 @@ function tick(dt) {
   // 포탈
   const po = g.portal;
   if (po && !g.room && g.state === 'play' && Math.hypot(p.x - po.x, p.y - po.y) < po.r * .8) { waveClear(); return; }
-  // 신성 폭주(skills.js): 8콤보로 켜지고 HIGH.dur초(장비·카드로 늘어남) 뒤 꺼진다
+  // 신성 폭주(skills.js): 5콤보로 켜지고 HIGH.dur초(장비·카드로 늘어남) 뒤 꺼진다
   highTick(dt);
   // 샛길
   if (attackTap && !nearItem) { const d = doorNear(); if (d) { if (g.room) exitRoom(); else enterRoom(d); return; } }
@@ -673,17 +675,27 @@ function updateEnemies(dt, jumpHeld) {
     const hx = Math.abs(p.x - e.x) < e.r + p.w / 2 + (e.stomp ? 3 : -2), hy = Math.abs(p.y - e.y) < e.r + p.h / 2 - 1;
     if (!hx || !hy) continue;
     const feet = p.y + p.h / 2;
+    const tLv = famLv('titan');   // v34 타이탄 묶음: 2단계부터 못 밟던 적도 밟는다
     if (p.vy > -60 && feet - e.y < e.r * 1.0) {
-      if (e.stomp) {
+      if (e.stomp || tLv >= 2) {
         // 밟기: 약한 적은 한 번에, 체력이 많아진 뒤에는 크게 깎는다
         const sd = stompDmg(e);   // v32: 몬스터 크기별 정해진 횟수(data.js STOMP). 공격력·카드로 세지지 않는다
         p.vy = (jumpHeld ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0));
         refill(p); p.jumpState = true; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
+        const hp0 = Math.max(0, e.hp);
         e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2;
         addCombo();   // v33 콤보 = 밟은 횟수
         if (e.hp <= 0) killEnemy(e, true);
         else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); inkBurst(e.x, e.y, e.r * .7, ENEMY[k].col, false); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 7); }
-        if (has('titan')) explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: '#8a5a2a', cols: ['#ffd27a', '#c08040', '#ffffff'] });
+        if (tLv) {
+          const before = tLv >= 3 ? foeHpSum() : 0;
+          explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: tLv >= 3 ? '#8a1a2a' : tLv >= 2 ? '#4a2a6a' : '#8a5a2a', cols: tLv >= 3 ? ['#ff6c7b', '#ffd27a', '#ffffff'] : tLv >= 2 ? ['#c88aff', '#ffd27a', '#ffffff'] : ['#ffd27a', '#c08040', '#ffffff'] });
+          if (tLv >= 3) {   // 흡혈: 밟기 + 충격파로 실제 깎은 체력의 20%
+            const dealt = Math.min(sd, hp0) + Math.max(0, before - foeHpSum()), n = Math.max(1, Math.round(dealt * .2));
+            healBy(n); popup(p.x, p.y - 40, '+' + n, '#ff8aa0');
+            for (let i = 0; i < 5; i++) g.fx.push({ type: 'dot', x: e.x + (Math.random() - .5) * 30, y: e.y, vx: (p.x - e.x) * 2.2 + (Math.random() - .5) * 60, vy: (p.y - e.y) * 2.2 - 60, t: 0, life: .4, r: 2.4, col: '#ff4a5e', g: 0 });
+          }
+        }
         if (g.st.stompWave) explode(e.x, e.y, 54, { tiles: false, dmg: Math.round(p.atk * .7) });
       } else { if (p.inv <= 0) refill(p); hurt(e.x, e.dmg); p.vy = -340; if (g.state === 'dying') return; }
     } else if (p.y - e.y > e.r * .4 && famLv('butt') >= 2) {   // 가시 달린 적도 들이받을 수 있다(v31.1)
