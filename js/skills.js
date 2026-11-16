@@ -180,6 +180,7 @@ function overBig(b, x, y, pad) { const hh = b.drawH || b.h; return Math.abs(x - 
 const highDur = () => HIGH.dur * (1 + (game.st.highPct || 0) + (has('overload') ? .8 : 0));
 function addCombo() {
   const g = game, p = g.p; if (!p) return;
+  if (p.high && !has('avatar')) return;   // v34.1 신성 폭주 중에는 콤보를 세지 않는다(사용자). 끝나면 멈춘 수에서 이어 센다. 신의 현현(판 내내 폭주)은 예외로 센다
   p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo);
   if (g.st.comboStrike && p.combo % HIGH.combo === 0) smite();   // 제우스: 콤보 5(HIGH.combo)마다 낙뢰
   const list = g.cfx || (g.cfx = []);
