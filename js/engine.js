@@ -152,6 +152,11 @@ const sfx = {
   hit() { if (this.limit('h', 40)) { this.tone('square', 640, 300, .04, .12); this.noise(.04, .14, 5000); } },
   ping() { if (this.limit('p', 60)) this.tone('triangle', 1500, 1100, .05, .12); },
   brk() { if (this.limit('b', 40)) this.noise(.13, .26, 1500); },
+  // v33 신성 폭주 '빠빰': 1박 = 짧고 단단한 타격음, 2박 = 위로 솟는 화음 + 쉭 소리. 연장 = 짧은 반짝, 꺼짐 = 내려가는 소리
+  highBeat1() { this.tone('square', 520, 780, .08, .2); this.noise(.07, .26, 2400); this.tone('sine', 130, 60, .12, .4); },
+  highBeat2() { this.tone('triangle', 520, 1040, .32, .2); this.tone('triangle', 780, 1560, .32, .14, .02); this.tone('square', 1040, 2080, .18, .08, .05); this.noise(.3, .22, 5200); this.tone('sine', 98, 49, .4, .45); },
+  highUp() { this.tone('triangle', 880, 1320, .12, .14); this.tone('triangle', 1320, 1760, .12, .1, .06); },
+  highOff() { this.tone('sine', 900, 300, .25, .12); },
   gem(chain) { if (this.limit('g', 28)) this.tone('sine', 900 + Math.min(chain, 100) * 9, 1300 + Math.min(chain, 100) * 9, .05, .09); },
   hurt() { this.tone('sawtooth', 300, 60, .24, .34); this.noise(.16, .3, 1200); },
   reward() { [0, .07, .14].forEach((d, i) => this.tone('square', 620 * (1 + i * .25), 660 * (1 + i * .25), .09, .14, d)); },
@@ -279,7 +284,7 @@ function newPlayer() {
   return {
     x: WORLD_W / 2, y: 40, vx: 0, vy: 0, w: 20, h: 34, face: 1, onGround: false,
     hp: 100, maxHp: 100, ammo: 8, maxAmmo: 8, gauge: 100, jumps: 0, gaugeFlash: 0,
-    coyote: 0, buffer: 0, fireT: 0, inv: 0, combo: 0, shards: 0, gemChain: 0, gemT: 0, high: false,
+    coyote: 0, buffer: 0, fireT: 0, inv: 0, combo: 0, shards: 0, sndChain: 0, sndT: 0, high: false, highT: 0,
     attackPose: 0, throwT: 0, shotN: 0, hurtT: 0, landT: 0, tilt: 0, flip: -1, breath: 0, glide: 3, squash: 0, emptyT: 0, spin: 0, walk: 0,
   };
 }

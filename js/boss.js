@@ -91,7 +91,7 @@ function pickAttack(b) {
 function bossShot(x, y, vx, vy, b, gv = 0) { game.ebul.push({ x, y, vx, vy, g: gv, r: 7, dmg: Math.round(22 * DIFF.dmg(game.wave)), t: 0, col: b.def.col[2], ghost: true }); }
 function bossTick(dt) {
   const g = game, b = g.boss, p = g.p; if (!b) return;
-  b.t += dt; if (b.stompT > 0) b.stompT -= dt; b.flash = Math.max(0, b.flash - dt); b.pop = Math.max(0, b.pop - dt * 8);
+  b.t += dt; if (b.stompT > 0) b.stompT -= dt; if (b.buttT > 0) b.buttT -= dt; b.flash = Math.max(0, b.flash - dt); b.pop = Math.max(0, b.pop - dt * 8);
   b.sx = approachSnap(b.sx, 1, 10, dt); b.sy = approachSnap(b.sy, 1, 10, dt);
   if (!b.mini) { if (g.darkT > 0) g.darkT -= dt; g.dark = approachSnap(g.dark || 0, g.darkT > 0 ? 1 : 0, 3, dt, .01); }
   // moveK = 몸의 움직임, speedK = 공격 박자. 중간 보스는 움직임만 진짜 보스와 같고 공격은 느리다
@@ -132,8 +132,18 @@ function bossTick(dt) {
   if (overX && overY && b.y - hh * .5 < floorY && !b.hidden) {
     if (p.vy > -40 && feet - topB < 26) {
       // 머리 밟기(v32): 밟기만으로는 보스 45번, 중간 보스 무리 전체 18번(data.js STOMP). 재장전은 없다(탄이 주 공격)
-      if (!(b.stompT > 0)) { b.stompT = .2; const n = b.mini ? Math.max(1, Math.round(STOMP.mini / ((g.minis && g.minis.length) || 1))) : STOMP.boss; hitBoss(Math.ceil(b.maxHp / n), false, p.x, p.y + p.h / 2, true); }
+      if (!(b.stompT > 0)) { b.stompT = .2; const n = b.mini ? Math.max(1, Math.round(STOMP.mini / ((g.minis && g.minis.length) || 1))) : STOMP.boss; addCombo(); hitBoss(Math.ceil(b.maxHp / n), false, p.x, p.y + p.h / 2, true); }
       p.vy = (input.jumpHeld || input.keys.j ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0)); p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.land(); g.shake = Math.max(g.shake, 4);
+    } else if (famLv('butt') >= 2 && p.vy < 0 && p.y > b.y - hh * .55) {
+      // v33 들이받기(미노타우로스의 뿔·포세이돈의 황소): 몸 아래쪽을 올라가며 치면 다치지 않고 밟기와 같은 피해(황소 ×1.5, 흡혈 20%)
+      if (!(b.buttT > 0)) {
+        b.buttT = .25; const lv = famLv('butt'), n = b.mini ? Math.max(1, Math.round(STOMP.mini / ((g.minis && g.minis.length) || 1))) : STOMP.boss, sd = Math.ceil(b.maxHp / n) * (lv >= 3 ? 1.5 : 1);
+        g.fx.push({ type: 'ring', x: p.x, y: p.y - p.h / 2, r: 40 + lv * 8, col: lv >= 3 ? 'rgba(255,90,110,.95)' : 'rgba(255,214,120,.95)', t: 0, life: .22 });
+        chunks(p.x, p.y - p.h / 2, 6, lv >= 3 ? ['#ff6c7b', '#ffffff', '#7fe8ff'] : ['#ffd27a', '#ffffff', '#c08040'], 260, 3);
+        if (lv >= 3) { const hn = Math.max(1, Math.round(sd * .2)); healBy(hn); popup(p.x, p.y - 40, '+' + hn, '#ff8aa0'); }
+        hitBoss(Math.round(sd), false, p.x, p.y - p.h / 2, true);
+      }
+      if (p.vy < 60) p.vy = 60; p.squash = .22; g.kick = -4;
     } else if (p.inv <= 0) { refill(p); hurt(b.x, Math.round(28 * DIFF.dmg(g.wave))); if (g.state === 'dying') return; }
   }
   const s = b.state;

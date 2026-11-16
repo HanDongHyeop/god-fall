@@ -231,6 +231,7 @@ function heroFrame(p) {
 function drawHero() {
   const g = game, p = g.p; if (!p) return;
   const s = view.s, M = HERO_META[p.god], name = heroFrame(p), im = IMG[`h_${p.god}_${name}`], wim = IMG[`h_${p.god}_${name}_w`], fr = M.frames[name] || M.frames.idle, k = s / PX;
+  drawAuraBack();   // v33 신성 폭주 아우라(몸 뒤 불꽃)
   ctx.save();
   ctx.translate(wx(p.x), wy(p.y + p.h / 2));
   const cy = -24 * s; ctx.translate(0, cy);
@@ -256,7 +257,7 @@ function drawHero() {
     }
   }
   if (has('owl')) { const im2 = IMG.c_owl, ox = wx(p.x + p.face * -24), oy = wy(p.y - 26 + Math.sin(g.t * 4) * 4); if (ok(im2)) ctx.drawImage(im2, ox - 11 * s, oy - 11 * s, 22 * s, 22 * s); }
-  if (godMode()) { ctx.strokeStyle = 'rgba(255,220,100,.6)'; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y - 8), 32 * s + Math.sin(g.t * 12) * 2 * s, 0, 7); ctx.stroke(); }
+  drawAuraFront();   // v33 신성 폭주 아우라(몸 앞 불씨·테두리). 예전의 금빛 원 하나는 없앴다
 }
 /* 새 이펙트: 타격 별, 방사선, 시체 섬광, 낙뢰, 전격 */
 function drawFx2() {
@@ -365,19 +366,7 @@ function drawHUD() {
     ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x0 + (bw2) * .5 - .5 * s, by + 13 * s, 1.4 * s, 10 * s);
     textOut(b.def.name, W / 2, by + 3 * s, b.flash > 0 ? '#ffd24a' : '#fff', 3);
   }
-  // 콤보
-  if (p.combo >= 2) {
-    const pop = 1 + (p.comboPop || 0) * .4, fs = (22 + Math.min(p.combo, 30) * .5) * s * pop;
-    ctx.font = `${fs}px ${FONT}`; ctx.textAlign = 'center';
-    const col = p.combo >= 25 ? '#ff8a5c' : p.combo >= 15 ? '#ffd24a' : p.combo >= 8 ? '#fff0a0' : '#ffffff', y = top + (g.boss ? 76 : 54) * s;
-    textOut(p.combo + ' 콤보', W / 2, y, col, 4.5);
-  }
-  if (p.high) {
-    const b2 = 130 * s, x = W / 2 - b2 / 2, y = top + (g.boss ? 92 : 72) * s, k = clamp(p.gemT / 4, 0, 1);
-    ctx.fillStyle = 'rgba(8,10,20,.8)'; ctx.fillRect(x, y, b2, 6 * s); ctx.fillStyle = '#ffd24a'; ctx.fillRect(x, y, b2 * k, 6 * s);
-  } else if (p.gemChain > 0 && p.gemT > 0) {
-    ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; textOut('+' + p.gemChain, W / 2, top + (g.boss ? 94 : 74) * s, '#ffe27a');
-  }
+  // v33: 콤보·신성 폭주는 위쪽 막대·숫자 대신 주인공 둘레 글자와 아우라로만 보여 준다(skills.js drawComboFx·drawAura)
 }
 function drawBanner() {
   const g = game, b = g.banner; if (!b || (g.state !== 'play' && g.state !== 'descend')) return;
@@ -435,6 +424,6 @@ function render(dt) {
     q.addColorStop(0, 'rgba(255,20,50,0)'); q.addColorStop(1, `rgba(220,10,40,${v * .72})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H);
   }
   if (g.cine > 0) drawCine();
-  if (g.state !== 'result') { drawHUD(); if (g.state === 'play') { drawButtons(dt); drawStick(); } drawBanner(); drawHints(); drawDebug(); }
+  if (g.state !== 'result') { drawHUD(); if (g.state !== 'dying' && g.state !== 'continue') drawComboFx(); if (g.state === 'play') { drawButtons(dt); drawStick(); } drawBanner(); drawHints(); drawDebug(); }
   if (g.fade > 0) { ctx.fillStyle = `rgba(4,4,12,${g.fade})`; ctx.fillRect(0, 0, view.W, view.H); }
 }

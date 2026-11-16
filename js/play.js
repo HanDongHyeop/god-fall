@@ -40,7 +40,6 @@ function runStats() {
 function atkNow() {
   const g = game, p = g.p; let a = p.atk;
   if (has('heavy')) a *= 1.7;
-  if (has('fest')) a *= p.combo >= 25 ? 1.6 : p.combo >= 15 ? 1.3 : 1;
   if (godMode()) a *= 1.6;
   return a;
 }
@@ -116,7 +115,7 @@ function buildWave() {
   g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
   const restKind = rest ? pickRestKind(R) : null;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
-  g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.dark = 0; g.darkT = 0;
+  g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.cfx = []; g.dark = 0; g.darkT = 0;
   // 맨 아래 바닥은 조작 버튼에 가리지 않게 화면 위쪽으로 올린다(아래 pad칸은 땅)
   // 휴식 판은 짧다(황금 낙하만 길다). 바닥은 휴식 물건이 화면 안에 보이도록 보스방처럼 넓게 비운다
   const pad = 3, arenaRows = boss || rest ? Math.ceil(view.worldH / TILE) - pad : 0, rows = (rest ? (restKind === 'gold' ? 64 : 26) : DIFF.rows(w)) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
@@ -270,13 +269,11 @@ function addDecal(x, y, r) {
 function killEnemy(e, byStomp) {
   const g = game, p = g.p, E = ENEMY[e.kind], st = g.st;
   e.alive = false; g.kills++;
-  if (!p.onGround) { p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo); p.comboPop = 1; if (st.comboStrike && p.combo % 8 === 0) smite(); }
   if (!g.tut) spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));   // v31 연습 방: 재화 없음
   // 처치: 하얗게 커졌다가 터진다
   g.fx.push({ type: 'corpse', name: E.frames[0], x: e.x, y: e.y, h: E.h, flip: e.face, t: 0, life: .07 });
   inkBurst(e.x, e.y, e.r, E.col, byStomp);
-  const comboK = Math.min(p.combo, 30) / 30;
-  g.shake = Math.max(g.shake, byStomp ? 9 : 5 + comboK * 3);
+  g.shake = Math.max(g.shake, byStomp ? 9 : 5);
   g.hitStop = Math.max(g.hitStop, byStomp ? 6 / 60 : 3 / 60);
   g.whiteout = Math.max(g.whiteout, byStomp ? .11 : .05);
   vibrate(byStomp ? 22 : 10);
@@ -369,22 +366,10 @@ function finishRun(gaveUp) {
   const reward = Meta.settle(r);
   UI.showResult(r, reward);
 }
-function endCombo() {
-  const p = game.p, c = p.combo;
-  if (c >= 8) {
-    let t = `${c} 콤보! 파편 +100`;
-    p.shards += 100; game.shardTotal += 100;
-    if (c >= 15) { p.maxAmmo++; p.ammo = p.maxAmmo; t += ' · 탄창 +1'; }
-    if (c >= 25) { healBy(10); t += ' · 체력 +10'; }
-    popup(p.x, p.y - 40, t, '#ffe27a', true); sfx.reward();
-    game.fx.push({ type: 'ring', x: p.x, y: p.y, r: 60, col: 'rgba(255,230,130,.95)', t: 0, life: .35 });
-  }
-  p.combo = 0;
-}
+/* v33: 파편은 돈일 뿐이다(이어 먹어 신성 폭주가 켜지던 것은 없앴다). sndChain은 이어 먹을 때 소리가 올라가게만 쓴다 */
 function gainShard(s) {
   const p = game.p;
-  p.shards += s.v; game.shardTotal += s.v; p.gemChain += s.v; p.gemT = (p.high ? 4 : 2.2) * (1 + game.st.highPct + (has('overload') ? .8 : 0)); sfx.gem(p.gemChain);
-  if (!p.high && p.gemChain >= 100) { p.high = true; popup(p.x, p.y - 30, '신성 폭주!', '#ffe27a', true); game.fx.push({ type: 'ring', x: p.x, y: p.y, r: 70, col: 'rgba(255,230,130,.95)', t: 0, life: .4 }); sfx.reward(); }
+  p.shards += s.v; game.shardTotal += s.v; p.sndChain = (p.sndT > 0 ? p.sndChain || 0 : 0) + s.v; p.sndT = .5; sfx.gem(p.sndChain);
   if (has('cell') && p.ammo < p.maxAmmo) p.ammo++;
 }
 /* ───── 탄: 신마다 모양과 판정이 다르다 ───── */
@@ -397,21 +382,25 @@ function fireBullet(x, y, vx, vy, up = false, ox = 0, o = {}) {
   const k = Math.hypot(vx, vy) / 1150;
   g.bullets.push({ x, y, px: x, py: y, vx: vx * S.v / 1150, vy: vy * S.v / 1150, y0: y, range: (has('apollo') ? 1.6 : 1) * S.range, r: S.r * (godMode() ? 1.5 : 1) * (has('heavy') ? 1.4 : 1) * (has('apollo') ? 1.3 : 1) * (o.big ? 1.6 : 1), dmg, crit, up, ox, t: 0, wob: Math.random() * 6, kind, pierce: (g.st.pierce || 0) + (has('pierce') ? 2 : 0), bounce: o.bounce || 0, hits: [], dist: 0, seekR: o.seekR || 0, seekTurn: o.seekTurn || 0 });
 }
+/* 낙뢰: 가장 가까운 몬스터나 보스·중간 보스(v33)에게 */
 function smite(x0) {
   const g = game, top = g.cam, bot = g.cam + view.worldH; let t = null, d = 1e9;
   for (const e of g.enemies) if (e.alive && e.y > top && e.y < bot) { const q = Math.abs(e.x - g.p.x) + Math.abs(e.y - g.p.y); if (q < d) { d = q; t = e; } }
+  for (const o of bigFoes()) { const P = foePt(o); if (P.y > top && P.y < bot) { const q = Math.abs(P.x - g.p.x) + Math.abs(P.y - g.p.y); if (q < d) { d = q; t = o; } } }
   if (!t) return;
-  g.fx.push({ type: 'zap', x: t.x, y: t.y, t: 0, life: .14 }); sfx.zap();
-  hitEnemy(t, Math.round(atkNow() * 1.2), false, t.x, t.y);
+  const P = foePt(t); g.fx.push({ type: 'zap', x: P.x, y: P.y, t: 0, life: .14 }); sfx.zap();
+  hitFoe(t, Math.round(atkNow() * 1.2), false, P.x, P.y);
 }
-function chainFrom(e, n, dmg) {
-  let cur = e; const done = [e];
+/* 번개 사슬: e에서 가까운 n마리로 옮겨 간다. 보스·중간 보스(v33)도 옮겨 갈 대상이다. sx·sy = 첫 번째로 뻗을 자리(보스를 맞힌 탄 자리) */
+function chainFrom(e, n, dmg, sx, sy) {
+  let cur = e, cp = sx !== undefined ? { x: sx, y: sy } : foePt(e); const done = [e];
   for (let i = 0; i < n; i++) {
-    let best = null, bd = 150;
-    for (const o of game.enemies) if (o.alive && !done.includes(o)) { const d = Math.hypot(o.x - cur.x, o.y - cur.y); if (d < bd) { bd = d; best = o; } }
+    let best = null, bp = null, bd = 150;
+    for (const o of game.enemies) if (o.alive && !done.includes(o)) { const d = Math.hypot(o.x - cp.x, o.y - cp.y); if (d < bd) { bd = d; best = o; bp = o; } }
+    for (const o of bigFoes()) if (!done.includes(o)) { const P = foePt(o), d = Math.hypot(P.x - cp.x, P.y - cp.y) - P.r; if (d < bd) { bd = d; best = o; bp = P; } }
     if (!best) break;
-    game.fx.push({ type: 'arc', x: cur.x, y: cur.y, x2: best.x, y2: best.y, t: 0, life: .12 }); done.push(best);
-    hitEnemy(best, Math.round(dmg * .6), false, best.x, best.y); cur = best;
+    game.fx.push({ type: 'arc', x: cp.x, y: cp.y, x2: bp.x, y2: bp.y, t: 0, life: .12 }); done.push(best);
+    hitFoe(best, Math.round(dmg * .6), false, bp.x, bp.y); cur = best; cp = { x: bp.x, y: bp.y };
   }
   if (done.length > 1) sfx.zap();
 }
@@ -421,11 +410,11 @@ function onBulletHit(b, e) {
     const r = game.st.splash; explode(b.x, b.y, r, { dmg: Math.round(b.dmg * .55), tiles: !!game.st.breaker, ink: b.kind === 'wine' ? '#8a1f4a' : '#ff8a3a', cols: b.kind === 'wine' ? ['#c23c62', '#6a1838', '#ffd0dc'] : undefined });
   }
   // 폭탄처럼 블록에 맞아 터지면 맞은 적이 없다. 적에게 맞았을 때만 카드 효과를 건다
-  if (e && (game.st.chain || has('chain'))) chainFrom(e, (game.st.chain || 0) + (has('chain') ? 2 : 0), b.dmg);
-  if (e && has('burn')) e.burn = Math.max(e.burn || 0, 3);
+  if (e && (game.st.chain || has('chain'))) chainFrom(e, (game.st.chain || 0) + (has('chain') ? 2 : 0), b.dmg, b.x, b.y);
+  if (e && has('burn') && !isBig(e)) e.burn = Math.max(e.burn || 0, 3);
   // 히드라의 독니: 맞은 자리에서 작은 탄 2발이 양옆 아래로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
   // 히드라의 독니(전설): 맞은 자리에서 적을 쫓는 독니 3발로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
-  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .8, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
+  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .8, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; if (!isBig(e)) nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
 }
 
@@ -522,9 +511,9 @@ function tick(dt) {
     const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
     const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
     fireVolley(p.x, by, hand, mul, buff);
-    if (has('echo') && p.shots % 2 === 0) fireBullet(p.x, by - 18, 0, 1150, false, hand, { mul });
+    if (has('echo') && p.shots % 2 === 0) fireVolley(p.x, by - 18, hand, mul, buff);   // v33: 갈래 탄도 통째로 한 번 더
     if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .8, bounce: 3 });
-    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: .7, seekR: 60, seekTurn: 10 });
+    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: mul * .7, seekR: 60, seekTurn: 10 });   // 올빼미 탄도 공격력·치명·관통·번개·불꽃·독니·유도가 그대로 붙는다
     if (has('strike') && p.shots % 4 === 0) smite();
     g.fx.push({ type: 'gustHand', x: p.x + hand, y: by - 3, t: 0, life: .09 });
     if (p.shotN % 3 === 0) feathers(p.x + (Math.random() - .5) * 20, p.y - 26, 1, 40);
@@ -554,7 +543,7 @@ function tick(dt) {
       p.vy = 0; p.onGround = true;
     }
   }
-  if (p.onGround) { refill(p); p.jumpState = false; if (p.combo) endCombo(); }
+  if (p.onGround) { refill(p); p.jumpState = false; p.combo = 0; }   // v33: 콤보(밟은 횟수)는 땅에 닿아야만 끊긴다
   p.squash = approachSnap(p.squash, 0, 14, dt);
   p.hurtT = Math.max(0, p.hurtT - dt); p.landT = Math.max(0, p.landT - dt); p.hitFlash = Math.max(0, (p.hitFlash || 0) - dt);
   p.flip = approachSnap(p.flip, p.face > 0 ? 1 : -1, 60, dt);
@@ -564,12 +553,12 @@ function tick(dt) {
   p.inv = Math.max(0, p.inv - dt);
   if (p.spin > 0) p.spin = Math.max(0, p.spin - dt * 3.2);
   if (p.onGround && Math.abs(p.vx) > 30) p.walk += dt * 15;
-  if (p.comboPop) p.comboPop = Math.max(0, p.comboPop - dt * 5);
+  if (p.sndT > 0) p.sndT -= dt;
   // 포탈
   const po = g.portal;
   if (po && !g.room && g.state === 'play' && Math.hypot(p.x - po.x, p.y - po.y) < po.r * .8) { waveClear(); return; }
-  // 신성 폭주
-  if (p.gemT > 0) { p.gemT -= dt; if (p.gemT <= 0) { p.high = false; p.gemChain = 0; } }
+  // 신성 폭주(skills.js): 8콤보로 켜지고 HIGH.dur초(장비·카드로 늘어남) 뒤 꺼진다
+  highTick(dt);
   // 샛길
   if (attackTap && !nearItem) { const d = doorNear(); if (d) { if (g.room) exitRoom(); else enterRoom(d); return; } }
   // 휴식 판: 룰렛 돌리기·샘 마시기
@@ -595,7 +584,7 @@ function tick(dt) {
   // 궤도 구슬·천둥 폭풍(skills.js)
   orbTick(edt); stormTick(dt);
   // 파편
-  const magnet = has('magnet') ? 150 : 56;
+  const magnet = has('magnet') ? 112 : 56;   // v33 자석 신상: 2배
   for (const s of g.shards) {
     s.t += dt;
     const dx = p.x - s.x, dy = p.y - s.y, d = Math.hypot(dx, dy);
@@ -691,6 +680,7 @@ function updateEnemies(dt, jumpHeld) {
         p.vy = (jumpHeld ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0));
         refill(p); p.jumpState = true; p.squash = -.3; p.spin = 1; g.kick = 5; feathers(p.x, p.y + 6, 3, 110); sfx.flap();
         e.hp -= sd; e.flash = .09; e.pop = 1; e.hbT = 1.2;
+        addCombo();   // v33 콤보 = 밟은 횟수
         if (e.hp <= 0) killEnemy(e, true);
         else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); inkBurst(e.x, e.y, e.r * .7, ENEMY[k].col, false); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 7); }
         if (has('titan')) explode(e.x, e.y + 20, 84, { tiles: false, dmg: Math.round(atkNow() * 1.5), ink: '#8a5a2a', cols: ['#ffd27a', '#c08040', '#ffffff'] });
@@ -753,8 +743,9 @@ function updateBullets(dt) {
       b.dead = true; break;
     }
     if (b.dead) continue;
-    if (g.minis) { if (miniBulletHit(b)) { onBulletHit(b, { x: b.x, y: b.y }); b.dead = true; continue; } }
-    else if (g.boss && g.boss.alive && bossHitTest(b)) { hitBoss(b.dmg, b.crit, b.x, b.y); onBulletHit(b, { x: b.x, y: b.y }); b.dead = true; continue; }
+    // 보스·중간 보스: 맞힌 보스는 hits에 넣어 같은 탄이 두 번 맞히지 않는다. 관통이 남았으면 뚫고 지나간다(v33)
+    const bigHit = g.minis ? miniBulletHit(b) : g.boss && g.boss.alive && !b.hits.includes(g.boss) && bossHitTest(b) ? (hitBoss(b.dmg, b.crit, b.x, b.y), g.boss) : null;
+    if (bigHit) { onBulletHit(b, bigHit); b.hits.push(bigHit); if (b.pierce > 0) b.pierce--; else { b.dead = true; continue; } }
     if (g.room && g.room.crystal && g.room.crystal.hp > 0 && seg(g.room.crystal.x, g.room.crystal.y) < 26) { crystalHit(b); b.dead = true; continue; }
     for (const j of g.jars) if (j.alive && seg(j.x, j.y) < j.r + b.r) { breakJar(j); b.dead = true; break; }
     if (b.dead) continue;

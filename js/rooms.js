@@ -209,8 +209,8 @@ function fullHeal() {
 }
 function miniBulletHit(b) {
   const g = game;
-  for (const m of g.minis || []) { if (!m.alive) continue; g.boss = m; if (bossHitTest(b)) { hitBoss(b.dmg, b.crit, b.x, b.y); return true; } }
-  return false;
+  for (const m of g.minis || []) { if (!m.alive || b.hits.includes(m)) continue; g.boss = m; if (bossHitTest(b)) { hitBoss(b.dmg, b.crit, b.x, b.y); return m; } }
+  return null;
 }
 function drawMinis() {
   const g = game, cur = g.boss;
@@ -276,7 +276,7 @@ function crystalHit(b) {
   if (c.hp <= 0) {
     g.whiteout = .5; g.shake = 14; sfx.bigBoom(); g.hitStop = 6 / 60;
     imageBits(c.ruby ? 'r_ruby' : 'o_gold', c.x, c.y, 60, 4, 300); spawnShards(c.x, c.y, Math.round(120 * p.gemMul), c.ruby ? 5 : 0);
-    p.high = true; p.gemChain = 100; p.gemT = 4 * (1 + g.st.highPct); popup(c.x, c.y - 40, '신성 폭주!', '#ffe27a', true);
+    startHigh('on');   // v33: 8콤보와 같은 신성 폭주
   }
 }
 function roomTick(dt) {

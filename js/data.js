@@ -180,6 +180,9 @@ const BOSSES = [
   { name: '첫 번째 어둠', sub: '빛이 생기기 전부터 있던 것', frames: ['b6_shut', 'b6_open'], w: 160, h: 140, col: ['#160f26', '#e8ccff', '#b070f0'], sig: '순간이동', weights: { blink: 4, orbs: 3, laser: 2, split: 2 }, p2: { dark: 3 }, minion: 'shade', hpMul: 1.5, float: true, laser: 'v', split: 'star' },
 ];
 
+/* v33(2026-11-16) 신성 폭주: 몬스터를 땅에 닿지 않고 combo번 밟을 때마다 켜진다(이미 켜져 있으면 시간을 다시 가득).
+   dur = 기본 지속(초, 장비 '신성 폭주 지속'·카드 '신성 과부하'로 늘어남), blink = 꺼지기 몇 초 전부터 깜박일지, beat = '빠빰'의 두 박 사이(초) */
+const HIGH = { combo: 8, dur: 8, blink: 3, beat: .17 };
 /* 샛길 문: 웨이브마다 최대 1개, 보스 웨이브에는 없다. 파편이 모인 뒤 만나도록 웨이브 뒤쪽에 둔다.
    mini = 문이 함정(중간 보스)일 확률. 겉모습은 보통 문과 같다 */
 const DOOR = { chance: .8, from: .6, to: .88, mini: .16 };   // 2026-11-06 함정 10% → 16%
