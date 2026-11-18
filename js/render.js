@@ -470,7 +470,7 @@ function render(dt) {
   const g = game;
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
   ctx.clearRect(0, 0, view.W, view.H);
-  if (!g.p || !['play', 'descend', 'intro', 'bossdead', 'dying', 'continue', 'card', 'pause', 'result'].includes(g.state)) return;
+  if (!g.p || !['play', 'descend', 'intro', 'bossdead', 'dying', 'continue', 'card', 'pause', 'result', 'guide'].includes(g.state)) return;   // guide = v38 안내 중(멈춤)
   drawSky();
   // 심층 챕터(7~12): 배경만 더 어둡고 붉게 가라앉힌다(몬스터·지형은 그대로 밝아 구분된다)
   if (g.deep && !g.room) { ctx.fillStyle = 'rgba(14,2,10,.38)'; ctx.fillRect(0, 0, view.W, view.H); const q = ctx.createRadialGradient(view.W / 2, view.H * .45, view.H * .2, view.W / 2, view.H * .45, view.H * .75); q.addColorStop(0, 'rgba(120,0,30,0)'); q.addColorStop(1, 'rgba(90,0,24,.35)'); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
@@ -505,6 +505,6 @@ function render(dt) {
     q.addColorStop(0, 'rgba(255,20,50,0)'); q.addColorStop(1, `rgba(220,10,40,${v * .72})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H);
   }
   if (g.cine > 0) drawCine();
-  if (g.state !== 'result') { drawHUD(); if (g.state !== 'dying' && g.state !== 'continue') drawComboFx(); if (g.state === 'play') { drawButtons(dt); drawStick(); } drawBanner(); drawHints(); drawDebug(); }
+  if (g.state !== 'result') { drawHUD(); if (g.state !== 'dying' && g.state !== 'continue') drawComboFx(); if (g.state === 'play' || g.state === 'guide') { drawButtons(dt); drawStick(); } drawBanner(); drawHints(); drawDebug(); }
   if (g.fade > 0) { ctx.fillStyle = `rgba(4,4,12,${g.fade})`; ctx.fillRect(0, 0, view.W, view.H); }
 }

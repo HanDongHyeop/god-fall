@@ -25,7 +25,7 @@ const Meta = {
   },
   load() {
     try { const t = localStorage.getItem(SAVE_KEY); if (t) { const o = JSON.parse(t); if (o && o.v === 1) { const old = !o.weapons, oldG = o.gradeV !== 2; this.s = Object.assign(this.fresh(), o); this.migrate(old, oldG); this.tick(); return; } } } catch (e) {}
-    this.s = this.fresh();
+    this.s = this.fresh(); this.isNew = true;   // v38 저장이 없던 새 계정(첫 플레이 흐름을 켤지 ui.js가 정한다)
   },
   /* 예전 저장(별 0~8)을 레벨 1~4로 옮긴다. 참고 영상의 2·5·8성 = 능력 Lv.2·3·4 */
   migrate(oldWeapons, oldGrades) {
@@ -266,6 +266,16 @@ const Meta = {
     g.shard -= c; if (!g.own) { g.own = true; g.level = 1; this.grantWeapon(id); } else g.level = (g.level || 1) + 1;
     this.save(); return true;
   },
+  /* v38 캐릭터 얻기(뽑기 없음): 보석 구매값은 가진 조각만큼 깎인다. 조각이 50개면 예전처럼 조각으로 해금(godUp) */
+  godPrice(id) { const G = GOD_GET[id]; if (!G || !G.gem || this.godLv(id)) return null; return Math.max(0, Math.ceil(G.gem * (1 - Math.min(1, this.godInfo(id).shard / GOD_UNLOCK)) / 10) * 10); },
+  buyGod(id) { const s = this.s, pr = this.godPrice(id); if (pr === null || s.gem < pr) return false; const g = s.gods[id] = this.godInfo(id); s.gem -= pr; g.shard = 0; g.own = true; g.level = 1; this.grantWeapon(id); this.save(); return true; },
+  giveGod(id) { const g = this.s.gods[id] = this.godInfo(id); if (g.own) { g.shard += 20; return false; } g.own = true; g.level = 1; this.grantWeapon(id); return true; },
+  shardDay() { const s = this.s, day = new Date().toISOString().slice(0, 10); if (!s.shop || s.shop.day !== day) s.shop = { day, n: {} }; return s.shop; },
+  shardLeft(id) { return SHARD_SHOP.daily - (this.shardDay().n[id] || 0); },
+  buyShards(id) { const s = this.s, G = GOD_BY[id]; if (!this.godLv(id) || this.godCost(id) === null || this.shardLeft(id) <= 0) return false; const pr = SHARD_SHOP.price[G.rank]; if (s.gem < pr) return false; s.gem -= pr; const d = this.shardDay(); d.n[id] = (d.n[id] || 0) + 1; this.addShard(id, SHARD_SHOP.n); this.save(); return true; },
+  goldLeft() { return GOLD_SHOP.daily - (this.shardDay().gold || 0); },
+  buyGold() { const s = this.s, d = this.shardDay(); if (this.goldLeft() <= 0 || s.gem < GOLD_SHOP.gem) return 0; const n = GOLD_SHOP.gold(this.clearedN()); s.gem -= GOLD_SHOP.gem; s.gold += n; d.gold = (d.gold || 0) + 1; this.save(); return n; },
+  ftueReward() { const s = this.s, R = FTUE.reward; s.gold += R.gold; s.gem += R.gem; for (const S of SLOTS) s.scrolls[S.id] += R.scroll; this.save(); },
   selectGod(id) { const s = this.s; if (!this.godInfo(id).own) return; s.weapons[s.god] = s.equip.weapon; s.weaponLv[s.god] = s.slotLv.weapon; s.god = id; s.equip.weapon = s.weapons[id] || null; s.slotLv.weapon = s.weaponLv[id] || 1; this.save(); },
   talentUp(id) {
     const T_ = TALENTS.find(t => t.id === id), l = this.s.talent[id] || 0;
@@ -332,8 +342,10 @@ const Meta = {
     if (done) s.best[r.chapter] = r.clear || r.bosses > 0 ? STAGES : Math.min(STAGES, Math.max(s.best[r.chapter] || 0, R.cleared));
     // 첫 보스를 잡으면 다음 챕터가 열린다
     if (r.bosses > 0) { s.cleared[r.chapter] = true; }
+    // v38 챕터 첫 클리어 보상으로 주는 신(GOD_GET.chapter)
+    let newGod = null; if (first) for (const id in GOD_GET) if (GOD_GET[id].chapter === r.chapter + 1 && this.giveGod(id)) newGod = id;
     this.save();
-    return { gold, gem, scrolls, drops, cleared: R.cleared, first };
+    return { gold, gem, scrolls, drops, cleared: R.cleared, first, newGod };
   },
   clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
   chapterOpen(i) { return i === 0 || (i < CHAPTERS && !!this.s.cleared[i - 1]); },

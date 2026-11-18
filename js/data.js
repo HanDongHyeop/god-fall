@@ -134,7 +134,18 @@ const WEAPON_S = {
   apollo: { name: '태양 리라', s: ['태양 음표 피해 +50% · 치명타 확률 +6%', { sun5: .5, crit: .06 }], ss: ['발사 간격 -10% · 치명타 피해 +40%', { firePct: -.1, critDmg: .4 }] },
   aphrodite: { name: '장미 조개 거울', s: ['매혹 시간 +1초 · 회피 +6%', { charm: 1, dodge: .06 }], ss: ['공격력 +15% · 체력 +10%', { atkPct: .15, hpPct: .1 }] },
 };
-/* 신의 소환(캐릭터 뽑기). 조각을 주고, 조각으로 해금·레벨 업한다. 임시값 */
+/* ───── v38(2026-11-18) 캐릭터는 뽑지 않는다(궁수의 전설 2: 캐릭터 뽑기 없음 · 조각 50개로 해금 · 보석 구매 / 이벤트 보상) ─────
+   GOD_GET: 얻는 길. start = 처음부터 / chapter = 그 챕터 첫 클리어 보상(무료) / gem = 보석 구매값(가진 조각만큼 깎인다: 조각 1개 = 값의 1/50)
+   SHARD_SHOP: 가진 신의 조각을 보석으로 산다(레벨 업용). 신마다 하루 daily번, 한 번에 n개 */
+/* 값은 우리 보석 수입 규모에 맞췄다(무과금 하루 약 100~150 → 궁수의 전설 2의 1/3쯤. 궁전2 헬릭스 3,000보석 = 무과금 약 10일치 → 영웅 1,500) */
+const GOD_GET = { hermes: { start: 1 }, heracles: { chapter: 2 }, dionysus: { gem: 500 }, hephaestus: { gem: 500 }, artemis: { chapter: 5 },
+  apollo: { gem: 1500 }, athena: { gem: 1500 }, hera: { gem: 1500 }, aphrodite: { gem: 1500 }, zeus: { gem: 4500 }, poseidon: { gem: 4500 }, hades: { gem: 4500 } };
+const SHARD_SHOP = { n: 10, price: { '희귀': 60, '영웅': 90, '전설': 150 }, daily: 3 };
+/* 골드 주머니: 보석 → 골드(보석이 강함으로 바뀌는 가장 빠른 길. 깬 챕터가 많을수록 많이 준다). 하루 daily번 */
+const GOLD_SHOP = { gem: 100, gold: n => 1200 + 200 * n, daily: 5 };
+/* v38 첫 플레이(새 계정) 흐름: 튜토리얼 뒤 첫 판을 마치면 주는 보상(빠르게 강해지게), 첫 신성 폭주 n번은 combo번만 밟아도 켜진다 */
+const FTUE = { reward: { gold: 3000, gem: 300, scroll: 10 }, highEasy: { n: 3, combo: 2 } };
+/* 신의 소환(캐릭터 뽑기) — v38부터 상점에서 뺐다. 디버그 · 예전 시험용으로 값만 남긴다 */
 const GOD_CHEST = { id: 'god', name: '신의 소환', icon: 'chest_god', cur: 'gem', one: 150, ten: 1350, free: 24 * 3600, pity: 10, tint: '#7a3fb0',
   rate: { '희귀': .55, '영웅': .37, '전설': .08 }, shard: { '희귀': 15, '영웅': 12, '전설': 10 }, desc: '신의 조각을 얻습니다. 해금과 레벨 업에 씁니다' };
 /* 신 전용 무기: 무기만 신마다 따로다. 뽑기에서 어느 신의 무기가 나올지는 등급으로 정한다(신 1명당 확률, 합 100%). 임시값 */
@@ -294,7 +305,7 @@ const DIFF_L = {
   // 단계 1~5의 부담만 낮추고 단계 6부터는 그대로 둔다. 2026-11-06 봇 대조: 시작 장비로 1챕터를 못 깨서 .75 → .6에서 시작
   dmg: L => (L < 6 ? .6 + .08 * (L - 1) : 1) * (1 + .11 * (L - 1)),
   speed: L => 1 + Math.min(.6, .05 * (L - 1)),
-  spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게)
+  spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6 + Math.max(0, 3 - L) * 30),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게). v38: 챕터 1 앞쪽(단계 3 전)은 더 듬성듬성(괴물 수 약 -25%)
   rows: L => Math.round(Math.min(150, 80 + L * 5)),                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게
   bossHp: L => 900 * DIFF_L.hp(L) * (L <= 3 ? .7 : L <= 6 ? .85 : 1),
   spike: L => L < 6 ? .08 + L * .05 : Math.min(.5, .18 + L * .04),
@@ -332,4 +343,9 @@ const STOMP = { small: 1, normal: 3, elite: 5, mini: 18, boss: 45 };
 const stompN = e => e.child || e.kind === 'bat' ? STOMP.small : e.elite ? STOMP.elite : STOMP.normal;
 const stompDmg = e => Math.ceil((e.maxHp || e.hp) / stompN(e));
 const CARD_UP = { base: [.60, .45, .35], boost: [.75, .55, .45] };
+/* v38 초반 후한 카드: 깬 챕터 수가 적을수록 등급 사다리가 잘 오른다(띵띵띵 승급 연출이 자주 보이게). [깬 챕터 수 미만, 사다리]
+   챕터 1을 깨기 전: 카드 창에 영웅 이상 약 95% · 전설 약 63% / 챕터 3을 깨기 전: 영웅 약 79% · 전설 약 42% / 그 뒤 = 기본(영웅 61% · 전설 26%) */
+const CARD_EARLY = [[1, [.85, .70, .50]], [3, [.72, .56, .42]]];
+/* v38 챕터별 권장 전투력: 성장 시뮬레이션(tools/test/econ_v38.py)에서 '이 전투력이면 60판쯤 해 본 실력으로 60% 깬다'로 뽑은 값. 전투 화면에 내 전투력과 견주어 보여 준다 */
+const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 3260, 3610, 4000, 4390, 4810, 5280];   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
 const CARD_PITY = { after: 2, hero: .25, legend: .2 };

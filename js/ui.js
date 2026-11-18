@@ -47,9 +47,11 @@ const UI = {
     // 타이틀(로고)을 누르면 매번 인트로(js/intro.js)부터 시작한다(핍의 젤리광산처럼, 건너뛰기 있음). 한 번도 판을 안 한 사람은 인트로의 다이브가 그대로 챕터 1 낙하로 이어진다
     // 자동 시험에서 로비로 바로 가려면 window.__skipIntro 또는 localStorage gf_skipIntro=1
     const noIntro = () => { try { return !!window.__skipIntro || localStorage.getItem('gf_skipIntro') === '1'; } catch (e) { return !!window.__skipIntro; } };
+    // v38 새 계정(저장 없음 · 판을 해 본 적 없음)은 타이틀을 누를 때 첫 플레이 흐름을 켠다: 튜토리얼 판 → 챕터 1 → 로비 안내. 자동 시험(인트로 건너뛰기)은 켜지 않는다
     const go = () => {
       sfx.init(); sfx.card(); $('mTitle').onclick = null;
-      if (typeof Intro !== 'undefined' && !noIntro()) { const fresh = !Meta.s.seenTip; Intro.play(() => { Meta.s.introSeen = true; Meta.save(); enter(); if (fresh) { this.chapterView = 0; this.render(); this.start(); } }); return; }
+      if (Meta.isNew && !Meta.s.seenTip && !noIntro() && !Meta.s.ftue) Meta.s.ftue = { stage: 0, high: 0, tips: {} };
+      if (typeof Intro !== 'undefined' && !noIntro()) { const fresh = !Meta.s.seenTip; Intro.play(() => { Meta.s.introSeen = true; Meta.save(); enter(); const f = Meta.s.ftue; if (f && f.stage === 0) startTutorial({ chapter: 0 }); else if (f && f.stage === 1) this.ftueLobby(); else if (fresh) { this.chapterView = 0; this.render(); this.start(); } }); return; }
       enter();
     };
     if (typeof Intro !== 'undefined' && !noIntro()) Intro.preload();
@@ -88,13 +90,13 @@ const UI = {
     const v = this.chapterView, CI = chapterInfo(v), open = Meta.chapterOpen(v), s = Meta.s, el = $('s_battle'), best = s.cleared[v] ? STAGES : s.best[v] || 0;
     el.className = 'screen on battle';
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
+    const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
-    setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>
+    setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
       <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="tutTog ${TUT.on ? 'on' : ''}" id="bTut" aria-pressed="${TUT.on}">튜토리얼 <b>${TUT.on ? 'ON' : 'OFF'}</b></button><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
     el.onclick = e => {
       const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
-      if (e.target.closest('#bTut')) { sfx.tap(); setTut(!TUT.on); this.r_battle(); return; }   // v31 임시: 나중에 지울 버튼
       if (e.target.closest('#bStart')) this.start();
     };
   },
@@ -104,10 +106,38 @@ const UI = {
     if (!s.equip.weapon) { this.toast('무기를 장착해야 출발할 수 있습니다'); this.sub = 'gear'; this.go('gear'); return; }
     if (s.energy < 5) { this.toast('에너지가 모자랍니다. 상점에서 채울 수 있습니다'); return; }
     Meta.spendEnergy(); s.chapter = this.chapterView; Meta.save(); sfx.start();
-    if (TUT.on) startTutorial({ chapter: this.chapterView }); else startRun({ chapter: this.chapterView });
+    startRun({ chapter: this.chapterView });
+  },
+  /* v38 새 계정 로비 안내(첫 판을 마치고 돌아왔을 때 한 번): 보상 → 상자 열기 → 일괄 장착 → 강화 → 전투력 → 다시 도전.
+     궁수의 전설 2 초반처럼 한 걸음씩 '여기를 누르세요'(딤 · 포커스 · 강제 터치). 건너뛰어도 보상은 받는다 */
+  ftueLobby() {
+    const f = Meta.s.ftue; if (!f || f.stage !== 1 || Guide.running || !$('lobby').classList.contains('on')) return;
+    const R = FTUE.reward, give = () => { if (!f.rewarded) { f.rewarded = true; Meta.ftueReward(); } };
+    const end = skipped => { if (skipped && !f.rewarded) { give(); this.toast('첫 낙하 보상을 받았습니다'); } f.stage = 2; Meta.save(); this.render(); };
+    const reward = next => {
+      this.popup(`<div class="card-pop" style="--c:#d9962e;--d:#713f10"><div class="hd">첫 낙하 보상</div><div class="note" style="color:#fff;text-align:center">무사히 돌아왔군요! 다음 낙하를 위한 선물입니다.</div><div class="ft-rw"><div><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(R.gold)}</b></div><div><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${R.gem}</b></div><div><img src="${uiIcon('cur_scroll')}" alt=""><b class="oL">×${R.scroll * 6}</b></div></div><button class="btn gold" id="ftGo" style="width:100%">받기</button></div>`);
+      $('pop').onclick = null;
+      $('ftGo').onclick = () => { sfx.reward(); give(); this.closePop(); this.render(); next(); };
+    };
+    const tab = k => `.nb[data-tab="${k}"]`;
+    Guide.run([
+      { call: reward },
+      { sel: tab('shop'), text: '<b>상점</b>에서 상자를 열면 장비가 나와.' },
+      { sel: '[data-pull="obsidian"][data-free="1"]', text: '<b>흑요석 상자</b>를 무료로 한 번 열어 보자!', limit: 2500 },
+      { sel: '#gaOk', text: '', limit: 12000, skipIf: () => !$('gacha').classList.contains('on') },
+      { sel: tab('gear'), text: '얻은 장비를 껴 볼까?' },
+      { sel: '.st[data-sub="gear"]', skipIf: () => this.sub === 'gear', limit: 1500 },
+      { sel: '#bBest', text: '<b>일괄 장착</b>을 누르면 가장 좋은 장비를 한 번에 껴.', skipIf: () => !Meta.bestPlan().length, limit: 2500 },
+      { sel: '.slot[data-slot="weapon"]', text: '장비 <b>칸</b>을 눌러 강화하자.<br>칸을 강화해 두면 장비를 바꿔도 레벨이 남아.', limit: 2500 },
+      { sel: '#ipUpMax', text: '골드와 두루마리로 <b>한 번에 강화</b>!', limit: 1500, skipIf: () => { const b = $('ipUpMax'); return !b || b.disabled; } },
+      { sel: '#ipUp', text: '골드와 두루마리로 <b>강화</b>!', limit: 1500, skipIf: () => Meta.s.slotLv.weapon > 1 },
+      { pre: () => this.closePop(), sel: '.pw', mode: 'card', pad: 1.6, text: '<b>전투력</b>이 올랐어!<br>전투력은 장비 · 재능 · 캐릭터를 모두 합친 내 강함이야.' },
+      { sel: tab('battle'), text: '강해졌으니 다시 내려가 보자.' },
+      { sel: '#bStart', mode: 'card', text: '챕터마다 <b>권장 전투력</b>이 있어. 막히면 장비와 재능을 키우고 다시 도전해!' },
+    ], end);
   },
   enterGame() { $('lobby').classList.remove('on'); $('pause').classList.add('on'); $('mResult').classList.remove('on'); },
-  backToLobby() { game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); },
+  backToLobby() { game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); if (Meta.s.ftue && Meta.s.ftue.stage === 1) setTimeout(() => this.ftueLobby(), 450); },
   pause() {
     const g = game; if (g.state !== 'play') return;
     g.state = 'pause'; input.clearAll(); sfx.tap();
@@ -139,7 +169,7 @@ const UI = {
     const el = $('mResult'); el.classList.add('on');
     el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? `챕터 ${r.chapter + 1} 클리어!` : '심연에 떨어졌다'}</div>
       <div class="rs-g"><div><b class="oL">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>통과한 판</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.high || 0}번</b>신성 폭주</div></div>
-      <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${REWARD.gemFirstClear}</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
+      <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${REWARD.gemFirstClear}</div>` : ''}${rw.newGod ? `<div class="rs-note first oL">새 신 ${GOD_BY[rw.newGod].name} 합류!</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
       <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
     $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
     sfx.reward();
@@ -179,7 +209,8 @@ const UI = {
     const s = Meta.s, cur = this.godView || s.god, G = GOD_BY[cur], lv = Meta.godLv(cur), info = Meta.godInfo(cur), cost = Meta.godCost(cur);
     const rows = [[G.passive, 1], ...GOD_LV[cur].map(([t], n) => [t, n + 2])].map(([t, n]) => `<div class="gl ${n <= lv ? 'on' : ''}"><b class="oL">Lv.${n}</b> ${t}</div>`).join('');
     const cnt = c => `<small>${info.shard}/${c}</small>`;
-    const act = !lv ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>해금 ${cnt(cost)}</button>`
+    const price = Meta.godPrice(cur), get = GOD_GET[cur] || {};   // v38 뽑기 없음: 조각 50개면 해금, 모자라면 보석 구매(조각만큼 깎임) 또는 챕터 클리어 보상
+    const act = !lv ? (info.shard >= cost ? `<button class="btn green" id="gUp">해금 ${cnt(cost)}</button>` : price !== null ? `<button class="btn gold" id="gBuy"><img src="${uiIcon('cur_gem')}" alt="">${fmt(price)} <small>데려오기</small></button>` : `<span class="gmax oL">챕터 ${get.chapter} 클리어 보상</span>`)
       : `${s.god !== cur ? '<button class="btn gold" id="gSel">출전</button>' : ''}${cost !== null ? `<button class="btn green" id="gUp" ${info.shard >= cost ? '' : 'disabled'}>레벨 업 ${cnt(cost)}</button>` : '<span class="gmax oL">최대 레벨</span>'}`;
     return `<div class="gpanel"><div class="gname oL"><span style="--rk:${G.rankCol}" class="grk">${G.rank}</span>${G.name}</div><div class="gsub">${G.title} · ${(w => w ? Meta.weaponName(w) : G.weapon)(Meta.godLv(cur) && Meta.equipped('weapon', cur))}</div><div class="gpips">${[1, 2, 3, 4].map(n => `<i class="${n <= lv ? 'on' : ''}"></i>`).join('')}</div>${rows}<div class="god-act">${act}</div></div>`;
   },
@@ -198,7 +229,7 @@ const UI = {
     const nextBonus = lv && lv < GOD_LV_MAX ? ` · 다음 레벨 +${Math.round(GOD_LV_BONUS * 100)}%` : '';
     const share = Meta.godShare(cur), all = Meta.accountBonus(), pc = x => (x * 100).toFixed(x * 100 % 1 ? 1 : 0);
     const acc = `<div class="gacc oL"><b>모든 신에게 주는 보너스</b><span>이 신 공격력 +${pc(share.atk)}% · 체력 +${pc(share.hp)}%</span><span>전체 합계 공격력 +${pc(all.atk)}% · 체력 +${pc(all.hp)}%</span></div>`;
-    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${RANK_STAT[G.rank] > 1 ? ` · ${G.rank} 등급 +${Math.round((RANK_STAT[G.rank] - 1) * 100)}%` : ''}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
+    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${RANK_STAT[G.rank] > 1 ? ` · ${G.rank} 등급 +${Math.round((RANK_STAT[G.rank] - 1) * 100)}%` : ''}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : (GOD_GET[cur] && GOD_GET[cur].chapter ? `<br>챕터 ${GOD_GET[cur].chapter}을 처음 깨면 함께합니다` : '<br>보석으로 데려올 수 있습니다. 가진 조각만큼 값이 내려갑니다')}</div>`;
     return `<div class="scroll" id="godScroll"><div class="gods">${cards}${soon}</div>${about}${acc}</div>`;
   },
   gearClick(e) {
@@ -212,7 +243,8 @@ const UI = {
     if (t.closest('#bInfo')) { sfx.tap(); this.statPop(); return; }
     if (gc) { sfx.tap(); this.godView = gc.dataset.god; this._swap = true; this.r_gear(); return; }
     if (t.closest('#gSel')) { sfx.tap(); loadGod(this.godView); Meta.selectGod(this.godView); this._swap = true; this.render(); this.toast(GOD_BY[this.godView].name + ' 출전'); return; }
-    if (t.closest('#gUp')) { const id = this.godView || Meta.s.god; if (Meta.godUp(id)) { sfx.reward(); this.toast(Meta.godLv(id) > 1 ? `Lv.${Meta.godLv(id)}이 되었습니다` : '해금했습니다'); this._swap = true; this.render(); } return; }
+    if (t.closest('#gBuy')) { const id = this.godView, p0 = Meta.power(); if (Meta.buyGod(id)) { sfx.reward(); loadGod(id); this.toast(GOD_BY[id].name + ' 합류!'); this._swap = true; this.render(); powerPill(p0, Meta.power()); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
+    if (t.closest('#gUp')) { const id = this.godView || Meta.s.god, p0 = Meta.power(); if (Meta.godUp(id)) { setTimeout(() => powerPill(p0, Meta.power()), 0); sfx.reward(); this.toast(Meta.godLv(id) > 1 ? `Lv.${Meta.godLv(id)}이 되었습니다` : '해금했습니다'); this._swap = true; this.render(); } return; }
   },
   popup(html) { const el = $('pop'); el.innerHTML = html; el.classList.add('on'); el.onclick = e => { if (e.target === el || e.target.closest('[data-close]')) { sfx.tap(); el.classList.remove('on'); } }; },
   closePop() { $('pop').classList.remove('on'); },
@@ -346,13 +378,20 @@ const UI = {
     const GC = GOD_CHEST, gst = s.chest.god || {}, gfr = (gst.freeAt || 0) <= now, gleft = Math.max(0, (gst.freeAt || 0) - now), gic = uiIcon('cur_gem');
     const gtm = gleft ? `${Math.floor(gleft / 3600000)}시간 ${Math.floor(gleft / 60000) % 60}분 뒤 무료` : '';
     const gcard = `<div class="chest" style="--t:${GC.tint}"><div class="hd2 oL"><span>${GC.name}</span><button class="info" data-rategod="1">i</button></div><div class="bd"><img class="cimg" src="${uiIcon(GC.icon)}" alt=""><div><div class="dsc">${GC.desc}</div><span class="pity">전설 확정까지 ${Math.max(1, GC.pity - (gst.pity || 0))}회</span>${gtm ? `<div class="pity" style="display:block;margin-top:calc(var(--u)*1)">${gtm}</div>` : ''}</div></div><div class="acts">${gfr ? `<button class="btn gold free" data-pullgod="1" data-free="1"><span>무료 1회</span></button>` : ''}<button class="btn green" data-pullgod="1"><span class="oL">1회 소환</span><span class="pr oL"><img src="${gic}" alt="">${GC.one}</span></button><button class="btn green" data-pullgod="10"><span class="oL">10회 소환</span><span class="pr oL"><img src="${gic}" alt="">${GC.ten}</span></button></div></div>`;
-    setHTML(el, `<div class="scroll">${gcard}${html}<div class="chest" style="--t:#2a6a3a"><div class="hd2 oL"><span>에너지 충전</span></div><div class="dsc" style="margin:calc(var(--u)*1) 0">에너지 ${ENERGY.buyN}을 채웁니다. 상한을 넘어 쌓입니다.</div><div class="acts"><button class="btn green" id="buyEn" style="grid-column:1/3"><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${ENERGY.buyGem}</span></button></div></div><div style="height:calc(var(--u)*2)"></div></div>`);
+    // v38 캐릭터 뽑기(신의 소환)는 없앴다 → 함께하는 신의 조각을 사는 상점(레벨 업용)
+    const owned = GODS.filter(g => Meta.godLv(g.id) && Meta.godCost(g.id) !== null);
+    const srow = g => { const left = Meta.shardLeft(g.id), i = Meta.godInfo(g.id); return `<div class="ss-r"><img class="ss-f" src="assets/god/${g.id}/big_bare.webp" alt=""><div class="ss-n"><b class="oL" style="color:${g.rankCol}">${g.name}</b><small>조각 ${i.shard}/${Meta.godCost(g.id)} · 오늘 ${left}/${SHARD_SHOP.daily}</small></div><button class="btn green" data-shard="${g.id}" ${left > 0 ? '' : 'disabled'}><span>조각 ×${SHARD_SHOP.n}</span><small><img src="${gic}" alt="">${SHARD_SHOP.price[g.rank]}</small></button></div>`; };
+    const scard = `<div class="chest" style="--t:#7a3fb0"><div class="hd2 oL"><span>신의 조각 상점</span></div><div class="dsc" style="margin:calc(var(--u)*1) 0">함께하는 신의 조각을 삽니다(레벨 업). 새 신은 캐릭터 화면에서 데려옵니다.</div><div class="ss">${owned.map(srow).join('') || '<div class="note">레벨을 올릴 수 있는 신이 없습니다</div>'}</div></div>`;
+    const gl = Meta.goldLeft(), gcard2 = `<div class="chest" style="--t:#9a6a12"><div class="hd2 oL"><span>골드 주머니</span></div><div class="bd"><img class="cimg" src="${uiIcon('cur_gold')}" alt=""><div><div class="dsc">보석으로 골드 <b style="color:#ffe27a">${fmt(GOLD_SHOP.gold(Meta.clearedN()))}</b>을 삽니다. 챕터를 깰수록 많아집니다.</div><span class="pity">오늘 ${gl}/${GOLD_SHOP.daily}</span></div></div><div class="acts"><button class="btn green" id="buyGold" style="grid-column:1/3" ${gl > 0 ? '' : 'disabled'}><span>골드 사기</span><span class="pr oL"><img src="${gic}" alt="">${GOLD_SHOP.gem}</span></button></div></div>`;
+    setHTML(el, `<div class="scroll">${html}${scard}${gcard2}<div class="chest" style="--t:#2a6a3a"><div class="hd2 oL"><span>에너지 충전</span></div><div class="dsc" style="margin:calc(var(--u)*1) 0">에너지 ${ENERGY.buyN}을 채웁니다. 상한을 넘어 쌓입니다.</div><div class="acts"><button class="btn green" id="buyEn" style="grid-column:1/3"><span class="pr oL"><img src="${uiIcon('cur_gem')}" alt="">${ENERGY.buyGem}</span></button></div></div><div style="height:calc(var(--u)*2)"></div></div>`);
     el.onclick = e => {
       const t = e.target, p = t.closest('[data-pull]'), r = t.closest('[data-rate]');
       if (r) { sfx.tap(); this.ratePop(r.dataset.rate); return; }
       if (t.closest('[data-rategod]')) { sfx.tap(); this.godRatePop(); return; }
       const pg = t.closest('[data-pullgod]');
       if (pg) { const res = Meta.pullGod(+pg.dataset.pullgod, !!pg.dataset.free); if (!res) { sfx.empty(); this.toast('보석이 모자랍니다'); return; } this.reveal('god', res); return; }
+      const sh = t.closest('[data-shard]'); if (sh && !sh.disabled) { if (Meta.buyShards(sh.dataset.shard)) { sfx.buy(); this.render(); this.toast('조각 +' + SHARD_SHOP.n); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
+      if (t.closest('#buyGold')) { const n = Meta.buyGold(); if (n) { sfx.buy(); this.render(); this.toast('골드 +' + fmt(n)); } else { sfx.empty(); this.toast(Meta.goldLeft() > 0 ? '보석이 모자랍니다' : '오늘은 다 샀습니다'); } return; }
       if (t.closest('#buyEn')) { if (s.gem >= ENERGY.buyGem) { s.gem -= ENERGY.buyGem; s.energy += ENERGY.buyN; Meta.save(); sfx.reward(); this.render(); } else this.toast('보석이 모자랍니다'); return; }
       if (p) { const res = Meta.pull(p.dataset.pull, +p.dataset.n, !!p.dataset.free); if (!res) { sfx.empty(); this.toast('재화가 모자랍니다'); return; } this.reveal(p.dataset.pull, res); }
     };
@@ -412,7 +451,7 @@ const UI = {
   r_talent() {
     const el = $('s_talent'), s = Meta.s; el.className = 'screen on bg-dark bg-talent';
     setHTML(el, `<div class="scroll"><div class="h2 oL" style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">재능: 골드로 영구히 강해집니다</div><div class="tal">${TALENTS.map(t => { const l = s.talent[t.id] || 0, mx = l >= t.max, c = t.cost(l); return `<div class="tc"><img src="${uiIcon(t.icon)}" alt=""><div class="nm oL">${t.name}</div><div class="lvv">Lv.${l} / ${t.max}</div><div class="dsc">${t.desc}</div><button class="btn green" data-t="${t.id}" ${mx || s.gold < c ? 'disabled' : ''}><span class="pr oL">${mx ? '최대' : `<img src="${uiIcon('cur_gold')}" alt="">${fmt(c)}`}</span></button></div>`; }).join('')}</div></div>`);
-    el.onclick = e => { const b = e.target.closest('[data-t]'); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); } };
+    el.onclick = e => { const b = e.target.closest('[data-t]'); const p0 = Meta.power(); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); powerPill(p0, Meta.power()); } };
   },
   settings() {
     this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">설정</div><button class="x" data-close>✕</button><div class="ip-acts"><button class="btn blue" id="stMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button></div><div class="ip-acts"><button class="btn blue" id="stIntro">인트로 다시 보기</button></div><div class="ip-acts"><button class="btn red" id="stReset">처음부터 다시</button></div><div class="note">GOD FALL 개발판. 저장은 이 브라우저에 됩니다.</div></div>`);

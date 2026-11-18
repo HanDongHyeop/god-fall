@@ -84,7 +84,8 @@ function pityUp() {
   const h = pt.hero >= P.after ? (pt.hero - P.after + 1) * P.hero : 0, l = pt.legend >= P.after ? (pt.legend - P.after + 1) * P.legend : 0;
   return [0, h + l * .5, l];
 }
-function rollTier(boost, from = 0, pity) { const up = boost ? CARD_UP.boost : CARD_UP.base; let t = from; while (t < 3 && Math.random() < up[t] + (pity ? pity[t] : 0)) t++; return t; }
+function cardUpNow(boost) { const n = Meta.clearedN(), e = CARD_EARLY.find(x => n < x[0]), b = boost ? CARD_UP.boost : CARD_UP.base; return e ? b.map((v, i) => Math.max(v, e[1][i])) : b; }
+function rollTier(boost, from = 0, pity) { const up = cardUpNow(boost); let t = from; while (t < 3 && Math.random() < up[t] + (pity ? pity[t] : 0)) t++; return t; }
 /* pool에서 t등급 카드를 하나 뽑아 뺀다. 그 등급이 비었으면 한 칸씩 내려가며 찾고, 그래도 없으면 위로 찾는다.
    v32: 같은 등급 안에서는 무게(CARD_W, 카드의 w)대로 뽑는다. 유도탄 묶음(seek)은 다른 카드보다 잘 나온다(일반·희귀·영웅 1.2, 전설 1.08) */
 const CARD_W = { seek: 1.08 };
@@ -126,6 +127,7 @@ function openCards(boost, opt) {
   $('cardTitle').textContent = opt && opt.title || (boost ? '보스의 전리품' : '신의 선물');
   $('cardSub').textContent = opt && opt.sub || '새로운 능력을 선택하세요!';
   modal.list = pickCards(boost, opt && opt.filter); modal.sel = 0; modal.openedAt = performance.now(); modal.ready = false;
+  if (typeof ftueCardTip === 'function') ftueCardTip();   // v38 새 계정: 첫 카드 창 설명
   /* 등급 승급 연출(궁수의 전설 2): 모두 일반(초록)으로 나와 아이콘이 돈다 → 단계마다 확률에 걸린 카드만 번쩍이며 한 등급 오른다.
      걸리지 않은 카드는 그 등급에서 멈춘다. 높은 등급으로 오를수록 터짐·흔들림·빛이 커진다. 실제 결과는 뽑을 때 이미 정해져 있다 */
   const ranks = modal.list.map(c => TIER_SEQ.indexOf(c.tier)), top = Math.max(0, ...ranks), STEP0 = 760, STEPN = 640;

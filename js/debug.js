@@ -22,7 +22,7 @@
     resume = null;
     if (document.getElementById('lobby').classList.contains('on')) UI.render();
   };
-  const inRun = () => !!game.p && ['play', 'descend', 'pause', 'intro', 'bossdead'].includes(game.state);
+  const inRun = () => !!game.p && ['play', 'descend', 'pause', 'intro', 'bossdead', 'guide'].includes(game.state);
   const say = t => UI.toast(t);
   /* 맵 바로 시작. 에너지를 쓰지 않는다 */
   const startAt = (chapter, wave) => {
@@ -63,6 +63,7 @@
       <h5>캐릭터</h5>${gods}
       <h5>장비 레벨 (칸마다)</h5>${slots}<div class="dr">${b('slAll', '전부 Lv.1로', 'no')}</div>
       <h5>장비 지급</h5><div class="dr">${GRADES.map((G, i) => b('give:' + i, G.name + ' 6칸')).join('')}</div>
+      <h5>튜토리얼</h5><div class="dr">${b('tut', '튜토리얼 처음부터')}${b('tutLobby', '로비 안내부터')}${b('tutOff', '안내 끄기', 'no')}</div>
       <h5>초기화</h5><div class="dr">${b('wipe', again ? '한 번 더 누르면 지웁니다' : '저장 전체 초기화', 'no')}</div></div>`;
   }
   function act(a) {
@@ -70,6 +71,10 @@
     if (k === 'close') { close(); return; }
     if (k === 'go') { startAt(+x, +y); return; }
     if (k === 'mini') { startMiniAt(+x); return; }
+    // v38 첫 플레이 흐름 다시 보기
+    if (k === 'tut') { s.ftue = { stage: 0, high: 0, tips: {} }; Meta.save(); for (const id of ['mResult', 'mPause', 'mCont', 'mCard']) { const el = document.getElementById(id); if (el) el.classList.remove('on'); } resume = null; panel.classList.remove('on'); document.getElementById('lobby').classList.remove('on'); sfx.init(); if (s.god !== 'hermes') Meta.selectGod('hermes'); startTutorial({ chapter: 0 }); return; }
+    if (k === 'tutLobby') { s.ftue = { stage: 1, high: 0, tips: {} }; Meta.save(); close(); if (inRun()) UI.backToLobby(); else UI.ftueLobby(); return; }
+    if (k === 'tutOff') { delete s.ftue; Guide.stop(); }
     if (k === 'god') setGod(!god);
     else if (k === 'next') { if (game.isBossWave && game.boss) game.boss = null; game.room = null; game.saved = null; game.minis = null; document.getElementById('mPause').classList.remove('on'); resume = null; panel.classList.remove('on'); nextWave(); return; }
     else if (k === 'kill') { setGod(false); panel.classList.remove('on'); resume = null; game.state = 'play'; game.hitStop = 0; game.p.hp = 0; gameOver(); return; }

@@ -74,6 +74,7 @@ function mkEnemy(kind, x, y, o) {
   const b = ENEMY[kind], w = game.wave;
   const e = { kind, x, y, vx: 0, vy: 0, alive: true, flash: 0, pop: 0, hbT: 0, burn: 0, fr: 0, ph: 0, stomp: b.stomp, shield: !!b.shield, r: b.r, gem: b.gem, ...o };
   e.hp = e.maxHp = Math.round(b.hp * DIFF.hp(w)); e.dmg = Math.round(b.dmg * DIFF.dmg(w));
+  if (dlv(w) < 3 && e.gem) e.gem = Math.ceil(e.gem * 1.35);   // v38 챕터 1 앞쪽은 괴물을 약 25% 줄였다 → 파편은 그만큼 더(첫 좌판 값 유지)
   return e;
 }
 function pickKind(R, w) {
@@ -548,7 +549,7 @@ function tick(dt) {
       p.vy = 0; p.onGround = true;
     }
   }
-  if (p.onGround) { refill(p); p.jumpState = false; p.combo = 0; }   // v33: 콤보(밟은 횟수)는 땅에 닿아야만 끊긴다
+  if (p.onGround) { refill(p); p.jumpState = false; if (!ftueEasyHigh()) p.combo = 0; }   // v33: 콤보(밟은 횟수)는 땅에 닿아야만 끊긴다
   p.squash = approachSnap(p.squash, 0, 14, dt);
   p.hurtT = Math.max(0, p.hurtT - dt); p.landT = Math.max(0, p.landT - dt); p.hitFlash = Math.max(0, (p.hitFlash || 0) - dt);
   p.flip = approachSnap(p.flip, p.face > 0 ? 1 : -1, 60, dt);
@@ -561,7 +562,8 @@ function tick(dt) {
   if (p.sndT > 0) p.sndT -= dt;
   // 포탈
   const po = g.portal;
-  if (po && !g.room && g.state === 'play' && Math.hypot(p.x - po.x, p.y - po.y) < po.r * .8) { waveClear(); return; }
+  if (g.tut) { if (tutTick(dt)) return; }   // v38 첫 낙하 튜토리얼(tutorial.js): 걸음 진행 · 포탈
+  else if (po && !g.room && g.state === 'play' && Math.hypot(p.x - po.x, p.y - po.y) < po.r * .8) { waveClear(); return; }
   // 신성 폭주(skills.js): 5콤보로 켜지고 HIGH.dur초(장비·카드로 늘어남) 뒤 꺼진다
   highTick(dt);
   // 샛길
