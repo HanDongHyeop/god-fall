@@ -246,9 +246,9 @@ function drawHero() {
   if ((p.hitFlash > 0 || blink) && ok(wim)) { ctx.globalAlpha = p.hitFlash > 0 ? 1 : .6; ctx.drawImage(wim, dx, dy, dw, dh); ctx.globalAlpha = 1; }
   ctx.restore();
   // v32.1: 탄창은 점프 버튼 테두리에 보인다. 머리 위에는 점프가 2회 이상일 때(날개 신발)만 남은 점프를 작은 점으로 — 뛸 때마다 하나씩 꺼지고 땅에 닿으면 다시 켜진다
-  const nJ = jumpMax();
-  if (nJ >= 2) {
-    const left = clamp(nJ - p.jumps, 0, nJ), r = 2.7 * s, d = 8.5 * s, y0 = wy(p.y) - 42 * s, x0 = wx(p.x) - (nJ - 1) * d / 2, fl = p.gaugeFlash > 0;
+  // v35: 공중 점프는 날개 신발 + 탄을 다 썼을 때 한 번 → 점 하나(쓰면 꺼짐, 땅·밟기로 다시 켜짐)
+  if (has('wings')) {
+    const nJ = 1, left = p.airJumped ? 0 : 1, r = 2.7 * s, d = 8.5 * s, y0 = wy(p.y) - 42 * s, x0 = wx(p.x) - (nJ - 1) * d / 2, fl = p.gaugeFlash > 0;
     for (let i = 0; i < nJ; i++) {
       const on = i < left, x = x0 + i * d;
       ctx.fillStyle = 'rgba(8,12,28,.78)'; ctx.beginPath(); ctx.arc(x, y0, r + 1.3 * s, 0, 7); ctx.fill();
@@ -382,7 +382,7 @@ function drawHints() {
   const g = game; if (!(g.hintT > 0) || g.state !== 'play') return;
   const al = clamp(g.hintT, 0, 1), s = view.s;
   ctx.globalAlpha = al; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`;
-  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['점프 후 다시 누르면 공격', clamp(ui.btn.x, view.W / 2, view.W - ctx.measureText('점프 후 다시 누르면 공격').width / 2 - 10 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
+  for (const [t, x, y] of [['이동', ui.stickHome.x, ui.stickHome.y - ui.knobR - 12 * s], ['공중에서 누르면 공격', clamp(ui.btn.x, view.W / 2, view.W - ctx.measureText('공중에서 누르면 공격').width / 2 - 10 * s), ui.btn.y - ui.btn.r - 14 * s]]) textOut(t, x, y);
   ctx.globalAlpha = 1;
 }
 function render(dt) {

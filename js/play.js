@@ -446,18 +446,22 @@ function tick(dt) {
   // 버튼 하나(v30): 문·좌판·휴식 물건 앞 바닥에서 누르면 그것을 쓰고(점프 안 함), 그 밖에는 점프. O 키(시험용)도 쓰기
   const act = locked ? null : interactNear();
   let attackTap = !locked && input.attackEdge; input.attackEdge = false;
-  // v30.2: 이번 누르기가 공격이 될 수 있는지는 누른 순간에 정한다 — 이미 점프 상태로 공중에 있을 때 누른 것만 공격이 된다(땅·그냥 떨어지는 중에 누르면 끝까지 점프만).
-  // v30.4: 누르면 어디서든 바로 점프(공중 탭·더블탭·떼고 다시 탭이 즉시 반응해야 한다는 피드백 — v30.3의 '뗄 때 점프'는 늦고, 긴 탭이 꾹 누름으로 읽혀 점프가 빠졌다).
-  // 공격은 점프 상태로 공중에서 시작한 누르기를 누르고 있을 때만: 그 누르기로 뛰었으면 HOLD_FIRE초부터, 게이지가 없어 못 뛰었으면(공격밖에 뜻이 없음) 바로 쏜다
+  // 이번 누르기가 점프인지 공격인지는 누른 순간에 정한다(v35: 땅=점프, 공중=공격. 예전 v30.2~v30.4의 0.12초 탭/꾹 판정은 없앴다 — 밟은 직후 누르면 먼저 떠오르던 문제)
   if (input.jumpEdge) {
     if (!locked) {
       if (act) attackTap = true;
-      else { p.pressFire = !p.onGround && p.jumpState; p.pressJumped = false; p.holdConv = false; p.buffer = BUFFER; }
+      else {
+        // v35 다운웰 규칙: 땅(발판 끝 COYOTE 안 포함)에서 누르면 점프, 공중에서 누르면 발사. 공중 누르기는 짧은 탭도 한 발은 나간다(tapShot).
+        // 공중 점프는 날개 신발 + 탄을 다 썼을 때만(그때는 쏠 탄이 없으니 누르기의 뜻이 하나) — airJump
+        const air = !p.onGround && p.coyote <= 0;
+        p.airJump = air && has('wings') && p.ammo <= 0 && !p.airJumped;
+        p.pressFire = air && !p.airJump; p.tapShot = p.pressFire; p.buffer = BUFFER;
+      }
       p.holdT = 0;
     }
     input.jumpEdge = false;
   }
-  if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; p.pressFire = false; }
+  if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; if (!p.tapShot) p.pressFire = false; }   // v35: 한 프레임 안에 뗀 탭도 한 발은 쏘게 tapShot이 남아 있는 동안은 지우지 않는다
   const st = g.st;
   // 좌우
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
@@ -471,13 +475,13 @@ function tick(dt) {
   p.buffer = Math.max(0, p.buffer - dt);
   if (p.buffer > 0) {
     const fromGround = p.coyote > 0 && p.jumps === 0;
-    if (p.jumps < jumpMax()) {
+    if (fromGround || p.airJump) {
       p.buffer = 0; p.jumps++; p.gauge = Math.max(0, 100 - p.jumps * gaugeCost()); g.stats.jumps++; p.jumpState = true;   // v30: 점프 버튼으로 뛰면 점프 상태(땅에 닿을 때까지 버튼을 누르고 있으면 공격)
       if (fromGround) {
-        p.vy = -T.jumpV * Math.sqrt(1 + (st.jumpPct || 0)); p.pressFire = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
+        p.vy = -T.jumpV * Math.sqrt(1 + (st.jumpPct || 0)); p.pressFire = false; p.tapShot = false;   // 땅에서 뛴 누르기(착지 직전에 미리 누른 것 포함)는 공격이 되지 않는다
         puff(p.x, p.y + p.h / 2 - 2, 3, 11, 5); gust(p.x, p.y + p.h / 2, 24);
       } else {
-        p.pressJumped = true;   // 이 누르기로 공중 점프를 했다 → 계속 누르고 있으면 HOLD_FIRE 뒤부터 쏜다
+        p.airJump = false; p.airJumped = true;   // v35: 날개 신발 공중 점프(탄을 다 쓴 뒤 한 번)
         const jv = T.jumpV * Math.sqrt(1 + (st.jumpPct || 0));
         p.vy = p.vy < 0 ? Math.max(p.vy - jv * T.airAdd, -jv * T.airCap) : -jv * Math.max(T.airAdd, .95);
         gust(p.x, p.y + p.h / 2 + 2, 36); feathers(p.x, p.y - 22, 3, 90); sfx.flap();
@@ -485,27 +489,19 @@ function tick(dt) {
       }
       if (st.jumpWave) explode(p.x, p.y + 16, 46, { tiles: false, dmg: Math.round(p.atk * .6) });   // v31: 점프가 1회라 땅 점프에도 충격파
       p.coyote = 0; p.onGround = false; p.squash = -.28; sfx.jump(p.jumps - 1);
-    } else if (!p.onGround && p.buffer < BUFFER - dt) { p.gaugeFlash = .25; if (!p.jumpState) sfx.fizzle(); p.buffer = 0; }   // 점프 상태에서 게이지 없이 누르면 공격 누르기라 헛소리는 내지 않는다(게이지 칸만 깜빡)
+    }   // v35: 공중 누르기는 발사라 여기서 끝(버퍼는 착지 직전 누르기를 땅 점프로 받으려고 남겨 둔다)
   }
-  // v30.4: 공중에서 눌러 바로 뛴 누르기가 HOLD_FIRE를 넘겨 '꾹 누름(공격)'이 되면 그 점프는 공격 시작의 작은 도약으로 바꾼다 —
-  // 게이지·점프 횟수를 돌려주고 올라가던 힘을 거의 멈춘다. 그래야 '점프 → 꾹 공격 → 떼고 탭'에서 탭이 다시 제대로 뛴다
-  if (jumpHeld && p.pressFire && p.pressJumped && !p.holdConv && p.holdT >= HOLD_FIRE) {
-    p.holdConv = true; p.jumps = Math.max(0, p.jumps - 1); p.gauge = Math.max(0, 100 - p.jumps * gaugeCost());
-    if (p.vy < 0) p.vy *= .25;
-  }
-  if (!jumpHeld) p.holdConv = false;
   // 공격
   p.fireT -= dt; p.attackPose = Math.max(0, p.attackPose - dt); p.throwT = Math.max(0, p.throwT - dt);
   const nearItem = g.room ? roomItemNear() : null;
   if (nearItem && attackTap) { roomBuy(nearItem); }
-  // 공격(v30.1): 점프 버튼과 합쳤다. 점프 버튼으로 뛴 뒤(또는 적을 밟고 튄 뒤) 땅에 닿기 전까지, 버튼을 누르고 있는 동안 쏜다.
-  // 한 번 뛰고 계속 누르면 쏘고, 손을 뗐다 다시 누르면 게이지가 있을 때 한 번 더 뛰고 그대로 누르고 있으면 또 쏜다. 그냥 발판에서 걸어 떨어질 때와 땅에서는 쏘지 않는다.
-  // 바로 아래가 막혀 있으면(땅에서 막 뛴 순간·벽 턱 위) 탄이 바로 부딪혀 사라지므로 아끼고 쏘지 않는다
-  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = jumpHeld && p.pressFire && (!p.pressJumped || p.holdT >= HOLD_FIRE) &&!p.onGround && p.jumpState && !isSolid(below);
+  // 공격(v35 다운웰 규칙): 공중에서 시작한 누르기를 누르고 있는 동안 쏜다(짧은 탭도 한 발). 땅에서 뛴 누르기는 그대로 누르고 있어도 쏘지 않는다 — 다시 눌러야 쏜다.
+  // 걸어서 떨어지는 중에도, 적을 밟고 튄 뒤에도 똑같다. 바로 아래가 막혀 있으면(착지 직전·벽 턱 위) 탄이 바로 사라지므로 아끼고 쏘지 않는다
+  const below = lvl.at(Math.floor(p.x / TILE), Math.floor((p.y + p.h / 2 + 22) / TILE)), firing = (jumpHeld || p.tapShot) && p.pressFire && !p.onGround && !isSolid(below);
   p.fireGlow = Math.max(0, (p.fireGlow || 0) - dt);
   if (firing && p.fireT <= 0 && p.ammo > 0) {
     const every = T.fireEvery * g.god_.fire * (1 + st.firePct) * [1, .88, .75][famLv('rate')] * (has('heavy') ? 1.2 : 1);
-    p.fireT = every; p.fireGlow = every + .05;
+    p.fireT = every; p.fireGlow = every + .05; p.tapShot = false;
     const wasLast = p.ammo === 1;
     p.ammo--;
     p.attackPose = Math.max(.12, every); p.throwT = Math.max(.06, every * .5); p.shotN++; p.shots++;
@@ -526,6 +522,7 @@ function tick(dt) {
     if (p.vy > 0) p.vy = p.vy * rec - 30;
     p.squash = Math.max(p.squash, .12);
   } else if (firing && p.ammo <= 0 && p.emptyT <= 0) { p.emptyT = .6; p.ammoFlash = .25; }
+  if (p.ammo <= 0 || p.onGround) p.tapShot = false;   // 쏠 수 없으면 탭 한 발 약속은 끝
   p.emptyT = Math.max(0, p.emptyT - dt);
   // 아틀라스의 짐: 공중에서 0.6초마다 탄 1발
   if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .3) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;

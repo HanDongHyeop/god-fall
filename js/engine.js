@@ -27,7 +27,7 @@ const TUNE_DEFAULT = {
   airCap: 1.15,      // 공중 점프 최대 상승 속도 비율. 크면 빠른 2회가 느린 3회보다 높아진다
   // v31: 점프는 1회(날개 신발이면 2회). 게이지는 남은 점프 칸 표시일 뿐 공중에서 차지 않는다 — 땅에 닿거나 적을 밟으면 다시 찬다(refill)
   fireEvery: .12,    // 다운웰 머신건 측정값
-  stompV: 430, stompHoldV: 600,
+  stompV: 500, stompHoldV: 600,   // v35: 그냥 밟기 430→500(점프의 약 57% 높이), 누르고 밟기 600(약 82%). 점프 버튼(663)보다는 낮게
 };
 const TUNE_UI = [
   ['run', '좌우 속도', 150, 340, 5], ['grav', '중력', 900, 2400, 50], ['maxFall', '최대 낙하', 300, 800, 10],
@@ -35,13 +35,12 @@ const TUNE_UI = [
   ['stompV', '밟기 반동', 250, 700, 10], ['fireEvery', '발사 간격', .06, .24, .01],
 ];
 const T = Object.assign({}, TUNE_DEFAULT);
-try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete saved.gaugeRegen; delete saved.jumpV; delete saved.recoil; delete saved.recoilFall; Object.assign(T, saved); } catch (e) {}
+try { const saved = JSON.parse(localStorage.getItem('gf_tune') || '{}'); delete saved.gaugeRegen; delete saved.jumpV; delete saved.recoil; delete saved.recoilFall; delete saved.stompV; Object.assign(T, saved); } catch (e) {}
 
 const HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
 // v31: 점프 횟수 = 1(날개 신발 +1). 게이지 한 칸 = 점프 1회
 const jumpMax = () => 1 + (typeof has === 'function' && has('wings') ? 1 : 0), gaugeCost = () => 100 / jumpMax();
 const COYOTE = .08, BUFFER = .11;
-const HOLD_FIRE = .12;   // v30.4: 점프 상태로 공중에서 눌러 바로 뛴 누르기를 이만큼(초) 넘게 누르고 있으면 그때부터 공격(짧은 탭은 점프만). 못 뛴 누르기(게이지 없음)는 바로 공격
 const WORLD_W = 360, TILE = 40, COLS = 9;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const approachSnap = (v, target, rate, dt, eps = .004) => {
@@ -386,7 +385,7 @@ function moveY(p, dy) {
 }
 
 // 바닥이나 몬스터에 닿으면 탄과 점프가 둘 다 리셋된다
-function refill(p) { p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.glide = 3; }
+function refill(p) { p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.glide = 3; p.airJumped = false; }
 
 /* ───── 1프레임(1/60초) 갱신 ───── */
 function fxUpdate(dt) {
@@ -521,7 +520,7 @@ function drawButtons(dt) {
   btnAnim.act = approachSnap(btnAnim.act, act ? 1 : 0, 14, dt);
   btnAnim.fire = approachSnap(btnAnim.fire, p && p.fireGlow > 0 ? 1 : 0, p && p.fireGlow > 0 ? 30 : 8, dt);
   btnAnim.ring = Math.max(0, btnAnim.ring - dt * 3.2);
-  const nJ = jumpMax(), canJump = !p || p.jumps < nJ || (p.jumpState && !p.onGround);   // v31: 공중 점프 상태에서는 누르면 공격이라 어둡게 하지 않는다
+  const canJump = !p || p.onGround || p.coyote > 0 || p.ammo > 0 || (has('wings') && !p.airJumped);   // v35: 공중에서는 쏠 탄(또는 날개 신발 점프)이 있으면 켜 둔다
   btnAnim.dim = approachSnap(btnAnim.dim, canJump || act ? 0 : 1, 12, dt);
   const R = b.r * (1 - .06 * btnAnim.j), x = b.x, y = b.y, fR = R * .72, A = btnAnim.act;
   ctx.save();

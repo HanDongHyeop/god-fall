@@ -47,7 +47,7 @@ const CARDS = [
   { id: 'echo', name: '메아리 탄', tier: '영웅', desc: '2번 공격할 때마다 같은 공격(갈래 탄 포함)이 한 번 더 나갑니다.' },
   { id: 'heavy', name: '무거운 일격', tier: '영웅', desc: '공격력 +70%, 탄이 1.4배 커집니다. 발사 간격은 20% 길어집니다.' },
   { id: 'ares', name: '아레스의 창끝', tier: '영웅', desc: '치명타 확률 +25%, 치명타 피해 +60%.', apply: () => { game.st.crit += .25; game.st.critDmg += .6; } },
-  { id: 'wings', name: '날개 신발', tier: '영웅', desc: '공중에서 한 번 더 뛸 수 있습니다(점프 2회).' },
+  { id: 'wings', name: '날개 신발', tier: '영웅', desc: '탄을 다 쓰면 공중에서 한 번 더 뛸 수 있습니다.' },
   { id: 'cell', name: '신성 회로', tier: '영웅', desc: '파편을 먹을 때마다 탄이 1 찹니다.', noMini: true },
   { id: 'nike', name: '니케의 월계관', tier: '영웅', desc: '지금 체력 30% 회복. 웨이브를 시작할 때마다 체력 15% 회복.', noMini: true, apply: p => { healBy(p.maxHp * .3); game.st.waveHeal = (game.st.waveHeal || 0) + .15; } },
   // v34 타이탄 밟기 묶음(titan, 카드표 문서 제안): 영웅 = 가시·그림자처럼 못 밟던 적도 밟는다, 전설 = 거기에 흡혈
