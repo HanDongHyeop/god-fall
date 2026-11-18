@@ -65,7 +65,7 @@ const sfx = {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-      this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .5; const lim = this.ctx.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .12; this.master.connect(lim); lim.connect(this.ctx.destination);
+      this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .5; const lim = this.ctx.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .12; const soft = this.ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 9000; soft.Q.value = .5; this.master.connect(soft); soft.connect(lim); lim.connect(this.ctx.destination); this.loadPack();
     } catch (e) { this.ctx = null; }
   },
   tone(type, f0, f1, dur, vol = .3, delay = 0) {
@@ -170,6 +170,64 @@ const sfx = {
   over() { this.tone('sawtooth', 300, 40, .7, .3); },
   card() { this.tone('square', 660, 990, .1, .16); },
 };
+
+/* ───── v37 효과음 = 녹음 질감 소리 파일(assets/sfx_pack.js). 2026-11-18 '오락실 같다 · 신경이 날카롭다' 피드백으로 합성음을 바꿨다.
+   파일이 아직 안 풀렸거나 없는 환경이면 예전 합성음으로 낸다. 같은 소리 반복이 귀에 박히지 않게 재생 속도를 ±3% 흔든다.
+   한꺼번에 울리는 소리는 10개까지(넘치면 새 소리를 버린다) — 겹쳐서 시끄러워지는 것을 막는다. ───── */
+Object.assign(sfx, {
+  buf: {}, voices: 0,
+  loadPack() {
+    const P = window.GF_SFX; if (!P || !this.ctx) return;
+    for (const [k, url] of Object.entries(P)) {
+      try {
+        const bin = atob(url.slice(url.indexOf(',') + 1)), u = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        const ok = b => { this.buf[k] = b; }, ng = () => {};
+        const pr = this.ctx.decodeAudioData(u.buffer, ok, ng); if (pr && pr.catch) pr.catch(ng);   // 옛 사파리는 콜백 방식
+      } catch (e) {}
+    }
+  },
+  play(k, vol = 1, rate = 1, delay = 0) {
+    const b = this.buf[k]; if (!b) return false;
+    if (!this.ctx || this.muted) return true;
+    if (this.voices >= 10) return true;
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), t = c.currentTime + delay;
+    s.buffer = b; s.playbackRate.value = rate * (.97 + Math.random() * .06); g.gain.value = vol;
+    s.connect(g); g.connect(this.master); s.start(t); this.voices++; s.onended = () => { this.voices--; };
+    return true;
+  },
+});
+// 이름: [파일, 크기, 재생 속도(인자 → 값), 같은 소리 최소 간격 ms]. 콤보 · 연쇄로 아주 조금씩만 높아진다(최대 +12% — '튀고 오락실 같다' 피드백).
+const SFX_FILE = {
+  shot: ['shot_letter', .8],
+  boom: ['boom', .9, null, 50], bigBoom: ['bigBoom', 1], bossHit: ['bossHit', .8, null, 60], roar: ['roar', 1], rumble: ['rumble', .9],
+  spit: ['spit', .7, null, 70], zap: ['zap', .7, null, 50], door: ['door', .8],
+  buy: ['buy', .8], tap: ['tap', .7, null, 40], equip: ['equip', .8], upgrade: ['upgrade', .8], start: ['start', .9],
+  cardOpen: ['cardOpen', .8], cardTick: ['cardTick', .5, null, 70], cardLock: ['cardLock', .8, t => 1 + (t || 0) * .05], cardOpen2: ['cardOpen', .45, () => .9],
+  drum: ['drum', .9, i => 1 + Math.min(i || 0, 8) * .015], cardUp: ['cardUp', .8, s => 1 + (s || 0) * .04],
+  flap: ['flap', .6], paper: ['shot_letter', .35, null, 40], jump: ['jump', .7, n => 1 + Math.min(n || 0, 3) * .05],
+  empty: ['empty', .6, null, 200], fizzle: ['fizzle', .6, null, 180], land: ['land', .6, null, 90],
+  stomp: ['stomp', 1, c => 1 + Math.min(c || 0, 24) * .005], kill: ['kill', .9, c => 1 + Math.min(c || 0, 24) * .005, 45],
+  hit: ['hit', .7, null, 60], ping: ['ping', .5, null, 90], brk: ['brk', .7, null, 70],
+  highBeat1: ['drum', 1, () => .9], highBeat2: ['powerUp', 1], highUp: ['upgrade', .5, () => 1.08], highFlick: ['fizzle', .3, null, 120], highOff: ['powerOff', .8],
+  gem: ['gem', .5, n => 1 + Math.min(n || 0, 100) * .0012, 45], hurt: ['hurt', .9], reward: ['reward', .8], over: ['over', .9], card: ['card', .7],
+};
+for (const [name, [file, vol, rf, gap]] of Object.entries(SFX_FILE)) {
+  const old = sfx[name];
+  sfx[name] = function (...a) {
+    if (!this.buf[file]) return old.apply(this, a);
+    if (gap && !this.limit('f_' + name, gap)) return;
+    this.play(file, vol, rf ? rf(...a) : 1);
+  };
+}
+{ const old = sfx.shotOf;
+  // 아폴론 음표: 다섯 음을 차례로(낮은 음역 안에서). 새 신 6종 포함 12명 모두 자기 소리 파일
+  sfx.shotOf = function (k) {
+    const f = 'shot_' + k; if (!this.buf[f]) return old.call(this, k);
+    let r = 1; if (k === 'note') { this._ni = ((this._ni || 0) + 1) % 5; r = [1, 1.06, 1.12, 1.19, 1.26][this._ni] * .9; }
+    this.play(f, .8, r);
+  };
+}
 
 /* ───── 화면 치수 ───── */
 const view = { W: 0, H: 0, dpr: 1, s: 1, worldH: 0, safeT: 0, safeB: 0, u: 1 };
