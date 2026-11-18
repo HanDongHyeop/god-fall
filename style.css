@@ -576,3 +576,5 @@ img { display: block; -webkit-user-drag: none; }
 .bg-talent { background: #2e1d12 linear-gradient(#45291a, #1e130c); }
 .bg-quest .qrow { background: #1b4454; box-shadow: inset 0 calc(var(--u) * .3) 0 #2f6a7c; }
 .bg-talent .tc { background: #4a2e1c; box-shadow: inset 0 calc(var(--u) * .3) 0 #7a5030; }
+/* v36 상점 정체성: 상자 카드는 같은 보라 바탕(보물 전당) + 위쪽에만 상자 색 빛 — 탭 전체가 보라로 읽히게(장비 탭 남색과 구분) */
+.shop .chest { background: radial-gradient(120% 75% at 50% 0%, var(--t) 0%, rgba(0, 0, 0, 0) 72%), linear-gradient(#4c2aa6, #2a1466); }
