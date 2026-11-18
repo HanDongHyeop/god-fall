@@ -399,14 +399,14 @@ const UI = {
 
   /* ───── 임무 ───── */
   r_quest() {
-    const el = $('s_quest'), Q = Meta.quests(); el.className = 'screen on bg-dark';
+    const el = $('s_quest'), Q = Meta.quests(); el.className = 'screen on bg-dark bg-quest';
     const row = q => { const done = q.cur >= q.need, cl = Meta.questClaimed(q), c = Math.min(q.cur, q.need); return `<div class="qrow"><div><div class="nm">${q.name}</div><div class="bar"><i style="width:${c / q.need * 100}%"></i><span>${c} / ${q.need}</span></div><div class="rw"><span><img src="${uiIcon('cur_gem')}" alt=""> ${q.gem}</span><span><img src="${uiIcon('cur_gold')}" alt=""> ${fmt(q.gold)}</span></div></div><button class="btn ${cl ? 'gray' : 'green'}" data-q="${q.id}" ${done && !cl ? '' : 'disabled'}>${cl ? '완료' : '받기'}</button></div>`; };
     setHTML(el, `<div class="scroll"><div class="list"><div class="h2 oL">오늘의 임무</div>${Q.filter(q => q.daily).map(row).join('')}<div class="h2 oL">업적</div>${Q.filter(q => !q.daily).map(row).join('')}</div></div>`);
     el.onclick = e => { const b = e.target.closest('[data-q]'); if (b && !b.disabled && Meta.questClaim(b.dataset.q)) { sfx.reward(); this.render(); } };
   },
   /* ───── 재능 ───── */
   r_talent() {
-    const el = $('s_talent'), s = Meta.s; el.className = 'screen on bg-dark';
+    const el = $('s_talent'), s = Meta.s; el.className = 'screen on bg-dark bg-talent';
     setHTML(el, `<div class="scroll"><div class="h2 oL" style="padding:calc(var(--u)*3) calc(var(--u)*3) 0">재능: 골드로 영구히 강해집니다</div><div class="tal">${TALENTS.map(t => { const l = s.talent[t.id] || 0, mx = l >= t.max, c = t.cost(l); return `<div class="tc"><img src="${uiIcon(t.icon)}" alt=""><div class="nm oL">${t.name}</div><div class="lvv">Lv.${l} / ${t.max}</div><div class="dsc">${t.desc}</div><button class="btn green" data-t="${t.id}" ${mx || s.gold < c ? 'disabled' : ''}><span class="pr oL">${mx ? '최대' : `<img src="${uiIcon('cur_gold')}" alt="">${fmt(c)}`}</span></button></div>`; }).join('')}</div></div>`);
     el.onclick = e => { const b = e.target.closest('[data-t]'); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); } };
   },

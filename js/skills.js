@@ -25,7 +25,7 @@ function fireVolley(x, y, hand, mul, big) {
   for (const vx of [-600, -300, 0, 300, 600]) godShot(x, y, vx, 1100 - Math.abs(vx) * .12, hand, { mul: mul * .9, big, fan: true });
 }
 /* v36 신마다 한 번 쏠 때 나가는 모양: 헤라는 깃털 2개(양옆으로 갈라짐), 아프로디테는 꽃잎 3장(부채꼴), 나머지는 1발 */
-const GOD_SPREAD = { feather: [[-150, 0], [150, 0]], rose: [[-120, -6], [0, 0], [120, -6]] };   // v36 밸런스: 꽃잎은 가까이서 3장이 모두 맞는 산탄
+const GOD_SPREAD = { feather: [[-150, 0], [150, 0]], rose: [[-95, -6], [0, 0], [95, -6]] };   // v36 밸런스: 꽃잎은 가까이서 3장이 모두 맞는 산탄
 function godShot(x, y, vx, vy, hand, o) {
   const sp = GOD_SPREAD[game.god_.shot], fan = o.fan;
   if (!sp) { fireBullet(x, y, vx, vy, false, hand, o); if (fan) game.bullets[game.bullets.length - 1].fan = true; return; }

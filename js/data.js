@@ -92,7 +92,7 @@ const GODS = [
     passive: '다섯 번째 음은 태양 음표(크고 피해 2.5배). 치명타 피해 +20%.', p: { sun5: 1, critDmg: .2 } },
   { id: 'hera', name: '헤라', rank: '에픽', rankCol: '#a040e6', title: '모든 걸 지켜보는 여왕', shot: 'feather', fire: 1.15, dmg: .78, recoil: .26, ammo: 8, weapon: '공작 깃털 부채',
     passive: '깃털 2개가 갈라져 날아간다. 맞은 적에게 공작의 눈 표식(3초간 받는 피해 +25%).', p: { mark: .25 } },
-  { id: 'aphrodite', name: '아프로디테', rank: '에픽', rankCol: '#a040e6', title: '거울부터 보는 미의 여신', shot: 'rose', fire: 1.1, dmg: .62, recoil: .3, ammo: 8, weapon: '조개 손거울',
+  { id: 'aphrodite', name: '아프로디테', rank: '에픽', rankCol: '#a040e6', title: '거울부터 보는 미의 여신', shot: 'rose', fire: 1.1, dmg: .66, recoil: .3, ammo: 8, weapon: '조개 손거울',
     passive: '장미 꽃잎 3장이 퍼진다. 맞은 적은 2초 매혹(공격을 멈추고, 가시가 있어도 밟힌다). 회피 +10%.', p: { charm: 2, dodge: .1 } },
   { id: 'poseidon', name: '포세이돈', rank: '전설', rankCol: '#e0a020', title: '형에게 지기 싫은 바다의 왕', shot: 'wave', fire: 1.3, dmg: 1.0, recoil: .2, ammo: 8, weapon: '황금 삼지창',
     passive: '물줄기가 적 1마리를 꿰뚫고, 맞은 자리에 물보라(주변 30% 피해). 신성 폭주 지속 +30%.', p: { pierce: 1, wave: 1, highPct: .3 } },

@@ -192,7 +192,7 @@ img { display: block; -webkit-user-drag: none; }
 @keyframes resPop { from { transform: scale(.2) rotate(-16deg); } }
 
 /* ───── 상점 ───── */
-.shop { background: #2a1a6a linear-gradient(#3a2a8c, #1f1660); }
+.shop { background: #3a1a8a linear-gradient(#5a34c0, #22104e); }   /* v36 탭 정체성: 상점 = 왕실 자주 보물함(장비 탭 남색과 구분) */
 .shop .scroll { padding: calc(var(--u) * 2.4); display: flex; flex-direction: column; gap: calc(var(--u) * 2.4); }
 .chest { position: relative; border-radius: calc(var(--u) * 3.4); padding: calc(var(--u) * 2.4); background: linear-gradient(var(--t), #0006), var(--t); box-shadow: inset 0 calc(var(--u) * .45) 0 rgba(255, 255, 255, .35), 0 calc(var(--u) * .7) 0 #0006; }
 .chest .hd2 { display: flex; align-items: center; justify-content: space-between; font-size: calc(var(--u) * 4.8); } .chest .info { width: calc(var(--u) * 6); height: calc(var(--u) * 6); border-radius: 50%; background: #fff; color: #222; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 3.6); }
@@ -244,7 +244,7 @@ img { display: block; -webkit-user-drag: none; }
 @keyframes tagPop { from { transform: translateX(-50%) scale(0); } }
 /* 에픽 이상: 뒤에서 도는 햇살 + 맥박 치는 빛 + 테두리 반짝임 */
 .ga-sun { position: absolute; inset: -38%; border-radius: 50%; pointer-events: none; background: repeating-conic-gradient(var(--g) 0deg 10deg, transparent 10deg 30deg); -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 100%); mask: radial-gradient(closest-side, #000 30%, transparent 100%); animation: raysSpin 5s linear infinite, fadeIn .4s both; }
-.ga-it.g2 .it, .ga-it.g3 .it, .ga-it.g2 .sc { box-shadow: 0 0 0 calc(var(--u) * .5) #fff, 0 0 calc(var(--u) * 4) var(--g); animation: epPulse 1.4s ease-in-out infinite; }
+.ga-it.g2 .it, .ga-it.g3 .it, .ga-it.g2 .sc { box-shadow: 0 0 0 calc(var(--u) * .45) #0a0918, 0 0 calc(var(--u) * 4) var(--g), 0 0 calc(var(--u) * 1.4) #fff; animation: epPulse 1.4s ease-in-out infinite; }
 @keyframes epPulse { 50% { box-shadow: 0 0 0 calc(var(--u) * .5) #fff, 0 0 calc(var(--u) * 7) var(--g); filter: brightness(1.15); } }
 .ga-it.g2, .ga-it.g3 { animation: gaInEp .55s cubic-bezier(.2, 1.7, .4, 1) both; z-index: 1; }
 @keyframes gaInEp { 0% { transform: scale(.1) rotate(-30deg); opacity: 0; } 60% { transform: scale(1.3); filter: brightness(2.4); } }
@@ -571,3 +571,8 @@ img { display: block; -webkit-user-drag: none; }
 .fbox::before { content: attr(data-cap); position: absolute; left: 50%; bottom: calc(var(--u) * -1.2); transform: translateX(-50%); z-index: 6; font-size: calc(var(--u) * 2.3); line-height: 1.45; padding: 0 calc(var(--u) * 1.2); border-radius: 999px; background: rgba(8, 6, 22, .82); color: #ffe2b0; white-space: nowrap; }
 .fbox.m::before { font-size: calc(var(--u) * 2.2); bottom: calc(var(--u) * -1.4); }
 .fg-mats { margin-top: calc(var(--u) * .6); }
+/* v36 탭 정체성(디자인 QA 탭 바탕 거리 25 이상): 임무 = 밤바다 청록 신탁, 재능 = 신전 청동 */
+.bg-quest { background: #0f2a36 linear-gradient(#143a48, #0b1c28); }
+.bg-talent { background: #2e1d12 linear-gradient(#45291a, #1e130c); }
+.bg-quest .qrow { background: #1b4454; box-shadow: inset 0 calc(var(--u) * .3) 0 #2f6a7c; }
+.bg-talent .tc { background: #4a2e1c; box-shadow: inset 0 calc(var(--u) * .3) 0 #7a5030; }
