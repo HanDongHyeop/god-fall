@@ -73,37 +73,38 @@ const GEAR_BY_SLOT = {}; for (const k in GEAR) (GEAR_BY_SLOT[GEAR[k].slot] = GEA
 
 /* ───── 신 6종. fire=발사 간격 배율, dmg=피해 배율, recoil=반동(작을수록 잘 뜸), shot=탄 종류 ───── */
 const GODS = [
-  { id: 'hermes', name: '헤르메스', rank: '레어', rankCol: '#3478e6', title: '늦은 전령', shot: 'letter', fire: 1, dmg: 1, recoil: .2, ammo: 8, weapon: '날개 편지',
+  { id: 'hermes', name: '헤르메스', rank: '희귀', rankCol: '#3478e6', title: '늦은 전령', shot: 'letter', fire: 1, dmg: 1, recoil: .2, ammo: 8, weapon: '날개 편지',
     passive: '파편 획득 +15%. 공중에서 더 빠르게 움직인다.', p: { shardPct: .15, runPct: .08 } },
-  { id: 'artemis', name: '아르테미스', rank: '레어', rankCol: '#3478e6', title: '달의 사냥꾼', shot: 'arrow', fire: 1.25, dmg: 1.35, recoil: .26, ammo: 8, weapon: '초승달 활',
+  { id: 'artemis', name: '아르테미스', rank: '영웅', rankCol: '#a040e6', title: '달의 사냥꾼', shot: 'arrow', fire: 1.25, dmg: 1.45, recoil: .26, ammo: 8, weapon: '초승달 활',
     passive: '화살이 적을 1번 관통한다. 치명타 확률 +15%.', p: { pierce: 1, crit: .15 } },
-  { id: 'dionysus', name: '디오니소스', rank: '에픽', rankCol: '#a040e6', title: '끝나도 즐거운 신', shot: 'wine', fire: 1.5, dmg: 1.3, recoil: .34, ammo: 7, weapon: '포도주 항아리',
+  { id: 'dionysus', name: '디오니소스', rank: '희귀', rankCol: '#3478e6', title: '끝나도 즐거운 신', shot: 'wine', fire: 1.5, dmg: 1.05, recoil: .34, ammo: 7, weapon: '포도주 항아리',
     passive: '술이 터져 주변까지 맞힌다. 20% 확률로 피해를 흘려 넘긴다.', p: { splash: 34, dodge: .2 } },
-  { id: 'hephaestus', name: '헤파이스토스', rank: '에픽', rankCol: '#a040e6', title: '아무도 안 믿는 대장장이', shot: 'bomb', fire: 2.4, dmg: 2.6, recoil: .08, ammo: 5, weapon: '대장간 망치',
+  { id: 'hephaestus', name: '헤파이스토스', rank: '희귀', rankCol: '#3478e6', title: '아무도 안 믿는 대장장이', shot: 'bomb', fire: 2.4, dmg: 2.05, recoil: .08, ammo: 5, weapon: '대장간 망치',
     passive: '불씨 폭탄이 넓게 터지고 블록을 부순다. 반동이 가장 강하다.', p: { splash: 52, breaker: 1 } },
-  { id: 'hades', name: '하데스', rank: '전설', rankCol: '#e0a020', title: '지친 명계 관리자', shot: 'soul', fire: 1.3, dmg: 1.05, recoil: .24, ammo: 8, weapon: '영혼 등불',
+  { id: 'hades', name: '하데스', rank: '전설', rankCol: '#e0a020', title: '지친 명계 관리자', shot: 'soul', fire: 1.3, dmg: 1.38, recoil: .24, ammo: 8, weapon: '영혼 등불',
     passive: '영혼불이 적을 따라간다. 처치할 때마다 체력 1 회복.', p: { homing: 1, leech: 1 } },
-  { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.15, recoil: .24, ammo: 8, weapon: '번개',
+  { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.5, recoil: .24, ammo: 8, weapon: '번개',
     passive: '번개가 가까운 적 2마리에게 옮겨 간다. 콤보 5마다 낙뢰.', p: { chain: 2, comboStrike: 1 } },
   // v36(2026-11-18) 새 신 6종. hand = 탄이 나가는 손(아테나는 방패를 반대 팔에 든다)
-  { id: 'heracles', name: '헤라클레스', rank: '레어', rankCol: '#3478e6', title: '자랑이 끝없는 영웅', shot: 'lion', fire: 2.0, dmg: 1.6, recoil: .1, ammo: 6, weapon: '올리브 몽둥이',
+  { id: 'heracles', name: '헤라클레스', rank: '희귀', rankCol: '#3478e6', title: '자랑이 끝없는 영웅', shot: 'lion', fire: 2.0, dmg: 1.48, recoil: .1, ammo: 6, weapon: '올리브 몽둥이',
     passive: '사자 충격파가 적 2마리까지 꿰뚫는다. 밟기 반동 +15%.', p: { pierce: 2, stompBounce: .15 } },
-  { id: 'apollo', name: '아폴론', rank: '레어', rankCol: '#3478e6', title: '박수가 필요한 태양', shot: 'note', fire: 1, dmg: .85, recoil: .22, ammo: 8, weapon: '황금 리라',
+  { id: 'apollo', name: '아폴론', rank: '영웅', rankCol: '#a040e6', title: '박수가 필요한 태양', shot: 'note', fire: 1, dmg: 1.2, recoil: .22, ammo: 8, weapon: '황금 리라',
     passive: '다섯 번째 음은 태양 음표(크고 피해 2.5배). 치명타 피해 +20%.', p: { sun5: 1, critDmg: .2 } },
-  { id: 'hera', name: '헤라', rank: '에픽', rankCol: '#a040e6', title: '모든 걸 지켜보는 여왕', shot: 'feather', fire: 1.15, dmg: .78, recoil: .26, ammo: 8, weapon: '공작 깃털 부채',
+  { id: 'hera', name: '헤라', rank: '영웅', rankCol: '#a040e6', title: '모든 걸 지켜보는 여왕', shot: 'feather', fire: 1.15, dmg: .78, recoil: .26, ammo: 8, weapon: '공작 깃털 부채',
     passive: '깃털 2개가 갈라져 날아간다. 맞은 적에게 공작의 눈 표식(3초간 받는 피해 +25%).', p: { mark: .25 } },
-  { id: 'aphrodite', name: '아프로디테', rank: '에픽', rankCol: '#a040e6', title: '거울부터 보는 미의 여신', shot: 'rose', fire: 1.1, dmg: .66, recoil: .3, ammo: 8, weapon: '조개 손거울',
+  { id: 'aphrodite', name: '아프로디테', rank: '영웅', rankCol: '#a040e6', title: '거울부터 보는 미의 여신', shot: 'rose', fire: 1.1, dmg: .66, recoil: .3, ammo: 8, weapon: '조개 손거울',
     passive: '장미 꽃잎 3장이 퍼진다. 맞은 적은 2초 매혹(공격을 멈추고, 가시가 있어도 밟힌다). 회피 +10%.', p: { charm: 2, dodge: .1 } },
-  { id: 'poseidon', name: '포세이돈', rank: '전설', rankCol: '#e0a020', title: '형에게 지기 싫은 바다의 왕', shot: 'wave', fire: 1.3, dmg: 1.0, recoil: .2, ammo: 8, weapon: '황금 삼지창',
+  { id: 'poseidon', name: '포세이돈', rank: '전설', rankCol: '#e0a020', title: '형에게 지기 싫은 바다의 왕', shot: 'wave', fire: 1.3, dmg: 1.28, recoil: .2, ammo: 8, weapon: '황금 삼지창',
     passive: '물줄기가 적 1마리를 꿰뚫고, 맞은 자리에 물보라(주변 30% 피해). 신성 폭주 지속 +30%.', p: { pierce: 1, wave: 1, highPct: .3 } },
-  { id: 'athena', name: '아테나', rank: '전설', rankCol: '#e0a020', title: '계획에 없는 건 싫은 전략가', shot: 'gaze', fire: 1.35, dmg: 1.25, recoil: .24, ammo: 8, weapon: '아이기스 방패', hand: -1,
+  { id: 'athena', name: '아테나', rank: '영웅', rankCol: '#a040e6', title: '계획에 없는 건 싫은 전략가', shot: 'gaze', fire: 1.35, dmg: 1.25, recoil: .24, ammo: 8, weapon: '아이기스 방패', hand: -1,
     passive: '메두사의 눈빛에 맞은 적은 1초 돌이 된다(멈추고, 닿아도 다치지 않음). 받는 피해 -10%.', p: { petrify: 1, dmgCut: .1 } },
 ];
 const GOD_BY = Object.fromEntries(GODS.map(g => [g.id, g]));
 /* 신 성장: 레벨 1~4. 올릴 때마다 공격력·체력이 오르고 고유 능력이 강해진다(GOD_LV = 레벨 2·3·4 효과) */
 const GOD_LV_MAX = 4, GOD_UNLOCK = 50;
-const GOD_LV_COST = { '레어': [100, 200, 400], '에픽': [100, 200, 400], '전설': [50, 100, 200] };   // 전설은 조각이 귀해 적게 든다
+const GOD_LV_COST = { '희귀': [100, 200, 400], '영웅': [100, 200, 400], '전설': [50, 100, 200] };   // 전설은 조각이 귀해 적게 든다
 const GOD_LV_BONUS = .15;   // 레벨 1개당 공격력·체력
+const RANK_STAT = { '희귀': 1, '영웅': 1.08, '전설': 1.16 };   // v37 등급 기본 배율(공격력 · 체력): 등급이 높을수록 강하다
 const GOD_LV = {
   hermes: [['점프 높이 +6%', { jumpPct: .06 }], ['판 보상 골드 +20%', { goldPct: .2 }], ['탄창 +2', { ammo: 2 }]],
   artemis: [['치명타 피해 +30%', { critDmg: .3 }], ['발사 간격 -12%', { firePct: -.12 }], ['화살 관통 +1', { pierce: 1 }]],
@@ -135,9 +136,9 @@ const WEAPON_S = {
 };
 /* 신의 소환(캐릭터 뽑기). 조각을 주고, 조각으로 해금·레벨 업한다. 임시값 */
 const GOD_CHEST = { id: 'god', name: '신의 소환', icon: 'chest_god', cur: 'gem', one: 150, ten: 1350, free: 24 * 3600, pity: 10, tint: '#7a3fb0',
-  rate: { '레어': .55, '에픽': .35, '전설': .1 }, shard: { '레어': 15, '에픽': 12, '전설': 10 }, desc: '신의 조각을 얻습니다. 해금과 레벨 업에 씁니다' };
+  rate: { '희귀': .55, '영웅': .37, '전설': .08 }, shard: { '희귀': 15, '영웅': 12, '전설': 10 }, desc: '신의 조각을 얻습니다. 해금과 레벨 업에 씁니다' };
 /* 신 전용 무기: 무기만 신마다 따로다. 뽑기에서 어느 신의 무기가 나올지는 등급으로 정한다(신 1명당 확률, 합 100%). 임시값 */
-const WEAPON_RATE = { '레어': .125, '에픽': .075, '전설': .05 }, WEAPON_MINE = .5;   // v36 신 12명(레어·에픽·전설 4명씩) → 합 100%
+const WEAPON_RATE = { '희귀': .125, '영웅': .07, '전설': .05 }, WEAPON_MINE = .5;   // v37 신 12명(희귀 4 · 영웅 5 · 전설 3) → 4×12.5 + 5×7 + 3×5 = 100%
 /* 계정 보너스: 출전하지 않은 신도 키울수록 모두가 강해진다. 값은 공격력·체력 %(소수). 임시값 */
 const ACCOUNT = { unlock: .01, perLv: .02, weaponGrade: [.005, .01, .02, .04, .06, .08, .11, .15], weaponLv: .0005 };   // v36 등급 8단계(일반~SS)
 /* 에너지: 궁수의 전설 2 기준. 회복은 상한에서 멈추지만 구매와 클리어 보상은 상한을 넘어 쌓인다 */

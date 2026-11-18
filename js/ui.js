@@ -2,7 +2,7 @@
 'use strict';
 const uiIcon = n => `assets/ui/${n}.webp`;
 const GODS_PLANNED = 12;   // 캐릭터 칸 수(지금 6 + 앞으로 만들 6). 새 신을 넣으면 '준비 중' 칸이 하나씩 줄어든다
-const RANK_BG = { '레어': ['#4a7fe0', '#213a86'], '에픽': ['#9150d6', '#45207a'], '전설': ['#d9962e', '#713f10'] };   // 카드 바탕(위·아래)
+const RANK_BG = { '희귀': ['#4a7fe0', '#213a86'], '영웅': ['#9150d6', '#45207a'], '전설': ['#d9962e', '#713f10'] };   // 카드 바탕(위·아래)
 /* 터지는 빛: 고리 하나와 불꽃 n개. 무대 좌표로 맨 위에 그리고 저절로 사라진다 */
 function sparkBurst(el, col, n = 14, size = 1) {
   const st = $('stage').getBoundingClientRect(), r = el.getBoundingClientRect(), w = document.createElement('div'); w.className = 'burst';
@@ -186,15 +186,19 @@ const UI = {
   /* 캐릭터 목록: 4열 카드(등급 색 바탕 · 얼굴 위주 · 조각 막대). 새 신이 들어올 자리(준비 중)를 미리 채워 12칸을 맞춘다. 안내 글은 목록 아래 */
   godsPane() {
     const s = Meta.s, cur = this.godView || s.god, G = GOD_BY[cur], lv = Meta.godLv(cur);
-    const cards = GODS.map(g => {
-      const i = Meta.godInfo(g.id), c = Meta.godCost(g.id), l = Meta.godLv(g.id), pct = c ? Math.min(100, i.shard / c * 100) : 100, bg = RANK_BG[g.rank] || RANK_BG['레어'];
-      return `<button class="gc ${l ? '' : 'lock'} ${g.id === cur ? 'sel' : ''} ${c !== null && i.shard >= c ? 'ready' : ''}" data-god="${g.id}"><span class="pt" style="--b1:${bg[0]};--b2:${bg[1]}"><img src="assets/god/${g.id}/big_bare.webp" alt=""><span class="rk oL" style="--rk:${g.rankCol}">${l ? 'Lv.' + l : g.rank}</span>${l ? '' : `<img class="lk" src="${uiIcon('ico_lock')}" alt="">`}</span>${s.god === g.id ? '<span class="on oL">출전 중</span>' : ''}<span class="pg oL"><i style="width:${pct}%"></i><img src="${uiIcon('cur_shard')}" alt=""><span>${c === null ? '최대' : i.shard + '/' + c}</span></span></button>`;
-    }).join('');
+    // v37: 등급 3단계(전설 3 · 영웅 5 · 희귀 4) — 등급별 묶음 머리글 + 등급 색 테두리 · 햇살 무늬 · 이름 띠(전설은 금빛이 흐른다)
+    const TIERS = [['전설', 't3'], ['영웅', 't2'], ['희귀', 't1']];
+    const card = g => {
+      const i = Meta.godInfo(g.id), c = Meta.godCost(g.id), l = Meta.godLv(g.id), pct = c ? Math.min(100, i.shard / c * 100) : 100, t = (TIERS.find(x => x[0] === g.rank) || TIERS[2])[1];
+      return `<button class="gc ${t} ${l ? '' : 'lock'} ${g.id === cur ? 'sel' : ''} ${c !== null && i.shard >= c ? 'ready' : ''}" data-god="${g.id}" aria-label="${g.rank} ${g.name}"><span class="pt"><img src="assets/god/${g.id}/big_bare.webp" alt=""><span class="gfx"></span>${l ? `<span class="rk oL">Lv.${l}</span>` : `<img class="lk" src="${uiIcon('ico_lock')}" alt="">`}<span class="gnm oL">${g.name}</span></span>${s.god === g.id ? '<span class="on oL">출전 중</span>' : ''}<span class="pg oL"><i style="width:${pct}%"></i><img src="${uiIcon('cur_shard')}" alt=""><span>${c === null ? '최대' : i.shard + '/' + c}</span></span></button>`;
+    };
+    const cards = TIERS.map(([r, t]) => { const gs = GODS.filter(g => g.rank === r); if (!gs.length) return ''; const own = gs.filter(g => Meta.godLv(g.id)).length;
+      return `<div class="gtier ${t}"><span class="gem"></span><b class="oL">${r}</b><i>${own}/${gs.length}</i><span class="ln"></span></div>` + gs.map(card).join(''); }).join('');
     const soon = Array.from({ length: Math.max(0, GODS_PLANNED - GODS.length) }, () => '<div class="gc soon"><span class="pt"><b>?</b></span><span class="pg oL"><span>준비 중</span></span></div>').join('');
     const nextBonus = lv && lv < GOD_LV_MAX ? ` · 다음 레벨 +${Math.round(GOD_LV_BONUS * 100)}%` : '';
     const share = Meta.godShare(cur), all = Meta.accountBonus(), pc = x => (x * 100).toFixed(x * 100 % 1 ? 1 : 0);
     const acc = `<div class="gacc oL"><b>모든 신에게 주는 보너스</b><span>이 신 공격력 +${pc(share.atk)}% · 체력 +${pc(share.hp)}%</span><span>전체 합계 공격력 +${pc(all.atk)}% · 체력 +${pc(all.hp)}%</span></div>`;
-    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
+    const about = `<div class="gabout oL"><b>${G.name}</b> 연사 ${Math.round(100 / G.fire)}% · 피해 ${Math.round(G.dmg * 100)}% · 탄창 ${G.ammo}${RANK_STAT[G.rank] > 1 ? ` · ${G.rank} 등급 +${Math.round((RANK_STAT[G.rank] - 1) * 100)}%` : ''}${lv ? ` · 레벨 효과 +${Math.round((lv - 1) * GOD_LV_BONUS * 100)}%${nextBonus}` : '<br>잠겨 있음: 상점의 신의 소환으로 조각을 모으세요'}</div>`;
     return `<div class="scroll" id="godScroll"><div class="gods">${cards}${soon}</div>${about}${acc}</div>`;
   },
   gearClick(e) {
@@ -355,7 +359,7 @@ const UI = {
   },
   godRatePop() {
     const C = GOD_CHEST, row = r => { const names = GODS.filter(g => g.rank === r).map(g => g.name).join(', '), col = GODS.find(g => g.rank === r).rankCol; return `<div class="r" style="--c:${col}"><span>${r} 조각 ${C.shard[r]}개</span><span>${Math.round(C.rate[r] * 100)}%</span></div><div class="note" style="margin:0 0 calc(var(--u)*1)">${names}</div>`; };
-    this.popup(`<div class="card-pop" style="--c:#7a3fb0;--d:#4a2470"><div class="hd">${C.name} 확률</div><button class="x" data-close>✕</button><div class="rates">${['레어', '에픽', '전설'].map(row).join('')}</div><div class="note">${C.pity}회 안에 전설 조각이 확정으로 나옵니다. 해금에는 조각 ${GOD_UNLOCK}개가 듭니다.</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#7a3fb0;--d:#4a2470"><div class="hd">${C.name} 확률</div><button class="x" data-close>✕</button><div class="rates">${['희귀', '영웅', '전설'].map(row).join('')}</div><div class="note">${C.pity}회 안에 전설 조각이 확정으로 나옵니다. 해금에는 조각 ${GOD_UNLOCK}개가 듭니다.</div></div>`);
   },
   ratePop(id) {
     const C = CHESTS.find(x => x.id === id);
@@ -366,7 +370,7 @@ const UI = {
      결과 칸은 개수에 따라 1개 = 크게 가운데, 2~3개 = 한 줄, 4~6개 = 3칸씩, 그 이상 = 5칸씩. 좋은 것부터 앞에 둔다 */
   reveal(id, res) {
     const C = id === 'god' ? GOD_CHEST : CHESTS.find(x => x.id === id), el = $('gacha'); el.classList.add('on');
-    const rankOf = r => r.type === 'item' ? Math.max(0, r.item.g - 1) : r.type === 'shard' ? { '레어': 1, '에픽': 2, '전설': 3 }[GOD_BY[r.god].rank] - (id === 'god' ? 0 : 1) : -1;
+    const rankOf = r => r.type === 'item' ? Math.max(0, r.item.g - 1) : r.type === 'shard' ? { '희귀': 1, '영웅': 2, '전설': 3 }[GOD_BY[r.god].rank] - (id === 'god' ? 0 : 1) : -1;
     const best = Math.max(0, ...res.map(rankOf)), lv = best >= 3 ? 'lg' : best >= 2 ? 'ep' : best >= 1 ? 'rr' : 'nm';
     const col = { nm: '#ffffff', rr: GRADES[2].color, ep: GRADES[3].color, lg: '#ffc640' }[lv], dur = { nm: 760, rr: 980, ep: 2000, lg: 2500 }[lv];
     el.style.setProperty('--gc', col);

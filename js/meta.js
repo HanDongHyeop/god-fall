@@ -112,7 +112,7 @@ const Meta = {
     for (const k in god.p) addEff(k, god.p[k]);
     GOD_LV[god.id].slice(0, lv - 1).forEach(([, e]) => { for (const k in e) addEff(k, e[k]); });
     const acc = this.accountBonus(); o.atkPct += acc.atk; o.hpPct += acc.hp;
-    const star = 1 + (lv - 1) * GOD_LV_BONUS;
+    const star = (1 + (lv - 1) * GOD_LV_BONUS) * (RANK_STAT[god.rank] || 1);   // v37 등급 배율
     if (o.heavy) { o.atkPct += .15; o.firePct += .15; }
     o.atk = Math.round(o.atk * (1 + o.atkPct) * star); o.hp = Math.round(o.hp * (1 + o.hpPct) * star);
     o.unarmed = !this.weaponOf(god.id);
@@ -247,7 +247,7 @@ const Meta = {
     for (let i = 0; i < count; i++) {
       st.pity = (st.pity || 0) + 1;
       let rank = '전설'; const x = Math.random();
-      if (st.pity < C.pity) rank = x < C.rate['레어'] ? '레어' : x < C.rate['레어'] + C.rate['에픽'] ? '에픽' : '전설';
+      if (st.pity < C.pity) rank = x < C.rate['희귀'] ? '희귀' : x < C.rate['희귀'] + C.rate['영웅'] ? '영웅' : '전설';
       if (rank === '전설') st.pity = 0;
       const pool = GODS.filter(g => g.rank === rank), pick = pool[Math.floor(Math.random() * pool.length)], n = C.shard[rank];
       this.addShard(pick.id, n); out.push({ type: 'shard', god: pick.id, n });
