@@ -14,7 +14,7 @@ const CARDS = [
   { id: 'might', name: '힘의 팔찌', tier: '일반', desc: '공격력 +15%. 여러 번 얻을 수 있습니다.', repeat: true, apply: p => { p.atk = Math.round(p.atk * 1.15); } },
   { id: 'rapid1', name: '날랜 손', tier: '일반', fam: 'rate', lv: 1, desc: '발사 간격 -12%, 탄창 +1.', apply: p => { p.maxAmmo += 1; p.ammo = p.maxAmmo; } },   // 공중 자동 공격에서는 탄이 금방 떨어져 연사만으로는 이득이 작다(측정) → 탄창을 같이 준다
   { id: 'seek1', name: '바람 길잡이', tier: '일반', fam: 'seek', lv: 1, w: 1.2, desc: '탄이 날아가다 40 거리 안의 적 쪽으로 살짝 휘어 갑니다. 보스도 따라갑니다.' },
-  { id: 'apollo', name: '아폴론의 시야', tier: '일반', desc: '탄이 1.6배 멀리 날아가고 30% 커집니다.' },
+  { id: 'apollo', name: '헬리오스의 시야', tier: '일반', desc: '탄이 1.6배 멀리 날아가고 30% 커집니다.' },
   { id: 'mag', name: '탄창 확장', tier: '일반', desc: '탄창이 3칸 늘어납니다. 여러 번 얻을 수 있습니다.', repeat: true, apply: p => { p.maxAmmo += 3; p.ammo = p.maxAmmo; } },
   { id: 'ambrosia', name: '암브로시아', tier: '일반', desc: '최대 체력이 20% 늘어납니다(지금 체력은 그대로). 여러 번 얻을 수 있습니다.', repeat: true, apply: p => { p.maxHp = Math.round(p.maxHp * 1.2); } },
   { id: 'hebe', name: '헤베의 잔', tier: '일반', desc: '최대 체력의 30%만큼 체력을 회복합니다.', noMini: true, apply: p => { healBy(p.maxHp * .3); } },
@@ -56,7 +56,7 @@ const CARDS = [
   // ── 전설: 고른 순간 몸과 화면에서 바로 보이는 상시 효과 ──
   { id: 'fan5', name: '헬리오스의 부채', tier: '전설', fam: 'shot', lv: 3, desc: '탄이 금빛 5갈래 부채꼴로 퍼집니다. 1발 피해는 90%.' },
   { id: 'seek3', name: '사냥 여신의 표식', tier: '전설', fam: 'seek', lv: 4, desc: '탄이 240 거리 안의 적을 끝까지 쫓아가 맞히고, 노린 적에 표식이 뜹니다. 보스도 쫓아갑니다.' },
-  { id: 'bull', name: '포세이돈의 황소', tier: '전설', fam: 'butt', lv: 3, desc: '아래에서 들이받아 적과 보스를 치고(밟기 피해 ×1.5), 준 피해의 20%만큼 체력을 흡혈합니다.' },
+  { id: 'bull', name: '크레타의 황소', tier: '전설', fam: 'butt', lv: 3, desc: '아래에서 들이받아 적과 보스를 치고(밟기 피해 ×1.5), 준 피해의 20%만큼 체력을 흡혈합니다.' },
   { id: 'orbit3', name: '원소 구슬', tier: '전설', fam: 'orb', lv: 3, desc: '불·얼음·번개·바람 구슬 4개가 돌며 적과 보스를 때리고(140%) 적 탄을 지웁니다. 태우기·얼리기·감전·밀치기.', note: '보스에게는 감전만 듭니다' },
   { id: 'storm', name: '천둥 폭풍', tier: '전설', desc: '0.8초마다 화면 안 적이나 보스에게 벼락(공격력 160%), 옆 2마리로 번집니다. 땅에서도 내립니다.' },
   { id: 'avatar', name: '신의 현현', tier: '전설', desc: '판 내내 신성 폭주 상태가 됩니다(공격력 ×1.6, 탄 1.5배, 파편 2배). 공격력도 50% 더 오릅니다.', apply: p => { p.atk = Math.round(p.atk * 1.5); } },

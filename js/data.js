@@ -1,54 +1,73 @@
 /* GOD FALL 데이터: 등급·장비·신·적·맵·카드·상자. 숫자를 고칠 때는 여기만 본다. */
 'use strict';
 
-/* ───── 등급 4단계: 신화는 뽑기에서 나오지 않고 합성으로만 만든다 ───── */
+/* ───── 등급(v36, 2026-11-18): 궁수의 전설 2처럼 일반 → 고급 → 희귀 → 에픽 → 전설 → 신화 6단계. 신화는 합성으로만 만든다.
+   신 전용 무기만 그 위에 S · SS가 있다(S부터 무기 모양이 바뀌고 SS는 같은 모양에 빛과 능력이 더해진다).
+   color = 칸 바탕 위, dark = 칸 바탕 아래, glow = 빛, hi = 테두리 반짝임 */
 const GRADES = [
-  { name: '고급', color: '#37b24d', dark: '#1d6b2c', glow: 'rgba(90,240,120,.9)' },
-  { name: '희귀', color: '#3478e6', dark: '#1b3f8a', glow: 'rgba(110,170,255,.9)' },
-  { name: '에픽', color: '#a040e6', dark: '#5a1d8e', glow: 'rgba(214,120,255,.95)' },
-  { name: '신화', color: '#e23340', dark: '#8a141e', glow: 'rgba(255,110,110,.95)' },
+  { name: '일반', color: '#8c93a3', dark: '#454b5c', glow: 'rgba(210,218,235,.85)', hi: '#e3e8f2' },
+  { name: '고급', color: '#3fbf5a', dark: '#17602a', glow: 'rgba(90,240,120,.9)', hi: '#b4ffbf' },
+  { name: '희귀', color: '#3a86f0', dark: '#173f95', glow: 'rgba(110,170,255,.9)', hi: '#bcd8ff' },
+  { name: '에픽', color: '#a64af0', dark: '#4e1a8c', glow: 'rgba(214,120,255,.95)', hi: '#e8c4ff' },
+  { name: '전설', color: '#f4a91c', dark: '#8a4c06', glow: 'rgba(255,200,70,.95)', hi: '#fff0b0' },
+  { name: '신화', color: '#ec3a48', dark: '#7c0e1c', glow: 'rgba(255,110,110,.95)', hi: '#ffc4c4' },
+  { name: 'S', color: '#ffb52e', dark: '#a8261a', glow: 'rgba(255,190,60,1)', hi: '#fff6c8', weapon: true },
+  { name: 'SS', color: '#ff7ad9', dark: '#3a1aa0', glow: 'rgba(255,140,240,1)', hi: '#ffffff', weapon: true },
 ];
-const MYTH = 3;
+const MYTH = 5, GRADE_S = 6, GRADE_SS = 7;
+const gradeName = g => g >= GRADE_S ? GRADES[g].name + ' 등급' : GRADES[g].name;
 
 /* ───── 장비 6칸. 왼쪽 3칸은 공격력, 오른쪽 3칸은 체력 ───── */
 const SLOTS = [
-  { id: 'weapon', name: '신의 무기', side: 'L', stat: 'atk', base: [12, 22, 38, 64], perLv: 2.2 },
-  { id: 'amulet', name: '부적', side: 'L', stat: 'atk', base: [4, 8, 14, 24], perLv: .9 },
-  { id: 'ring', name: '인장 반지', side: 'L', stat: 'atk', base: [4, 8, 14, 24], perLv: .9 },
-  { id: 'helm', name: '투구', side: 'R', stat: 'hp', base: [20, 40, 70, 120], perLv: 4 },
-  { id: 'armor', name: '갑옷', side: 'R', stat: 'hp', base: [30, 60, 100, 170], perLv: 5 },
-  { id: 'boots', name: '날개 신발', side: 'R', stat: 'hp', base: [20, 40, 70, 120], perLv: 4 },
+  { id: 'weapon', name: '신의 무기', side: 'L', stat: 'atk', base: [8, 12, 22, 38, 52, 68, 90, 120], perLv: 2.2 },   // v36 일반~신화 + S · SS
+  { id: 'amulet', name: '목걸이', side: 'L', stat: 'atk', base: [3, 4, 8, 14, 19, 25], perLv: .9 },
+  { id: 'ring', name: '반지', side: 'L', stat: 'atk', base: [3, 4, 8, 14, 19, 25], perLv: .9 },
+  { id: 'helm', name: '투구', side: 'R', stat: 'hp', base: [14, 20, 40, 70, 95, 125], perLv: 4 },
+  { id: 'armor', name: '갑옷', side: 'R', stat: 'hp', base: [20, 30, 60, 100, 135, 180], perLv: 5 },
+  { id: 'boots', name: '신발', side: 'R', stat: 'hp', base: [14, 20, 40, 70, 95, 125], perLv: 4 },
 ];
 const SLOT_BY = Object.fromEntries(SLOTS.map(s => [s.id, s]));
 const LV_MAX = 200;   // 참고 영상의 장비 팝업 '레벨: 8/200'. 등급과 상관없이 같다
 
-/* 장비 도안: 칸마다 2종. 같은 도안이 등급만 바뀐다(궁수의 전설 2와 같은 구조).
-   skills: 그 등급이 되면 열리는 능력. [필요 등급, 설명, 효과 키, 값] */
+/* 장비 도안(v36): 칸마다 3종. 같은 도안이 등급만 바뀐다(궁수의 전설 2와 같은 구조).
+   skills: 그 등급이 되면 열리는 능력 [필요 등급, 설명, 효과 키, 값]. 희귀 · 에픽 · 전설 · 신화에서 하나씩 열린다 */
 const GEAR = {
   weapon_a: { slot: 'weapon', name: '연사의 신물', icon: null, desc: '가볍고 빠르다. 쉼 없이 쏘아 낙하를 늦춘다.',
-    skills: [[1, '공격력 +8%', 'atkPct', .08], [2, '발사 간격 -12%', 'firePct', -.12], [3, '8번째 공격마다 강화탄', 'every8', 1]] },
+    skills: [[2, '공격력 +8%', 'atkPct', .08], [3, '발사 간격 -12%', 'firePct', -.12], [4, '8번째 공격마다 강화탄', 'every8', 1], [5, '탄창 +2', 'ammo', 2]] },
   weapon_b: { slot: 'weapon', name: '강타의 신물', icon: null, desc: '묵직하다. 한 발이 강하고 반동이 크다.',
-    skills: [[0, '발사 간격 +15%, 공격력 +15%', 'heavy', 1], [2, '치명타 확률 +12%', 'crit', .12], [3, '공격이 적을 1번 관통', 'pierce', 1]] },
+    skills: [[0, '발사 간격 +15%, 공격력 +15%', 'heavy', 1], [3, '치명타 확률 +12%', 'crit', .12], [4, '공격이 적을 1번 관통', 'pierce', 1], [5, '보스 피해 +20%', 'bossPct', .2]] },
+  weapon_c: { slot: 'weapon', name: '천둥의 신물', icon: null, desc: '맞힐 때마다 작은 번개가 튄다. 무리를 상대할 때 좋다.',
+    skills: [[2, '공격력 +6%', 'atkPct', .06], [3, '번개가 가까운 적 1마리에게 옮겨 감', 'chain', 1], [4, '치명타 피해 +40%', 'critDmg', .4], [5, '번개 전이 +1', 'chain', 1]] },
   amulet_a: { slot: 'amulet', name: '청동 올빼미 부적', icon: 'amulet_a', desc: '아테나의 올빼미가 새겨진 낡은 부적.',
-    skills: [[1, '파편 획득 +10%', 'shardPct', .1], [2, '공격력 +6%', 'atkPct', .06], [3, '보스 피해 +20%', 'bossPct', .2]] },
+    skills: [[2, '파편 획득 +10%', 'shardPct', .1], [3, '공격력 +6%', 'atkPct', .06], [4, '보스 피해 +20%', 'bossPct', .2], [5, '공격력 +10%', 'atkPct', .1]] },
   amulet_b: { slot: 'amulet', name: '월계수 사파이어', icon: 'amulet_b', desc: '바다의 빛을 머금은 신의 목걸이.',
-    skills: [[1, '치명타 확률 +5%', 'crit', .05], [2, '치명타 피해 +30%', 'critDmg', .3], [3, '신성 폭주 지속 +50%', 'highPct', .5]] },
+    skills: [[2, '치명타 확률 +5%', 'crit', .05], [3, '치명타 피해 +30%', 'critDmg', .3], [4, '신성 폭주 지속 +50%', 'highPct', .5], [5, '치명타 확률 +8%', 'crit', .08]] },
+  amulet_c: { slot: 'amulet', name: '메두사 카메오', icon: 'amulet_c', desc: '눈을 마주치면 굳어 버린다는 목걸이.',
+    skills: [[2, '보스 피해 +10%', 'bossPct', .1], [3, '치명타 확률 +5%', 'crit', .05], [4, '적을 처치하면 체력 1 회복', 'leech', 1], [5, '공격력 +12%', 'atkPct', .12]] },
   ring_a: { slot: 'ring', name: '올리브 인장', icon: 'ring_a', desc: '평화 협정을 찍던 은 반지.',
-    skills: [[1, '밟기 반동 +15%', 'stompBounce', .15], [2, '공격력 +6%', 'atkPct', .06], [3, '밟을 때 주변에 충격파', 'stompWave', 1]] },
+    skills: [[2, '밟기 반동 +15%', 'stompBounce', .15], [3, '공격력 +6%', 'atkPct', .06], [4, '밟을 때 주변에 충격파', 'stompWave', 1], [5, '밟기 반동 +20%', 'stompBounce', .2]] },
   ring_b: { slot: 'ring', name: '헤스티아의 불씨', icon: 'ring_b', desc: '꺼지지 않는 화덕 불을 담은 반지.',
-    skills: [[1, '탄창 +1', 'ammo', 1], [2, '탄창 +1', 'ammo', 1], [3, '탄이 비면 다음 공격 강화', 'lastShot', 1]] },
+    skills: [[2, '탄창 +1', 'ammo', 1], [3, '탄창 +1', 'ammo', 1], [4, '탄이 비면 다음 공격 강화', 'lastShot', 1], [5, '탄창 +2', 'ammo', 2]] },
+  ring_c: { slot: 'ring', name: '아레스의 핏빛 반지', icon: 'ring_c', desc: '전쟁의 신이 끼던 무거운 반지.',
+    skills: [[2, '공격력 +5%', 'atkPct', .05], [3, '치명타 피해 +25%', 'critDmg', .25], [4, '보스 피해 +15%', 'bossPct', .15], [5, '적을 처치하면 체력 1 회복', 'leech', 1]] },
   helm_a: { slot: 'helm', name: '찌그러진 청동 투구', icon: 'helm_a', desc: '여러 번 맞았지만 아직 쓸 만하다.',
-    skills: [[1, '최대 체력 +6%', 'hpPct', .06], [2, '맞은 뒤 무적 +20%', 'invPct', .2], [3, '웨이브 시작 시 체력 10% 회복', 'waveHeal', .1]] },
+    skills: [[2, '최대 체력 +6%', 'hpPct', .06], [3, '맞은 뒤 무적 +20%', 'invPct', .2], [4, '웨이브 시작 시 체력 10% 회복', 'waveHeal', .1], [5, '최대 체력 +12%', 'hpPct', .12]] },
   helm_b: { slot: 'helm', name: '올림포스 깃털 투구', icon: 'helm_b', desc: '근위대장이 버리고 간 투구.',
-    skills: [[1, '최대 체력 +6%', 'hpPct', .06], [2, '받는 피해 -8%', 'dmgCut', .08], [3, '치명적 피해를 1회 버팀', 'lastStand', 1]] },
+    skills: [[2, '최대 체력 +6%', 'hpPct', .06], [3, '받는 피해 -8%', 'dmgCut', .08], [4, '치명적 피해를 1회 버팀', 'lastStand', 1], [5, '받는 피해 -10%', 'dmgCut', .1]] },
+  helm_c: { slot: 'helm', name: '하데스의 투명 투구', icon: 'helm_c', desc: '쓰면 그림자처럼 흐려진다.',
+    skills: [[2, '회피 +5%', 'dodge', .05], [3, '맞은 뒤 무적 +25%', 'invPct', .25], [4, '회피 +8%', 'dodge', .08], [5, '치명적 피해를 1회 버팀', 'lastStand', 1]] },
   armor_a: { slot: 'armor', name: '청동 흉갑', icon: 'armor_a', desc: '무겁지만 믿음직하다.',
-    skills: [[1, '받는 피해 -5%', 'dmgCut', .05], [2, '최대 체력 +8%', 'hpPct', .08], [3, '맞으면 주변 적에게 반격', 'thorns', 1]] },
+    skills: [[2, '받는 피해 -5%', 'dmgCut', .05], [3, '최대 체력 +8%', 'hpPct', .08], [4, '맞으면 주변 적에게 반격', 'thorns', 1], [5, '최대 체력 +12%', 'hpPct', .12]] },
   armor_b: { slot: 'armor', name: '신성 대리석 갑옷', icon: 'armor_b', desc: '신전 기둥을 깎아 만들었다.',
-    skills: [[1, '최대 체력 +8%', 'hpPct', .08], [2, '회복 효과 +30%', 'healPct', .3], [3, '받는 피해 -12%', 'dmgCut', .12]] },
+    skills: [[2, '최대 체력 +8%', 'hpPct', .08], [3, '회복 효과 +30%', 'healPct', .3], [4, '받는 피해 -12%', 'dmgCut', .12], [5, '웨이브 시작 시 체력 10% 회복', 'waveHeal', .1]] },
+  armor_c: { slot: 'armor', name: '네메아 사자 가죽', icon: 'armor_c', desc: '화살도 칼도 뚫지 못한 사자의 가죽.',
+    skills: [[2, '받는 피해 -6%', 'dmgCut', .06], [3, '최대 체력 +10%', 'hpPct', .1], [4, '맞으면 주변 적에게 반격', 'thorns', 1], [5, '받는 피해 -12%', 'dmgCut', .12]] },
   boots_a: { slot: 'boots', name: '낡은 가죽 샌들', icon: 'boots_a', desc: '끈이 몇 번 끊어졌던 샌들.',
-    skills: [[1, '이동 속도 +5%', 'runPct', .05], [2, '최대 체력 +6%', 'hpPct', .06], [3, '점프 높이 +8%', 'jumpPct', .08]] },
+    skills: [[2, '이동 속도 +5%', 'runPct', .05], [3, '최대 체력 +6%', 'hpPct', .06], [4, '점프 높이 +8%', 'jumpPct', .08], [5, '이동 속도 +10%', 'runPct', .1]] },
   boots_b: { slot: 'boots', name: '황금 날개 샌들', icon: 'boots_b', desc: '헤르메스의 여벌 신발이다. 말없이 빌렸다.',
-    skills: [[1, '점프 높이 +5%', 'jumpPct', .05], [2, '이동 속도 +8%', 'runPct', .08], [3, '점프할 때 충격파', 'jumpWave', 1]] },
+    skills: [[2, '점프 높이 +5%', 'jumpPct', .05], [3, '이동 속도 +8%', 'runPct', .08], [4, '점프할 때 충격파', 'jumpWave', 1], [5, '점프 높이 +10%', 'jumpPct', .1]] },
+  boots_c: { slot: 'boots', name: '탈로스의 청동 장화', icon: 'boots_c', desc: '청동 거인의 발을 본떠 만들었다.',
+    skills: [[2, '밟기 반동 +10%', 'stompBounce', .1], [3, '최대 체력 +8%', 'hpPct', .08], [4, '밟을 때 주변에 충격파', 'stompWave', 1], [5, '이동 속도 +10%', 'runPct', .1]] },
 };
 const GEAR_BY_SLOT = {}; for (const k in GEAR) (GEAR_BY_SLOT[GEAR[k].slot] = GEAR_BY_SLOT[GEAR[k].slot] || []).push(k);
 
@@ -66,6 +85,19 @@ const GODS = [
     passive: '영혼불이 적을 따라간다. 처치할 때마다 체력 1 회복.', p: { homing: 1, leech: 1 } },
   { id: 'zeus', name: '제우스', rank: '전설', rankCol: '#e0a020', title: '스스로 위엄 있는 왕', shot: 'bolt', fire: 1.35, dmg: 1.15, recoil: .24, ammo: 8, weapon: '번개',
     passive: '번개가 가까운 적 2마리에게 옮겨 간다. 콤보 5마다 낙뢰.', p: { chain: 2, comboStrike: 1 } },
+  // v36(2026-11-18) 새 신 6종. hand = 탄이 나가는 손(아테나는 방패를 반대 팔에 든다)
+  { id: 'heracles', name: '헤라클레스', rank: '레어', rankCol: '#3478e6', title: '자랑이 끝없는 영웅', shot: 'lion', fire: 2.0, dmg: 1.6, recoil: .1, ammo: 6, weapon: '올리브 몽둥이',
+    passive: '사자 충격파가 적 2마리까지 꿰뚫는다. 밟기 반동 +15%.', p: { pierce: 2, stompBounce: .15 } },
+  { id: 'apollo', name: '아폴론', rank: '레어', rankCol: '#3478e6', title: '박수가 필요한 태양', shot: 'note', fire: 1, dmg: .85, recoil: .22, ammo: 8, weapon: '황금 리라',
+    passive: '다섯 번째 음은 태양 음표(크고 피해 2.5배). 치명타 피해 +20%.', p: { sun5: 1, critDmg: .2 } },
+  { id: 'hera', name: '헤라', rank: '에픽', rankCol: '#a040e6', title: '모든 걸 지켜보는 여왕', shot: 'feather', fire: 1.15, dmg: .78, recoil: .26, ammo: 8, weapon: '공작 깃털 부채',
+    passive: '깃털 2개가 갈라져 날아간다. 맞은 적에게 공작의 눈 표식(3초간 받는 피해 +25%).', p: { mark: .25 } },
+  { id: 'aphrodite', name: '아프로디테', rank: '에픽', rankCol: '#a040e6', title: '거울부터 보는 미의 여신', shot: 'rose', fire: 1.1, dmg: .62, recoil: .3, ammo: 8, weapon: '조개 손거울',
+    passive: '장미 꽃잎 3장이 퍼진다. 맞은 적은 2초 매혹(공격을 멈추고, 가시가 있어도 밟힌다). 회피 +10%.', p: { charm: 2, dodge: .1 } },
+  { id: 'poseidon', name: '포세이돈', rank: '전설', rankCol: '#e0a020', title: '형에게 지기 싫은 바다의 왕', shot: 'wave', fire: 1.3, dmg: 1.0, recoil: .2, ammo: 8, weapon: '황금 삼지창',
+    passive: '물줄기가 적 1마리를 꿰뚫고, 맞은 자리에 물보라(주변 30% 피해). 신성 폭주 지속 +30%.', p: { pierce: 1, wave: 1, highPct: .3 } },
+  { id: 'athena', name: '아테나', rank: '전설', rankCol: '#e0a020', title: '계획에 없는 건 싫은 전략가', shot: 'gaze', fire: 1.35, dmg: 1.25, recoil: .24, ammo: 8, weapon: '아이기스 방패', hand: -1,
+    passive: '메두사의 눈빛에 맞은 적은 1초 돌이 된다(멈추고, 닿아도 다치지 않음). 받는 피해 -10%.', p: { petrify: 1, dmgCut: .1 } },
 ];
 const GOD_BY = Object.fromEntries(GODS.map(g => [g.id, g]));
 /* 신 성장: 레벨 1~4. 올릴 때마다 공격력·체력이 오르고 고유 능력이 강해진다(GOD_LV = 레벨 2·3·4 효과) */
@@ -79,14 +111,35 @@ const GOD_LV = {
   hephaestus: [['탄창 +1', { ammo: 1 }], ['공격력 +10%', { atkPct: .1 }], ['폭발 범위 +20', { splash: 20 }]],
   hades: [['체력 +10%', { hpPct: .1 }], ['처치 회복 +1', { leech: 1 }], ['판마다 한 번, 쓰러질 때 체력 1로 버틴다', { lastStand: 1 }]],
   zeus: [['보스 피해 +15%', { bossPct: .15 }], ['번개 전이 +1', { chain: 1 }], ['치명타 확률 +10%', { crit: .1 }]],
+  heracles: [['체력 +10%', { hpPct: .1 }], ['충격파 관통 +1', { pierce: 1 }], ['밟을 때 주변에 충격파', { stompWave: 1 }]],
+  apollo: [['발사 간격 -10%', { firePct: -.1 }], ['치명타 확률 +10%', { crit: .1 }], ['태양 음표 피해 +100%', { sun5: 1 }]],
+  hera: [['공격력 +8%', { atkPct: .08 }], ['표식 피해 +15%', { mark: .15 }], ['보스 피해 +20%', { bossPct: .2 }]],
+  aphrodite: [['회피 +8%', { dodge: .08 }], ['매혹 시간 +1초', { charm: 1 }], ['웨이브 시작 시 체력 8% 회복', { waveHeal: .08 }]],
+  poseidon: [['보스 피해 +15%', { bossPct: .15 }], ['물보라 범위 +40%', { wave: .4 }], ['탄창 +2', { ammo: 2 }]],
+  athena: [['체력 +10%', { hpPct: .1 }], ['돌이 되는 시간 +0.5초', { petrify: .5 }], ['돌이 된 적이 받는 피해 +30%', { stoneDmg: .3 }]],
+};
+/* v36 신 전용 무기 S · SS: 신화 무기를 합성해 S가 되면 무기 모양이 바뀌고(SS도 같은 모양), 등급마다 신 고유 능력이 하나씩 열린다 */
+const WEAPON_S = {
+  hermes: { name: '황금 봉인 편지', s: ['탄창 +2 · 파편 획득 +20%', { ammo: 2, shardPct: .2 }], ss: ['공격력 +15% · 이동 속도 +10%', { atkPct: .15, runPct: .1 }] },
+  artemis: { name: '보름달 활', s: ['화살 관통 +1 · 치명타 확률 +8%', { pierce: 1, crit: .08 }], ss: ['치명타 피해 +50%', { critDmg: .5 }] },
+  dionysus: { name: '황금 암포라', s: ['폭발 범위 +16 · 회피 +8%', { splash: 16, dodge: .08 }], ss: ['공격력 +15% · 웨이브 시작 시 체력 8% 회복', { atkPct: .15, waveHeal: .08 }] },
+  hephaestus: { name: '용암 심장 망치', s: ['폭발 범위 +20 · 탄창 +1', { splash: 20, ammo: 1 }], ss: ['공격력 +20%', { atkPct: .2 }] },
+  hades: { name: '케르베로스 등불', s: ['처치 회복 +1 · 체력 +10%', { leech: 1, hpPct: .1 }], ss: ['판마다 한 번 체력 1로 버팀 · 공격력 +12%', { lastStand: 1, atkPct: .12 }] },
+  zeus: { name: '독수리 번개창', s: ['번개 전이 +1 · 보스 피해 +15%', { chain: 1, bossPct: .15 }], ss: ['치명타 확률 +10% · 공격력 +12%', { crit: .1, atkPct: .12 }] },
+  poseidon: { name: '파도 왕관 삼지창', s: ['물보라 범위 +30% · 탄창 +1', { wave: .3, ammo: 1 }], ss: ['보스 피해 +20% · 공격력 +12%', { bossPct: .2, atkPct: .12 }] },
+  hera: { name: '여왕의 공작 부채', s: ['표식 피해 +15% · 공격력 +6%', { mark: .15, atkPct: .06 }], ss: ['표식 피해 +20% · 보스 피해 +15%', { mark: .2, bossPct: .15 }] },
+  heracles: { name: '황금 사자 몽둥이', s: ['충격파 관통 +1 · 밟기 반동 +15%', { pierce: 1, stompBounce: .15 }], ss: ['공격력 +18% · 체력 +10%', { atkPct: .18, hpPct: .1 }] },
+  athena: { name: '황금 아이기스', s: ['돌이 되는 시간 +0.5초 · 받는 피해 -6%', { petrify: .5, dmgCut: .06 }], ss: ['돌이 된 적이 받는 피해 +30% · 공격력 +12%', { stoneDmg: .3, atkPct: .12 }] },
+  apollo: { name: '태양 리라', s: ['태양 음표 피해 +50% · 치명타 확률 +6%', { sun5: .5, crit: .06 }], ss: ['발사 간격 -10% · 치명타 피해 +40%', { firePct: -.1, critDmg: .4 }] },
+  aphrodite: { name: '장미 조개 거울', s: ['매혹 시간 +1초 · 회피 +6%', { charm: 1, dodge: .06 }], ss: ['공격력 +15% · 체력 +10%', { atkPct: .15, hpPct: .1 }] },
 };
 /* 신의 소환(캐릭터 뽑기). 조각을 주고, 조각으로 해금·레벨 업한다. 임시값 */
 const GOD_CHEST = { id: 'god', name: '신의 소환', icon: 'chest_god', cur: 'gem', one: 150, ten: 1350, free: 24 * 3600, pity: 10, tint: '#7a3fb0',
   rate: { '레어': .55, '에픽': .35, '전설': .1 }, shard: { '레어': 15, '에픽': 12, '전설': 10 }, desc: '신의 조각을 얻습니다. 해금과 레벨 업에 씁니다' };
 /* 신 전용 무기: 무기만 신마다 따로다. 뽑기에서 어느 신의 무기가 나올지는 등급으로 정한다(신 1명당 확률, 합 100%). 임시값 */
-const WEAPON_RATE = { '레어': .25, '에픽': .15, '전설': .1 };
+const WEAPON_RATE = { '레어': .125, '에픽': .075, '전설': .05 }, WEAPON_MINE = .5;   // v36 신 12명(레어·에픽·전설 4명씩) → 합 100%
 /* 계정 보너스: 출전하지 않은 신도 키울수록 모두가 강해진다. 값은 공격력·체력 %(소수). 임시값 */
-const ACCOUNT = { unlock: .01, perLv: .02, weaponGrade: [.01, .02, .04, .08], weaponLv: .0005 };
+const ACCOUNT = { unlock: .01, perLv: .02, weaponGrade: [.005, .01, .02, .04, .06, .08, .11, .15], weaponLv: .0005 };   // v36 등급 8단계(일반~SS)
 /* 에너지: 궁수의 전설 2 기준. 회복은 상한에서 멈추지만 구매와 클리어 보상은 상한을 넘어 쌓인다 */
 const ENERGY = { max: 30, cost: 5, regenMin: 12, buyGem: 100, buyN: 20, clearBack: 5 };
 /* 이어하기: 판당 횟수와 보석 비용. 임시값 */
@@ -102,16 +155,16 @@ const TALENTS = [
   { id: 'heal', name: '암브로시아', desc: '웨이브 시작 시 체력 +1% 회복', icon: 'amulet_a', cost: l => 300 + l * 180, max: 10, effect: l => ({ waveHeal: l * .01 }) },
 ];
 
-/* ───── 상자. rate = [고급, 희귀, 에픽]. 신화는 어떤 상자에서도 나오지 않는다 ─────
+/* ───── 상자. rate = { 등급 번호: 확률 } (v36: 0 일반 · 1 고급 · 2 희귀 · 3 에픽). 전설 이상은 합성으로만 ─────
    2026-11-06 상자마다 나오는 것을 나눴다(궁수의 전설 2: 은 상자 = 낮은 등급, 흑요석 = 전 부위 51/37/12, 신화석 = 회차마다 바뀌는 세트).
    slots = 나올 수 있는 부위, scroll = 뽑을 때마다 함께 주는 두루마리 [확률, 최소, 최대], shard = 신 조각 [확률, 개수],
    featured = 회차마다 바뀌는 '이번 신'의 무기·조각 확률이 오른다 */
 const CHESTS = [
-  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: [.8, .2, 0], slots: ['amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [1, 1, 3], shard: [0, 0], free: 8 * 3600, tint: '#2e5f8e',
-    desc: '방어구·장신구와 강화 두루마리. 무기는 나오지 않습니다', note: '고급·희귀 방어구와 장신구가 나오고, 뽑을 때마다 강화 두루마리 1~3장을 함께 줍니다.' },
-  { id: 'obsidian', name: '흑요석 상자', icon: 'chest_obsidian', cur: 'gem', one: 150, ten: 1350, rate: [.51, .37, .12], slots: ['weapon', 'amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [.3, 1, 2], shard: [.25, 6], free: 24 * 3600, pity: 10, tint: '#4a2670',
+  { id: 'silver', name: '실버 상자', icon: 'chest_silver', cur: 'gold', one: 800, ten: 7200, rate: { 0: .3, 1: .55, 2: .15 }, slots: ['amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [1, 1, 3], shard: [0, 0], free: 8 * 3600, tint: '#2e5f8e',
+    desc: '방어구·장신구와 강화 두루마리. 무기는 나오지 않습니다', note: '일반~희귀 방어구와 장신구가 나오고, 뽑을 때마다 강화 두루마리 1~3장을 함께 줍니다.' },
+  { id: 'obsidian', name: '흑요석 상자', icon: 'chest_obsidian', cur: 'gem', one: 150, ten: 1350, rate: { 1: .51, 2: .37, 3: .12 }, slots: ['weapon', 'amulet', 'ring', 'helm', 'armor', 'boots'], scroll: [.3, 1, 2], shard: [.25, 6], free: 24 * 3600, pity: 10, tint: '#4a2670',
     desc: '모든 부위 장비와 신의 조각. 10회 안에 에픽 확정', note: '6부위 장비가 모두 나옵니다. 25% 확률로 신의 조각 6개를 함께 줍니다.' },
-  { id: 'prism', name: '환채석 상자', icon: 'chest_prism', cur: 'gem', one: 400, ten: 3600, rate: [0, .7, .3], slots: ['weapon'], scroll: [0, 0, 0], shard: [.4, 10], featured: .5, pity: 5, tint: '#a0621a',
+  { id: 'prism', name: '환채석 상자', icon: 'chest_prism', cur: 'gem', one: 400, ten: 3600, rate: { 2: .7, 3: .3 }, slots: ['weapon'], scroll: [0, 0, 0], shard: [.4, 10], featured: .5, pity: 5, tint: '#a0621a',
     desc: '신 전용 무기만 나옵니다. 이번 회차 신의 무기 확률 50%', note: '희귀 이상 신 전용 무기만 나옵니다. 절반은 이번 회차 신의 무기이고, 40% 확률로 그 신의 조각 10개를 함께 줍니다. 이번 회차 신은 3일마다 바뀝니다.' },
 ];
 const FEATURE_DAYS = 3;
@@ -253,7 +306,7 @@ const REWARD = {
   waveGold: w => 16 + 3 * dlv(w), bossGold: w => 100 + 5 * dlv(w), killGold: 1.5,
   scrollPerWave: 1, scrollPerBoss: 3, scrollChapter: .25, scrollMax: 16,
   // 2026-11-06 econ_v21 시뮬레이션: 판마다 장비가 최대 5개라 합성으로 에픽이 쏟아졌다 → 궁전2처럼 판당 1~2개, 보스 처치 시 +1
-  gearEveryWaves: 3, gearMax: 3, gearEpicBoss: .03, gearRare: .15, gearRareBoss: .08,
+  gearEveryWaves: 3, gearMax: 3, gearEpicBoss: .03, gearRare: .15, gearRareBoss: .08, gearFine: .85,   // v36 나머지는 고급 85% · 일반 15%(econ_v21: 예전 진행 속도 유지)
   gemPerBoss: 10, gemFirstClear: 50,    // 같은 보스를 되풀이해 보석을 모으지 못하게 한다. 챕터 첫 클리어에 몰아 준다
   startGold: 2000, startGem: 150,       // 시작 보석 900 → 150: 첫날 전 부위 에픽이 되는 것을 막는다
 };

@@ -6,10 +6,11 @@ const Meta = {
   fresh() {
     const inv = [], add = (d, g) => { const o = { uid: 'u' + (inv.length + 1), d, g, isNew: false }; if (GEAR[d].slot === 'weapon') o.god = 'hermes'; inv.push(o); };
     // 시작 장비: 무기 하나를 끼고 시작한다. 다른 칸은 합성·교체를 익히도록 조금 준다
-    add('weapon_a', 0); add('armor_a', 0); add('boots_a', 0); add('amulet_a', 0); add('ring_a', 0); add('helm_a', 0);
-    add('armor_a', 0); add('armor_a', 0); add('ring_b', 0);
+    // v36: 등급이 6단계가 되어 예전 '고급'(능력치 그대로)은 1번이다. 시작 장비 · 해금 무기는 고급으로 준다(초반 밸런스 유지)
+    add('weapon_a', 1); add('armor_a', 1); add('boots_a', 1); add('amulet_a', 1); add('ring_a', 1); add('helm_a', 1);
+    add('armor_a', 1); add('armor_a', 1); add('ring_b', 1);
     return {
-      v: 1, name: '올림포스 생존자', gold: REWARD.startGold, gem: REWARD.startGem, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
+      v: 1, gradeV: 2, name: '올림포스 생존자', gold: REWARD.startGold, gem: REWARD.startGem, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
       equip: { weapon: 'u1', amulet: null, ring: null, helm: null, armor: null, boots: null },
       // 무기는 신마다 따로다. equip.weapon과 slotLv.weapon은 지금 출전한 신의 값이다
       weapons: { hermes: 'u1' }, weaponLv: { hermes: 1 },
@@ -23,12 +24,14 @@ const Meta = {
     };
   },
   load() {
-    try { const t = localStorage.getItem(SAVE_KEY); if (t) { const o = JSON.parse(t); if (o && o.v === 1) { const old = !o.weapons; this.s = Object.assign(this.fresh(), o); this.migrate(old); this.tick(); return; } } } catch (e) {}
+    try { const t = localStorage.getItem(SAVE_KEY); if (t) { const o = JSON.parse(t); if (o && o.v === 1) { const old = !o.weapons, oldG = o.gradeV !== 2; this.s = Object.assign(this.fresh(), o); this.migrate(old, oldG); this.tick(); return; } } } catch (e) {}
     this.s = this.fresh();
   },
   /* 예전 저장(별 0~8)을 레벨 1~4로 옮긴다. 참고 영상의 2·5·8성 = 능력 Lv.2·3·4 */
-  migrate(oldWeapons) {
+  migrate(oldWeapons, oldGrades) {
     const s = this.s;
+    // v36: 등급 4단계(고급·희귀·에픽·신화) → 6단계(일반·고급·희귀·에픽·전설·신화). 예전 0~3을 1 · 2 · 3 · 5로 옮긴다
+    if (oldGrades) { for (const it of s.inv) it.g = [1, 2, 3, 5][it.g] ?? it.g; s.gradeV = 2; }
     if (oldWeapons) {
       // 공용 무기 저장을 신 전용으로 옮긴다: 끼고 있던 무기는 출전 신의 것, 나머지는 헤르메스의 것
       s.weapons = { [s.god]: s.equip.weapon }; s.weaponLv = { [s.god]: s.slotLv.weapon };
@@ -58,15 +61,23 @@ const Meta = {
   /* 신 전용 무기 */
   weaponOf(god) { const s = this.s; return god === s.god ? s.equip.weapon : s.weapons[god] || null; },
   weaponLvOf(god) { const s = this.s; return god === s.god ? s.slotLv.weapon : s.weaponLv[god] || 1; },
-  grantWeapon(id) { const s = this.s; if (s.weapons[id]) return; const it = this.addItem('weapon_a', 0, id); it.isNew = false; s.weapons[id] = it.uid; s.weaponLv[id] = s.weaponLv[id] || 1; if (id === s.god) { s.equip.weapon = it.uid; s.slotLv.weapon = s.weaponLv[id]; } },
-  rollWeaponGod() { let r = Math.random(); for (const g of GODS) { r -= WEAPON_RATE[g.rank]; if (r < 0) return g.id; } return GODS[0].id; },
+  grantWeapon(id) { const s = this.s; if (s.weapons[id]) return; const it = this.addItem('weapon_a', 1, id); it.isNew = false; s.weapons[id] = it.uid; s.weaponLv[id] = s.weaponLv[id] || 1; if (id === s.god) { s.equip.weapon = it.uid; s.slotLv.weapon = s.weaponLv[id]; } },
+  // v36: 신이 12명이라 무기가 흩어진다 → 절반(WEAPON_MINE)은 지금 출전한 신의 무기, 나머지는 신 등급별 확률
+  rollWeaponGod() { if (Math.random() < WEAPON_MINE) return this.s.god; let r = Math.random(); for (const g of GODS) { r -= WEAPON_RATE[g.rank]; if (r < 0) return g.id; } return GODS[0].id; },
   /* 계정 보너스: 이 신이 모두에게 주는 몫과 전체 합 */
   godShare(id) { const l = this.godLv(id); if (!l) return { atk: 0, hp: 0 }; const w = this.item(this.weaponOf(id)), base = ACCOUNT.unlock + (l - 1) * ACCOUNT.perLv; return { atk: base + (w ? ACCOUNT.weaponGrade[w.g] + (this.weaponLvOf(id) - 1) * ACCOUNT.weaponLv : 0), hp: base }; },
   accountBonus() { const o = { atk: 0, hp: 0 }; for (const g of GODS) { const b = this.godShare(g.id); o.atk += b.atk; o.hp += b.hp; } return o; },
-  iconOf(it) { const d = it.d || it, g = GEAR[d]; return g.slot === 'weapon' ? 'w_' + (it.god || this.s.god) : g.icon; },
+  iconOf(it) { const d = it.d || it, g = GEAR[d]; return g.slot === 'weapon' ? 'w_' + (it.god || this.s.god) + (it.g >= GRADE_S ? '_s' : '') : g.icon; },   // v36 S부터 무기 모양이 바뀐다
   /* 장비 한 개의 기본 수치 */
   itemStat(it) { const G = GEAR[it.d], S = SLOT_BY[G.slot]; return { stat: S.stat, val: S.base[it.g] }; },
-  itemSkills(it) { return GEAR[it.d].skills.map(([g, t, k, v]) => ({ g, t, k, v, on: it.g >= g })); },
+  itemSkills(it) {
+    const out = GEAR[it.d].skills.map(([g, t, k, v]) => ({ g, t, k, v, on: it.g >= g }));
+    // v36 신 전용 무기의 S · SS 능력(신마다 다름). e = 여러 효과를 한 줄로
+    const W = GEAR[it.d].slot === 'weapon' && WEAPON_S[it.god];
+    if (W) { out.push({ g: GRADE_S, t: W.s[0], e: W.s[1], on: it.g >= GRADE_S, sig: true }); out.push({ g: GRADE_SS, t: W.ss[0], e: W.ss[1], on: it.g >= GRADE_SS, sig: true }); }
+    return out;
+  },
+  weaponName(it) { const G = GOD_BY[it.god]; return it.g >= GRADE_S && WEAPON_S[it.god] ? WEAPON_S[it.god].name : G.weapon; },
   lvCap() { return LV_MAX; },
   /* 슬롯 레벨 수치. 장비를 바꿔도 칸에 남는다. 장비를 빼면 보너스도 쉰다 */
   slotBonus(slot, god) { const S = SLOT_BY[slot]; return this.equipped(slot, god) ? Math.round((this.levelOf(slot, god) - 1) * S.perLv) : 0; },
@@ -90,12 +101,12 @@ const Meta = {
   /* 내 능력치: 기본 + 장비 + 슬롯 레벨 + 등급 스킬 + 재능 + 신 */
   stats(godId) {
     const s = this.s, god = GOD_BY[godId || s.god], lv = this.godLv(god.id) || 1;
-    const o = { atk: 10, hp: 100, atkPct: 0, hpPct: 0, firePct: 0, crit: .05, critDmg: .5, shardPct: 0, goldPct: 0, runPct: 0, jumpPct: 0, stompBounce: 0, dmgCut: 0, invPct: 0, healPct: 0, highPct: 0, bossPct: 0, ammo: 0, waveHeal: 0, pierce: 0, heavy: 0, every8: 0, stompWave: 0, jumpWave: 0, lastShot: 0, lastStand: 0, thorns: 0, splash: 0, dodge: 0, breaker: 0, homing: 0, leech: 0, chain: 0, comboStrike: 0 };
+    const o = { atk: 10, hp: 100, atkPct: 0, hpPct: 0, firePct: 0, crit: .05, critDmg: .5, shardPct: 0, goldPct: 0, runPct: 0, jumpPct: 0, stompBounce: 0, dmgCut: 0, invPct: 0, healPct: 0, highPct: 0, bossPct: 0, ammo: 0, waveHeal: 0, pierce: 0, heavy: 0, every8: 0, stompWave: 0, jumpWave: 0, lastShot: 0, lastStand: 0, thorns: 0, splash: 0, dodge: 0, breaker: 0, homing: 0, leech: 0, chain: 0, comboStrike: 0, sun5: 0, mark: 0, charm: 0, wave: 0, petrify: 0, stoneDmg: 0 };
     const addEff = (k, v) => { if (k in o) o[k] += v; };
     for (const S of SLOTS) {
       const it = this.equipped(S.id, god.id); if (!it) continue;
       o[S.stat] += S.base[it.g] + this.slotBonus(S.id, god.id);
-      for (const sk of this.itemSkills(it)) if (sk.on) addEff(sk.k, sk.v);
+      for (const sk of this.itemSkills(it)) if (sk.on) { if (sk.e) for (const k in sk.e) addEff(k, sk.e[k]); else addEff(sk.k, sk.v); }
     }
     for (const T_ of TALENTS) { const l = s.talent[T_.id] || 0, e = T_.effect(l); for (const k in e) addEff(k, e[k]); }
     for (const k in god.p) addEff(k, god.p[k]);
@@ -140,8 +151,8 @@ const Meta = {
   },
   upgradeMax(slot, god) { const p = this.slotUpPlan(slot, god); let n = 0; for (let i = p.from; i < p.to; i++) if (this.upgrade(slot, god)) n++; return { ...p, n }; },
   /* 분해: 장비를 그 부위 강화 두루마리와 골드로 바꾼다(고급 1장 · 희귀 3장 · 에픽 9장, 골드는 장당 20). 무기·신화·착용 중인 장비는 분해하지 않는다 */
-  salvageGain(it) { const k = [1, 3, 9][it.g] || 0; return { slot: GEAR[it.d].slot, scroll: k, gold: 20 * k }; },
-  canSalvage(it) { return !!it && it.g < MYTH && GEAR[it.d].slot !== 'weapon' && !this.isEquipped(it.uid); },
+  salvageGain(it) { const k = [1, 2, 4, 10][it.g] || 0; return { slot: GEAR[it.d].slot, scroll: k, gold: 20 * k }; },   // v36 일반 1 · 고급 2 · 희귀 4 · 에픽 10장
+  canSalvage(it) { return !!it && it.g <= 3 && GEAR[it.d].slot !== 'weapon' && !this.isEquipped(it.uid); },   // 전설 이상은 분해하지 않는다
   salvage(uids) {
     const s = this.s, out = { n: 0, gold: 0, scrolls: {} };
     for (const u of uids) {
@@ -157,17 +168,26 @@ const Meta = {
     for (const i of this.s.inv) if (this.canSalvage(i) && grades.includes(i.g) && !this.isBetter(i)) (groups[i.d + ':' + i.g] = groups[i.d + ':' + i.g] || []).push(i);
     return Object.values(groups).flatMap(g => g.slice(Math.floor(g.length / 3) * 3));
   },
-  /* 합성: 같은 장비 + 재료 2개. 에픽 → 신화는 같은 칸의 에픽이면 된다 */
-  mergeNeed(it) { if (it.g >= MYTH) return null; return { n: 2, sameSlot: it.g === MYTH - 1 }; },
+  /* 합성(v36, 궁수의 전설 2 사다리를 줄인 것). 무기는 늘 같은 신의 무기끼리
+     일반 → 고급 → 희귀 → 에픽: 같은 장비 2개 / 에픽 → 전설: 같은 부위 에픽 2개 / 전설 → 신화: 같은 부위 전설 1개
+     무기만: 신화 → S: 같은 신 무기 신화 1개 / S → SS: 같은 신 무기 신화 2개 */
+  topGrade(it) { return GEAR[it.d].slot === 'weapon' ? GRADE_SS : MYTH; },
+  mergeNeed(it) {
+    if (!it || it.g >= this.topGrade(it)) return null;
+    if (it.g <= 2) return { n: 2, same: true, matG: it.g };
+    if (it.g === 3) return { n: 2, same: false, matG: 3 };
+    if (it.g === 4) return { n: 1, same: false, matG: 4 };
+    return { n: it.g === GRADE_S ? 2 : 1, same: false, matG: MYTH };
+  },
   mergeMats(it) {
     const need = this.mergeNeed(it); if (!need) return [];
     const slot = GEAR[it.d].slot;
-    return this.s.inv.filter(o => o.uid !== it.uid && !this.isEquipped(o.uid) && o.g === it.g && (need.sameSlot ? GEAR[o.d].slot === slot : o.d === it.d) && (slot !== 'weapon' || o.god === it.god));
+    return this.s.inv.filter(o => o.uid !== it.uid && !this.isEquipped(o.uid) && o.g === need.matG && (need.same ? o.d === it.d : GEAR[o.d].slot === slot) && (slot !== 'weapon' || o.god === it.god));
   },
   merge(uid, matUids) {
-    const it = this.item(uid); if (!it || it.g >= MYTH) return null;
+    const it = this.item(uid), need = this.mergeNeed(it); if (!need) return null;
     const mats = matUids.map(u => this.item(u)).filter(Boolean);
-    if (mats.length !== 2) return null;
+    if (mats.length !== need.n || mats.some(m => !this.mergeMats(it).includes(m))) return null;
     this.s.inv = this.s.inv.filter(o => !matUids.includes(o.uid));
     it.g++; it.isNew = true; this.save(); return it;
   },
@@ -177,7 +197,7 @@ const Meta = {
     while (done && guard++ < 200) {
       done = false;
       for (const it of this.s.inv.slice().sort((a, b) => a.g - b.g)) {
-        if (it.g >= 2) continue;   // 신화는 재료를 직접 고른다
+        if (it.g >= 3) continue;   // v36 일괄 합성은 에픽까지(같은 장비 3개 묶음). 전설 이상은 재료를 직접 고른다
         const m = this.mergeMats(it);
         if (m.length >= 2) { const r = this.merge(it.uid, m.slice(0, 2).map(o => o.uid)); if (r) { results.push(r); done = true; break; } }
       }
@@ -186,8 +206,9 @@ const Meta = {
   },
   addItem(d, g, god) { const s = this.s, it = { uid: 'u' + (s.nextUid++), d, g, isNew: true }; if (GEAR[d].slot === 'weapon') it.god = god || s.god; s.inv.push(it); return it; },
   rollGrade(C, forceEpic) {
-    if (forceEpic) return 2;
-    let r = Math.random(); for (let i = 0; i < 3; i++) { if (r < C.rate[i]) return i; r -= C.rate[i]; } return 0;
+    if (forceEpic) return 3;
+    const e = Object.entries(C.rate).map(([g, p]) => [+g, p]); let r = Math.random();
+    for (const [g, p] of e) { if (r < p) return g; r -= p; } return e[0][0];
   },
   /* 뽑기. 돌려주는 값 = 얻은 것 목록. 비용을 못 내면 null */
   pull(chestId, count, free) {
@@ -198,7 +219,7 @@ const Meta = {
     for (let i = 0; i < count; i++) {
       let force = false;
       if (C.pity) { st.pity = (st.pity || 0) + 1; if (st.pity >= C.pity) force = true; }
-      const g = this.rollGrade(C, force); if (g === 2) st.pity = 0;
+      const g = this.rollGrade(C, force); if (g >= 3) st.pity = 0;
       const d = keys[Math.floor(Math.random() * keys.length)], wgod = GEAR[d].slot !== 'weapon' ? null : C.featured && Math.random() < C.featured ? feat : this.rollWeaponGod();
       out.push({ type: 'item', item: this.addItem(d, g, wgod) });
       if (C.shard[0] && Math.random() < C.shard[0]) {
@@ -302,7 +323,7 @@ const Meta = {
     for (let i = 0; i < nScroll; i++) { const sl = SLOTS[Math.floor(Math.random() * 6)].id; scrolls[sl] = (scrolls[sl] || 0) + 1; s.scrolls[sl]++; }
     // 웨이브마다 장비를 조금씩 떨어뜨린다. 보스를 잡으면 더 좋은 등급
     const keys = Object.keys(GEAR), nGear = R.nGear;
-    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses ? 2 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
+    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses ? 3 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 2 : Math.random() < REWARD.gearFine ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
     if (r.bosses) s.energy += ENERGY.clearBack;
     // 시작하자마자 포기한 판은 임무·기록에 넣지 않는다
     if (done) q.runs++;

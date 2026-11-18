@@ -66,7 +66,7 @@ function drawBossBits() {
 function bossHitTest(bu) { if (game.boss.hidden) return false; const b = game.boss, hh = b.drawH || b.h; return Math.abs(bu.x - b.x) < b.w * .42 + bu.r && bu.y > b.y - hh * .95 - bu.r && bu.y < b.y && b.y - hh * .4 < b.floorY + 4; }
 function hitBoss(dmg, crit, x, y, raw) {
   const g = game, b = g.boss; if (!b || !b.alive || b.state === 'intro' || b.state === 'dead') return;
-  const d = raw ? dmg : Math.round(dmg * (1 + (g.st.bossPct || 0)) * (b.open > .5 ? 1.25 : 1));   // raw = 밟기(고정 피해, 보스 피해 보너스·입 벌림 배율 없음)
+  const d = raw ? dmg : Math.round(dmg * (1 + (g.st.bossPct || 0) + ((b.markU || 0) > g.t ? g.st.mark || 0 : 0)) * (b.open > .5 ? 1.25 : 1));   // v36 헤라 표식은 보스에도   // raw = 밟기(고정 피해, 보스 피해 보너스·입 벌림 배율 없음)
   b.hp -= d; b.flash = .06; b.pop = 1; b.hitC = (b.hitC || 0) + 1;
   dmgNum(x, y - 6, d, crit || b.open > .5);
   g.fx.push({ type: 'hit', x, y, r: crit ? 16 : 11, t: 0, life: .1, rot: Math.random() * 3 });
@@ -81,7 +81,8 @@ function bossDie() {
   sfx.roar(); g.whiteout = .6; g.shake = 18; vibrate(120);
 }
 function bossWarn(b, x0, x1, y0, y1, life) { b.path = { x0, x1, y0, y1 }; game.fx.push({ type: 'warn', x0, x1, y0, y1, x: 0, y: 0, t: 0, life }); }
-function bossSet(st) { const b = game.boss; if (st === 'idle' && b.pendRage) { st = 'rage'; b.pendRage = false; } b.state = st; b.t = 0; b.step = 0; }
+function bossSet(st) { const b = game.boss; if (!b) return;   // v36: 중간 보스가 공격 중에 죽어 game.boss가 비는 드문 순간(qa_v16에서 한 번 멈춤)
+  if (st === 'idle' && b.pendRage) { st = 'rage'; b.pendRage = false; } b.state = st; b.t = 0; b.step = 0; }
 function pickAttack(b) {
   const w = Object.assign({}, b.def.weights), pool = [];
   if (b.phase === 2 && !b.mini && b.def.p2) for (const k in b.def.p2) w[k] = (w[k] || 0) + b.def.p2[k];

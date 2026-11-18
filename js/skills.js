@@ -16,11 +16,42 @@ const godMode = () => { const p = game.p; return !!(p && (p.high || has('avatar'
 
 /* 탄 하나를 쏠 때의 모양: 없음 1발 · 희귀 나란히 2발 · 영웅 3갈래 · 전설 5갈래 부채 */
 function fireVolley(x, y, hand, mul, big) {
-  const lv = famLv('shot');
-  if (lv === 0) { fireBullet(x, y, 0, 1150, false, hand, { mul, big }); return; }
-  if (lv === 1) { for (const d of [-7, 7]) fireBullet(x + d, y, 0, 1150, false, hand, { mul: mul * .75, big }); return; }
-  if (lv === 2) { fireBullet(x, y, 0, 1150, false, hand, { mul, big }); for (const s of [-1, 1]) fireBullet(x, y, s * 330, 1100, false, hand, { mul: mul * .85, big }); return; }
-  for (const vx of [-600, -300, 0, 300, 600]) { fireBullet(x, y, vx, 1100 - Math.abs(vx) * .12, false, hand, { mul: mul * .9, big }); game.bullets[game.bullets.length - 1].fan = true; }
+  const lv = famLv('shot'), g = game;
+  // v36 아폴론: 다섯 번째 음은 태양 음표(크고 피해 1.5 + sun5배)
+  if (g.st.sun5) { g.p.noteN = (g.p.noteN || 0) + 1; g.p.sunNote = g.p.noteN % 5 === 0; if (g.p.sunNote) { mul *= 1.5 + g.st.sun5; big = true; } }
+  if (lv === 0) { godShot(x, y, 0, 1150, hand, { mul, big }); return; }
+  if (lv === 1) { for (const d of [-7, 7]) godShot(x + d, y, 0, 1150, hand, { mul: mul * .75, big }); return; }
+  if (lv === 2) { godShot(x, y, 0, 1150, hand, { mul, big }); for (const s of [-1, 1]) godShot(x, y, s * 330, 1100, hand, { mul: mul * .85, big }); return; }
+  for (const vx of [-600, -300, 0, 300, 600]) godShot(x, y, vx, 1100 - Math.abs(vx) * .12, hand, { mul: mul * .9, big, fan: true });
+}
+/* v36 신마다 한 번 쏠 때 나가는 모양: 헤라는 깃털 2개(양옆으로 갈라짐), 아프로디테는 꽃잎 3장(부채꼴), 나머지는 1발 */
+const GOD_SPREAD = { feather: [[-150, 0], [150, 0]], rose: [[-120, -6], [0, 0], [120, -6]] };   // v36 밸런스: 꽃잎은 가까이서 3장이 모두 맞는 산탄
+function godShot(x, y, vx, vy, hand, o) {
+  const sp = GOD_SPREAD[game.god_.shot], fan = o.fan;
+  if (!sp) { fireBullet(x, y, vx, vy, false, hand, o); if (fan) game.bullets[game.bullets.length - 1].fan = true; return; }
+  for (const [dx, dy] of sp) { fireBullet(x, y + dy, vx + dx, vy - Math.abs(dx) * .1, false, hand, o); const b = game.bullets[game.bullets.length - 1]; b.spin = dx; if (fan) b.fan = true; }
+}
+/* v36 새 신의 맞았을 때 효과. e = 맞은 적(보스·중간 보스 포함), 없으면 블록·바닥 */
+function godHit(b, e) {
+  const g = game, st = g.st, big = e && isBig(e);
+  if (b.kind === 'wave' && st.wave) {   // 포세이돈: 물보라
+    const r = 36 * st.wave; explode(b.x, b.y, r, { dmg: Math.round(b.dmg * .3), tiles: false, ink: '#1a5a8a', cols: ['#7fe8ff', '#e6fbff', '#2aa0d8'] });
+    for (let i = 0; i < 6; i++) g.fx.push({ type: 'dot', x: b.x, y: b.y, vx: (Math.random() - .5) * 260, vy: -140 - Math.random() * 160, t: 0, life: .45, r: 2.6, col: i % 2 ? '#bff6ff' : '#4cc8f0', g: 700 });
+  }
+  if (!e) return;
+  if (b.kind === 'feather' && st.mark) {   // 헤라: 공작의 눈 표식 3초
+    if (!((e.markU || 0) > g.t)) g.fx.push({ type: 'ring', x: b.x, y: b.y, r: 22, col: 'rgba(80,230,210,.95)', t: 0, life: .25 });
+    e.markU = g.t + 3;
+  }
+  if (b.kind === 'gaze' && st.petrify && !big) {   // 아테나: 돌이 된다(멈춤·닿아도 안전). 보스·중간 보스는 돌이 되지 않는다
+    if (!(e.frz > 0)) g.fx.push({ type: 'ring', x: e.x, y: e.y, r: e.r + 12, col: 'rgba(200,214,160,.95)', t: 0, life: .3 });
+    e.frz = Math.max(e.frz || 0, st.petrify); e.stoneU = g.t + st.petrify;
+  }
+  if (b.kind === 'rose' && st.charm && !big) {   // 아프로디테: 매혹
+    if (!((e.charmU || 0) > g.t)) for (let i = 0; i < 3; i++) g.fx.push({ type: 'dot', x: e.x + (i - 1) * 8, y: e.y - e.r, vx: (i - 1) * 30, vy: -90, t: 0, life: .5, r: 2.4, col: '#ff7aa8', g: 0 });
+    e.charmU = g.t + st.charm;
+  }
+  if (b.kind === 'lion') g.fx.push({ type: 'ring', x: b.x, y: b.y, r: 30, col: 'rgba(255,200,90,.9)', t: 0, life: .2 });
 }
 /* 유도 값: 카드(바람 길잡이·사냥꾼의 눈·사냥매의 눈·사냥 여신의 표식), 하데스의 영혼불, 올빼미·히드라 탄 중 가장 센 것 */
 function seekOf(b) {  // 유도 반경 r, 꺾는 힘 turn. 대상은 일반 몬스터와 보스·중간 보스(v33)

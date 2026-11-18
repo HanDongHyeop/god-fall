@@ -149,8 +149,10 @@ function drawEnemy(e) {
   if (e.tele > 0) ctx.translate((Math.random() - .5) * 2.4 * s, 0);
   ctx.drawImage(im, -w / 2, dy, w, h);
   if (e.flash > 0 && ok(wim)) { ctx.globalAlpha = 1; ctx.drawImage(wim, -w / 2, dy, w, h); }
+  else if ((e.stoneU || 0) > g.t && ok(wim)) { ctx.globalAlpha = .34; ctx.drawImage(wim, -w / 2, dy, w, h); }   // v36 돌이 된 적
   ctx.restore(); ctx.globalAlpha = 1;
   drawMonTele(e, x, y + (ground ? -E.h * sc * s * .45 + e.r * s : 0));
+  if ((e.stoneU || 0) > g.t || (e.charmU || 0) > g.t || (e.markU || 0) > g.t) { const cy = y + (ground ? -E.h * sc * s * .45 + e.r * s : 0); drawFoeMarks(e, x, cy, cy - E.h * sc * s * .55); }
   if ((e.hbT > 0 || e.elite) && e.hp > 0) {
     const bw = Math.max(22, e.r * 2) * s, bh = 3 * s, bx = x - bw / 2, by = y - (ground ? E.h * sc * .95 - e.r : E.h * sc * .55) * s - 6 * s;
     ctx.globalAlpha = Math.min(1, e.hbT * 3);
@@ -184,6 +186,7 @@ function drawBullets() {
     if (godMode() || b.fan) { ctx.strokeStyle = b.fan ? 'rgba(255,196,70,.6)' : 'rgba(255,214,110,.55)'; ctx.lineWidth = (b.fan ? 7 : 9) * s; const sp = Math.hypot(b.vx, b.vy) || 1; ctx.beginPath(); ctx.moveTo(x - b.vx / sp * 34 * s, y - b.vy / sp * 34 * s); ctx.lineTo(x, y); ctx.stroke(); }
     if (b.hydra) { ctx.fillStyle = 'rgba(90,255,150,.45)'; ctx.beginPath(); ctx.arc(x, y, 7 * s, 0, 7); ctx.fill(); }
     drawSeekTrail(b, x, y);
+    if (wi && wi.g >= GRADE_S && Math.floor(b.t * 30 + b.wob) % 2 === 0) { const k = Math.sin(b.t * 50 + b.wob); ctx.fillStyle = wi.g >= GRADE_SS ? `hsl(${(g.t * 400 + b.wob * 60) % 360},100%,78%)` : '#fff2b0'; ctx.fillRect(x + k * 7 * s - s, y - dir * (16 + Math.abs(k) * 10) * s, 2.4 * s, 2.4 * s); }   // v36 S · SS 무기: 탄 꼬리에 반짝이
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
     if (b.kind === 'letter') {
       ctx.strokeStyle = tint; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(0, -Math.abs(tail) * .85); ctx.lineTo(0, 0); ctx.stroke();
@@ -211,10 +214,88 @@ function drawBullets() {
     } else if (b.kind === 'bolt') {
       ctx.strokeStyle = tint; ctx.lineWidth = 5 * s; ctx.lineJoin = 'miter'; ctx.beginPath(); ctx.moveTo(0, -40 * s); ctx.lineTo(5 * s, -24 * s); ctx.lineTo(-5 * s, -12 * s); ctx.lineTo(0, 6 * s); ctx.stroke();
       ctx.strokeStyle = '#fff6a8'; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.moveTo(0, -40 * s); ctx.lineTo(5 * s, -24 * s); ctx.lineTo(-5 * s, -12 * s); ctx.lineTo(0, 6 * s); ctx.stroke();
-    }
+    } else drawGodShot(b, s, big, tint);
     ctx.restore();
   }
 }
+/* v36 새 신의 탄. 국소 좌표: +y = 날아가는 쪽, 0 = 탄 머리. 무기 등급 색(tint)이 꼬리에 묻는다 */
+function drawGodShot(b, s, big, tint) {
+  const k = b.kind, t = b.t;
+  if (k === 'wave') {   // 포세이돈: 물줄기 + 머리 물방울
+    ctx.strokeStyle = 'rgba(60,170,230,.45)'; ctx.lineWidth = 9 * s * big; ctx.beginPath(); ctx.moveTo(0, -46 * s); ctx.lineTo(0, 0); ctx.stroke();
+    ctx.strokeStyle = tint; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(-3 * s, -40 * s); ctx.lineTo(-3 * s, -6 * s); ctx.stroke();
+    ctx.strokeStyle = '#e6fbff'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(0, -30 * s); ctx.lineTo(0, 2 * s); ctx.stroke();
+    ctx.fillStyle = '#2aa0d8'; ctx.beginPath(); ctx.moveTo(0, 11 * s * big); ctx.quadraticCurveTo(8 * s * big, 0, 0, -6 * s * big); ctx.quadraticCurveTo(-8 * s * big, 0, 0, 11 * s * big); ctx.fill();
+    ctx.fillStyle = '#bff6ff'; ctx.beginPath(); ctx.arc(-2 * s, 2 * s, 2.2 * s * big, 0, 7); ctx.fill();
+    for (let i = 0; i < 3; i++) { const yy = -14 * s - i * 11 * s, xx = Math.sin(t * 40 + i * 2) * 5 * s; ctx.fillStyle = 'rgba(190,245,255,.8)'; ctx.beginPath(); ctx.arc(xx, yy, (2 - i * .4) * s, 0, 7); ctx.fill(); }
+  } else if (k === 'feather') {   // 헤라: 공작 깃털(끝에 눈 무늬)
+    ctx.rotate(Math.sin(t * 22 + b.wob) * .25);
+    ctx.strokeStyle = tint; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(0, -38 * s); ctx.lineTo(0, -16 * s); ctx.stroke();
+    ctx.strokeStyle = '#e8d9a0'; ctx.lineWidth = 1.4 * s; ctx.beginPath(); ctx.moveTo(0, -24 * s); ctx.lineTo(0, 9 * s); ctx.stroke();
+    ctx.fillStyle = '#1f7a5c'; ctx.beginPath(); ctx.ellipse(0, -2 * s, 5.4 * s * big, 13 * s * big, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#3cc49a'; ctx.beginPath(); ctx.ellipse(0, -4 * s, 3.4 * s * big, 10 * s * big, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f2c84a'; ctx.beginPath(); ctx.ellipse(0, 4 * s * big, 4.2 * s * big, 5 * s * big, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1aa8c8'; ctx.beginPath(); ctx.ellipse(0, 4.5 * s * big, 2.8 * s * big, 3.4 * s * big, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#16245a'; ctx.beginPath(); ctx.ellipse(0, 5 * s * big, 1.5 * s * big, 1.9 * s * big, 0, 0, 7); ctx.fill();
+  } else if (k === 'lion') {   // 헤라클레스: 포효하는 사자 머리 + 뒤로 퍼지는 충격파 고리
+    const R = 10 * s * big;
+    for (let i = 1; i <= 3; i++) { const yy = -R * .6 - i * 9 * s, a = .95 - i * .22; ctx.strokeStyle = `rgba(255,196,80,${a})`; ctx.lineWidth = (3.4 - i * .7) * s; ctx.beginPath(); ctx.arc(0, yy, R * (.9 + i * .22), Math.PI * .15, Math.PI * .85); ctx.stroke(); }
+    ctx.fillStyle = '#9a4a12'; for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + Math.sin(t * 20) * .05; ctx.beginPath(); ctx.arc(Math.cos(a) * R * 1.02, Math.sin(a) * R * 1.02, R * .52, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#d97a1e'; for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + .35; ctx.beginPath(); ctx.arc(Math.cos(a) * R * .9, Math.sin(a) * R * .9, R * .4, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#9a4a12'; ctx.beginPath(); ctx.arc(-R * .62, -R * .62, R * .26, 0, 7); ctx.arc(R * .62, -R * .62, R * .26, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffc94a'; ctx.beginPath(); ctx.arc(0, 0, R * .78, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff0bf'; ctx.beginPath(); ctx.ellipse(0, R * .3, R * .44, R * .32, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#4a1c04'; ctx.beginPath(); ctx.moveTo(-R * .14, R * .12); ctx.lineTo(R * .14, R * .12); ctx.lineTo(0, R * .3); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-R * .48, -R * .2); ctx.lineTo(-R * .18, -R * .1); ctx.lineTo(-R * .44, -R * .02); ctx.moveTo(R * .48, -R * .2); ctx.lineTo(R * .18, -R * .1); ctx.lineTo(R * .44, -R * .02); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-R * .2, R * .44); ctx.lineTo(-R * .12, R * .62); ctx.lineTo(-R * .04, R * .44); ctx.moveTo(R * .2, R * .44); ctx.lineTo(R * .12, R * .62); ctx.lineTo(R * .04, R * .44); ctx.fill();
+  } else if (k === 'gaze') {   // 아테나: 메두사의 눈빛(초록빛 광선 + 눈)
+    ctx.strokeStyle = 'rgba(140,255,170,.32)'; ctx.lineWidth = 10 * s * big; ctx.beginPath(); ctx.moveTo(0, -64 * s); ctx.lineTo(0, 0); ctx.stroke();
+    ctx.strokeStyle = tint; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(0, -56 * s); ctx.lineTo(0, -4 * s); ctx.stroke();
+    ctx.strokeStyle = '#eaffd8'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(0, -40 * s); ctx.lineTo(0, 2 * s); ctx.stroke();
+    const E = 7 * s * big; ctx.fillStyle = '#f4ffe8'; ctx.beginPath(); ctx.moveTo(-E, 0); ctx.quadraticCurveTo(0, -E * .9, E, 0); ctx.quadraticCurveTo(0, E * .9, -E, 0); ctx.fill();
+    ctx.fillStyle = '#2fbf5a'; ctx.beginPath(); ctx.arc(0, 0, E * .42, 0, 7); ctx.fill();
+    ctx.fillStyle = '#0c3a18'; ctx.beginPath(); ctx.ellipse(0, 0, E * .12, E * .36, 0, 0, 7); ctx.fill();
+  } else if (k === 'note') {   // 아폴론: 황금 음표, 다섯 번째는 태양 음표
+    ctx.rotate(-ang0(b) + Math.sin(t * 16 + b.wob) * .3);   // 음표는 늘 세워서 보인다
+    if (big > 1) {
+      const R = 10 * s * big; ctx.fillStyle = 'rgba(255,200,60,.35)'; ctx.beginPath(); ctx.arc(0, 0, R * 1.9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffb21e'; for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283 + t * 4; ctx.beginPath(); ctx.moveTo(Math.cos(a - .14) * R, Math.sin(a - .14) * R); ctx.lineTo(Math.cos(a) * R * 1.55, Math.sin(a) * R * 1.55); ctx.lineTo(Math.cos(a + .14) * R, Math.sin(a + .14) * R); ctx.fill(); }
+      ctx.fillStyle = '#ffe066'; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill(); ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.arc(-R * .25, -R * .25, R * .4, 0, 7); ctx.fill();
+    } else {
+      ctx.strokeStyle = 'rgba(255,214,90,.5)'; ctx.lineWidth = 5 * s; ctx.beginPath(); ctx.moveTo(0, -26 * s); ctx.lineTo(0, -6 * s); ctx.stroke();
+      ctx.fillStyle = '#7a4a08'; ctx.beginPath(); ctx.ellipse(0, 4 * s, 6.4 * s, 4.8 * s, -.4, 0, 7); ctx.fill(); ctx.fillRect(3 * s, -14 * s, 3 * s, 18 * s);
+      ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.ellipse(0, 4 * s, 5 * s, 3.6 * s, -.4, 0, 7); ctx.fill(); ctx.fillRect(3.6 * s, -13 * s, 1.8 * s, 16 * s);
+      ctx.beginPath(); ctx.moveTo(5.4 * s, -13 * s); ctx.quadraticCurveTo(12 * s, -9 * s, 9 * s, -3 * s); ctx.lineTo(5.4 * s, -8 * s); ctx.fill();
+    }
+  } else if (k === 'rose') {   // 아프로디테: 하트 모양 장미 꽃잎(빙글빙글) + 반짝이
+    ctx.fillStyle = 'rgba(255,140,190,.28)'; ctx.beginPath(); ctx.ellipse(0, -9 * s, 5 * s, 11 * s, 0, 0, 7); ctx.fill();
+    if (Math.floor(t * 20 + b.wob) % 3 === 0) { ctx.fillStyle = '#fff0f6'; ctx.fillRect(-6 * s, -14 * s, 1.8 * s, 1.8 * s); }
+    ctx.rotate(t * 9 + b.wob); const R = 6.4 * s * big;
+    heart(0, 0, R, '#c41e52'); heart(-R * .12, -R * .14, R * .76, '#ff4f86');
+    ctx.fillStyle = 'rgba(255,225,238,.9)'; ctx.beginPath(); ctx.ellipse(-R * .38, -R * .42, R * .2, R * .13, -.6, 0, 7); ctx.fill();
+  }
+}
+const ang0 = b => Math.atan2(b.vy, b.vx) - Math.PI / 2;
+/* v36 상태 표식: 돌(아테나) · 매혹(아프로디테) · 공작의 눈(헤라). 몸 위에 그린다 */
+function drawFoeMarks(e, x, y, top) {
+  const g = game, s = view.s, tt = g.t;
+  if ((e.stoneU || 0) > tt) {   // 금 간 돌
+    ctx.strokeStyle = 'rgba(40,36,30,.85)'; ctx.lineWidth = 1.6 * s; ctx.beginPath();
+    ctx.moveTo(x - e.r * .6 * s, y - e.r * .5 * s); ctx.lineTo(x - e.r * .1 * s, y - e.r * .05 * s); ctx.lineTo(x - e.r * .35 * s, y + e.r * .45 * s);
+    ctx.moveTo(x + e.r * .55 * s, y - e.r * .6 * s); ctx.lineTo(x + e.r * .15 * s, y + e.r * .1 * s); ctx.stroke();
+  }
+  if ((e.charmU || 0) > tt) {   // 매혹: 머리 위 하트 두 개
+    for (let i = 0; i < 2; i++) { const hx = x + (i ? 7 : -6) * s, hy = top - (6 + i * 5 + Math.sin(tt * 6 + i * 2) * 2) * s, r = (i ? 3.2 : 4) * s; heart(hx, hy, r, i ? '#ff9ac0' : '#ff4f8b'); }
+  }
+  if ((e.markU || 0) > tt) {   // 공작의 눈
+    const mx = x, my = top - 9 * s, a = Math.min(1, ((e.markU || 0) - tt) * 3); ctx.globalAlpha = a;
+    ctx.fillStyle = '#1f7a5c'; ctx.beginPath(); ctx.ellipse(mx, my, 6 * s, 7.5 * s, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f2c84a'; ctx.beginPath(); ctx.ellipse(mx, my + .5 * s, 4.2 * s, 5.2 * s, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1aa8c8'; ctx.beginPath(); ctx.ellipse(mx, my + 1 * s, 2.6 * s, 3.3 * s, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#16245a'; ctx.beginPath(); ctx.arc(mx, my + 1.4 * s, 1.3 * s, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  }
+}
+function heart(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y + r); ctx.bezierCurveTo(x - r * 1.6, y - r * .2, x - r * .6, y - r * 1.4, x, y - r * .45); ctx.bezierCurveTo(x + r * .6, y - r * 1.4, x + r * 1.6, y - r * .2, x, y + r); ctx.fill(); }
 function heroFrame(p) {
   if (p.hurtT > 0) return 'hurt';
   if (p.spin > 0 && !p.onGround) return 'tuck';

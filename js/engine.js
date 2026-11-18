@@ -93,6 +93,13 @@ const sfx = {
     else if (k === 'bomb') { this.tone('square', 160, 60, .14, .3); this.noise(.12, .22, 900); }
     else if (k === 'soul') { this.tone('sine', 620, 980, .1, .13); this.tone('triangle', 310, 490, .1, .06); }
     else if (k === 'bolt') { this.noise(.05, .22, 9500); this.tone('sawtooth', 1500, 300, .06, .11); }
+    // v36 새 신
+    else if (k === 'wave') { this.noise(.09, .2, 2600); this.tone('sine', 520, 260, .08, .12); }   // 물줄기 쏴아
+    else if (k === 'feather') { this.noise(.06, .12, 6000); this.tone('triangle', 1100, 1500, .05, .08); }   // 깃털 휙
+    else if (k === 'lion') { this.tone('sawtooth', 150, 70, .16, .26); this.noise(.12, .2, 900); }   // 사자 포효 쿵
+    else if (k === 'gaze') { this.tone('sine', 880, 1320, .09, .12); this.tone('triangle', 440, 660, .1, .06); }   // 눈빛 핑
+    else if (k === 'note') { this._ni = ((this._ni || 0) + 1) % 5; const n = [523, 587, 659, 784, 880][this._ni]; this.tone('triangle', n, n, .12, .15); this.tone('sine', n * 2, n * 2, .08, .05); }   // 리라 음계
+    else if (k === 'rose') { this.noise(.05, .1, 4000); this.tone('sine', 900, 1200, .07, .08); }   // 꽃잎 사락
   },
   boom() { if (this.limit('bm', 50)) { this.noise(.2, .34, 1400); this.tone('sine', 120, 36, .2, .42); } },
   bigBoom() { this.noise(.5, .5, 1200); this.tone('sine', 90, 26, .6, .7); this.tone('square', 180, 40, .3, .24); },

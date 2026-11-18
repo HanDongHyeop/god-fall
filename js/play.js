@@ -244,6 +244,8 @@ function dmgNum(x, y, n, crit) {
   if (game.popups.length > 40) game.popups.shift();
 }
 function hitEnemy(e, dmg, crit, fromX, fromY) {
+  const st = game.st, tt = game.t;   // v36: 공작의 눈 표식(헤라) · 돌이 된 적(아테나)은 더 아프다
+  if ((e.markU || 0) > tt || ((e.stoneU || 0) > tt && st.stoneDmg)) dmg = Math.round(dmg * (1 + ((e.markU || 0) > tt ? st.mark : 0) + ((e.stoneU || 0) > tt ? st.stoneDmg || 0 : 0)));
   e.hp -= dmg; e.flash = .075; e.pop = 1; e.hbT = 1.2; if (!e.still && e.baseY !== undefined) e.baseY += 2; else e.y += e.kind === 'mound' || e.kind === 'tick' || e.kind === 'spit' ? 0 : 2;
   dmgNum(e.x, e.y - e.r - 2, dmg, crit);
   game.fx.push({ type: 'hit', x: fromX, y: fromY, r: crit ? 15 : 10, t: 0, life: .1, rot: Math.random() * 3 });
@@ -378,6 +380,9 @@ function gainShard(s) {
 const SHOT = {
   letter: { v: 1150, r: 5, range: 300 }, arrow: { v: 1500, r: 4, range: 380 }, wine: { v: 860, r: 7, range: 280 },
   bomb: { v: 620, r: 9, range: 260 }, soul: { v: 620, r: 7, range: 340 }, bolt: { v: 1700, r: 5, range: 300 },
+  // v36 새 신: 물줄기 · 공작 깃털 · 사자 충격파 · 메두사 눈빛 · 황금 음표 · 장미 꽃잎
+  wave: { v: 1400, r: 6, range: 330 }, feather: { v: 1250, r: 5, range: 320 }, lion: { v: 760, r: 11, range: 290 },
+  gaze: { v: 1650, r: 6, range: 360 }, note: { v: 1000, r: 6, range: 310 }, rose: { v: 1050, r: 4.5, range: 270 },
 };
 function fireBullet(x, y, vx, vy, up = false, ox = 0, o = {}) {
   const g = game, p = g.p, kind = o.kind || g.god_.shot, S = SHOT[kind], { dmg, crit } = rollDamage(o.mul || 1);
@@ -418,6 +423,7 @@ function onBulletHit(b, e) {
   // 히드라의 독니(전설): 맞은 자리에서 적을 쫓는 독니 3발로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
   if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .8, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; if (!isBig(e)) nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
+  godHit(b, e);   // v36 새 신의 맞았을 때 효과(skills.js)
 }
 
 /* ───── 1프레임 갱신 ───── */
@@ -505,7 +511,7 @@ function tick(dt) {
     const wasLast = p.ammo === 1;
     p.ammo--;
     p.attackPose = Math.max(.12, every); p.throwT = Math.max(.06, every * .5); p.shotN++; p.shots++;
-    const by = p.y + p.h / 2 + 3, hand = -p.flip * HAND_X;
+    const by = p.y + p.h / 2 + 3, hand = -p.flip * HAND_X * (g.god_.hand || 1);
     const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
     const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
     fireVolley(p.x, by, hand, mul, buff);
@@ -660,7 +666,8 @@ function updateEnemies(dt, jumpHeld) {
         e.x = clamp(e.x, TILE + 8, WORLD_W - TILE - 8); e.face = Math.sign(e.vx) || 1;
       }
     }
-    if (e.sk) { monSkillTick(e, dt); if (g.state === 'dying') return; if (!e.alive) continue; }
+    const charmed = (e.charmU || 0) > g.t;   // v36 아프로디테의 매혹: 능력을 쓰지 않는다
+    if (e.sk && !charmed) { monSkillTick(e, dt); if (g.state === 'dying') return; if (!e.alive) continue; }
     // 움직임 값: 기울임·늘어남·먼지에 쓴다
     const mvx = (e.x - ox0) / Math.max(dt, .001), mvy = (e.y - oy0) / Math.max(dt, .001);
     e.mvx = approachSnap(e.mvx || 0, mvx, 12, dt, .5); e.mvy = approachSnap(e.mvy || 0, mvy, 12, dt, .5);
@@ -674,7 +681,7 @@ function updateEnemies(dt, jumpHeld) {
     const feet = p.y + p.h / 2;
     const tLv = famLv('titan');   // v34 타이탄 묶음: 2단계부터 못 밟던 적도 밟는다
     if (p.vy > -60 && feet - e.y < e.r * 1.0) {
-      if (e.stomp || tLv >= 2) {
+      if (e.stomp || tLv >= 2 || (e.charmU || 0) > g.t) {
         // 밟기: 약한 적은 한 번에, 체력이 많아진 뒤에는 크게 깎는다
         const sd = stompDmg(e);   // v32: 몬스터 크기별 정해진 횟수(data.js STOMP). 공격력·카드로 세지지 않는다
         p.vy = (jumpHeld ? -T.stompHoldV : -T.stompV) * (1 + (g.st.stompBounce || 0));
@@ -705,7 +712,7 @@ function updateEnemies(dt, jumpHeld) {
       if (lv >= 3) { const n = Math.max(1, Math.round(Math.min(sd, (e.maxHp || sd)) * .2)); healBy(n); popup(p.x, p.y - 40, '+' + n, '#ff8aa0'); }
       if (e.hp <= 0) killEnemy(e, true);
       else { dmgNum(e.x, e.y - e.r, Math.round(sd), true); sfx.stomp(p.combo); g.hitStop = Math.max(g.hitStop, 4 / 60); g.shake = Math.max(g.shake, 6); }
-    } else if (p.inv <= 0) { refill(p); hurt(e.x, e.dmg); if (g.state === 'dying') return; }
+    } else if (p.inv <= 0 && !((e.charmU || 0) > g.t)) { refill(p); hurt(e.x, e.dmg); if (g.state === 'dying') return; }
   }
   if (g.enemies.length > 60) g.enemies = g.enemies.filter(e => e.alive);
 }
@@ -762,7 +769,7 @@ function updateBullets(dt) {
     if (isSolid(t)) {
       if (b.bounce > 0) { b.vy *= -.0; }
       b.dead = true; sparks(b.x, r * TILE, 2, 'rgba(255,255,255,.9)', 130, .18); sfx.paper();
-      if (b.kind === 'bomb' || b.kind === 'wine') onBulletHit(b, null);
+      if (b.kind === 'bomb' || b.kind === 'wine' || b.kind === 'wave') onBulletHit(b, null);
       if (t === BREAK) { const i = r * COLS + c; lvl.hp[i] -= b.dmg * (g.st.breaker ? 3 : 1); game.fx.push({ type: 'hit', x: b.x, y: r * TILE, r: 8, t: 0, life: .07, rot: 0 }); if (lvl.hp[i] <= 0) breakTile(c, r); else sfx.hit(); }
     }
   }
