@@ -293,7 +293,7 @@ function explode(x, y, r, opt = {}) {
   g.fx.push({ type: 'burst', x, y, r, t: 0, life: .16, ink: opt.ink || '#ff8a3a' });
   g.fx.push({ type: 'ring', x, y, r: r * 1.4, col: 'rgba(255,240,200,.95)', t: 0, life: .22 });
   chunks(x, y, 10, opt.cols || ['#ffd27a', '#ff8a3a', '#ffffff'], 280);
-  g.shake = Math.max(g.shake, Math.min(10, r * .14)); sfx.boom();
+  g.shake = Math.max(g.shake, Math.min(10, r * .14)); if (r >= 150) sfx.boom(); else sfx.pop(r);   // v38.1 헤파이스토스 · 디오니소스는 탄마다 터진다 → 큰 폭발음이 매번 겹쳐 크고 날카로웠다
   const dmg = opt.dmg !== undefined ? opt.dmg : Math.round(atkNow() * 1.2);
   if (g.minis) for (const m of g.minis) if (m.alive && Math.abs(m.x - x) < r + m.w * .4 && y > m.y - m.h && y < m.y + 12) { g.boss = m; hitBoss(Math.round(dmg * .6), false, x, y); }
   for (const e of g.enemies) if (e.alive && Math.hypot(e.x - x, e.y - y) < r + e.r) hitEnemy(e, dmg, false, e.x, e.y);

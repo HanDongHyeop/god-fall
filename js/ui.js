@@ -37,6 +37,7 @@ const UI = {
     sfx.muted = !!Meta.s.opt.mute;
     this.chapterView = Meta.s.chapter;
     this.buildNav(); this.warm(); this.go('battle');
+    $('tver').textContent = verText();   // v38.1 타이틀 아래 빌드 표시(폰에 새 버전이 들어왔는지 눈으로 확인)
     const dev = /[?&]dev=1/.test(location.search);
     if (dev) { $('gear').style.display = 'block'; }
     $('pause').onclick = () => this.pause();
@@ -137,7 +138,7 @@ const UI = {
     ], end);
   },
   enterGame() { $('lobby').classList.remove('on'); $('pause').classList.add('on'); $('mResult').classList.remove('on'); },
-  backToLobby() { game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); if (Meta.s.ftue && Meta.s.ftue.stage === 1) setTimeout(() => this.ftueLobby(), 450); },
+  backToLobby() { verCheck(); game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); if (Meta.s.ftue && Meta.s.ftue.stage === 1) setTimeout(() => this.ftueLobby(), 450); },
   pause() {
     const g = game; if (g.state !== 'play') return;
     g.state = 'pause'; input.clearAll(); sfx.tap();
@@ -454,8 +455,9 @@ const UI = {
     el.onclick = e => { const b = e.target.closest('[data-t]'); const p0 = Meta.power(); if (b && !b.disabled && Meta.talentUp(b.dataset.t)) { sfx.upgrade(); this.render(); powerPill(p0, Meta.power()); } };
   },
   settings() {
-    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">설정</div><button class="x" data-close>✕</button><div class="ip-acts"><button class="btn blue" id="stMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button></div><div class="ip-acts"><button class="btn blue" id="stIntro">인트로 다시 보기</button></div><div class="ip-acts"><button class="btn red" id="stReset">처음부터 다시</button></div><div class="note">GOD FALL 개발판. 저장은 이 브라우저에 됩니다.</div></div>`);
+    this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">설정</div><button class="x" data-close>✕</button><div class="ip-acts"><button class="btn blue" id="stMute">소리 ${sfx.muted ? '켜기' : '끄기'}</button></div><div class="ip-acts"><button class="btn blue" id="stIntro">인트로 다시 보기</button></div><div class="ip-acts"><button class="btn blue" id="stTut">튜토리얼 다시 하기</button></div><div class="ip-acts"><button class="btn red" id="stReset">처음부터 다시</button></div><div class="note">GOD FALL 개발판 ${verText()}. 저장은 이 브라우저에 됩니다.</div></div>`);
     $('stIntro').onclick = () => { this.closePop(); Intro.play(() => {}); };
+    $('stTut').onclick = () => { this.closePop(); $('lobby').classList.remove('on'); sfx.init(); startTutorial({ chapter: 0, replay: true }); };   // v38.1 예전 계정도 튜토리얼을 볼 수 있게
     $('stMute').onclick = e => { sfx.setMute(!sfx.muted); e.target.textContent = `소리 ${sfx.muted ? '켜기' : '끄기'}`; };
     $('stReset').onclick = e => { if (e.target.dataset.k) { Meta.reset(); this.closePop(); this.go('battle'); this.toast('처음부터 시작합니다'); } else { e.target.dataset.k = 1; e.target.textContent = '한 번 더 누르면 지워집니다'; } };
   },

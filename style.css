@@ -41,6 +41,7 @@ img { display: block; -webkit-user-drag: none; }
 #mTitle.on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); }
 .logo { display: flex; flex-direction: column; line-height: .88; font-size: calc(var(--u) * 25); animation: logoIn .7s cubic-bezier(.2, 1.4, .4, 1) both; }
 .tsub { font-size: calc(var(--u) * 4.2); color: #ffe9d0; text-shadow: 0 2px 6px rgba(0, 0, 0, .7); }
+.tver { position: absolute; bottom: calc(var(--safe-b) + var(--u) * 3); left: 0; right: 0; text-align: center; font-size: calc(var(--u) * 2.8); color: rgba(255, 255, 255, .9); letter-spacing: .04em; pointer-events: none; text-shadow: 0 1px 3px rgba(42, 15, 74, .9), 0 0 6px rgba(42, 15, 74, .6); }
 .tgo { position: absolute; bottom: calc(var(--safe-b) + var(--u) * 22); font-size: calc(var(--u) * 4.6); animation: blink 1.3s infinite; text-shadow: 0 2px 6px rgba(0, 0, 0, .8); }
 @keyframes logoIn { from { transform: scale(1.6) translateY(calc(var(--u) * -10)); opacity: 0; } }
 @keyframes blink { 50% { opacity: .45; } }

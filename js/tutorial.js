@@ -109,6 +109,7 @@ function exitTutorial() {
   const g = game, opt = (g.tutS && g.tutS.opt) || {};
   g.tut = false; g.tutS = null; Guide.stop(); sfx.door(); $('pause').style.visibility = '';
   const f = Meta.s.ftue; if (f && f.stage < 1) { f.stage = 1; Meta.save(); }
+  if (opt.replay) { UI.backToLobby(); UI.toast('튜토리얼을 마쳤어요'); return; }   // v38.1 설정의 '튜토리얼 다시 하기'는 로비로 돌아간다
   startRun(Object.assign({}, opt, { chapter: 0, noIntro: false }));
 }
 /* 새 계정 한 번짜리 안내(판 안) */

@@ -65,7 +65,7 @@ const sfx = {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-      this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .5; const lim = this.ctx.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .12; const soft = this.ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 9000; soft.Q.value = .5; this.master.connect(soft); soft.connect(lim); lim.connect(this.ctx.destination); this.loadPack();
+      this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .5; const lim = this.ctx.createDynamicsCompressor(); lim.threshold.value = -9; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .12; const soft = this.ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 7000; soft.Q.value = .5; this.master.connect(soft); soft.connect(lim); lim.connect(this.ctx.destination); this.loadPack();
     } catch (e) { this.ctx = null; }
   },
   tone(type, f0, f1, dur, vol = .3, delay = 0) {
@@ -101,6 +101,7 @@ const sfx = {
     else if (k === 'note') { this._ni = ((this._ni || 0) + 1) % 5; const n = [523, 587, 659, 784, 880][this._ni]; this.tone('triangle', n, n, .12, .12); this.tone('sine', n * 2, n * 2, .08, .04); }   // 리라 음계
     else if (k === 'rose') { this.noise(.05, .15, 4000); this.tone('sine', 900, 1200, .07, .12); }   // 꽃잎 사락
   },
+  pop() { this.boom(); },   // v38.1 탄이 터지는 작은 폭발. 소리 파일이 없을 때만 예전 폭발음
   boom() { if (this.limit('bm', 50)) { this.noise(.2, .34, 1400); this.tone('sine', 120, 36, .2, .42); } },
   bigBoom() { this.noise(.5, .5, 1200); this.tone('sine', 90, 26, .6, .7); this.tone('square', 180, 40, .3, .24); },
   bossHit() { this.tone('square', 180, 90, .07, .22); },
@@ -200,7 +201,8 @@ Object.assign(sfx, {
 // 이름: [파일, 크기, 재생 속도(인자 → 값), 같은 소리 최소 간격 ms]. 콤보 · 연쇄로 아주 조금씩만 높아진다(최대 +12% — '튀고 오락실 같다' 피드백).
 const SFX_FILE = {
   shot: ['shot_letter', .8],
-  boom: ['boom', .9, null, 50], bigBoom: ['bigBoom', 1], bossHit: ['bossHit', .8, null, 60], roar: ['roar', 1], rumble: ['rumble', .9],
+  boom: ['boom', .9, null, 50], pop: ['pop', .45, r => .94 + Math.min(Math.max((90 - (r || 60)) / 60, -.5), .5) * .12, 80],   // v38.1 pop = 탄 · 밟기 충격파가 터지는 소리(작게, 반지름이 클수록 조금 낮게)
+  bigBoom: ['bigBoom', 1], bossHit: ['bossHit', .8, null, 60], roar: ['roar', 1], rumble: ['rumble', .9],
   spit: ['spit', .7, null, 70], zap: ['zap', .7, null, 50], door: ['door', .8],
   buy: ['buy', .8], tap: ['tap', .7, null, 40], equip: ['equip', .8], upgrade: ['upgrade', .8], start: ['start', .9],
   cardOpen: ['cardOpen', .8], cardTick: ['cardTick', .5, null, 70], cardLock: ['cardLock', .8, t => 1 + (t || 0) * .05], cardOpen2: ['cardOpen', .45, () => .9],
@@ -225,7 +227,7 @@ for (const [name, [file, vol, rf, gap]] of Object.entries(SFX_FILE)) {
   sfx.shotOf = function (k) {
     const f = 'shot_' + k; if (!this.buf[f]) return old.call(this, k);
     let r = 1; if (k === 'note') { this._ni = ((this._ni || 0) + 1) % 5; r = [1, 1.06, 1.12, 1.19, 1.26][this._ni] * .9; }
-    this.play(f, .8, r);
+    this.play(f, .75, r);
   };
 }
 
