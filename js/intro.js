@@ -170,7 +170,7 @@ const Intro = (() => {
       el.querySelector('#introSkip').onclick = e => { e.stopPropagation(); finish(); };
     }
     if (!logo) { logo = new Image(); logo.src = 'assets/ui/logo.webp'; }
-    onDone = done; st = { i: 0, t: 0, clock: 0, prev: null, fired: new Set(), shake: [], flash: [], glow: [], punch: [], parts: [], end: null, done: false, ready: false, xf: null, bgm: null, prevBgm: sfx.bgmNow };
+    onDone = done; st = { i: 0, t: 0, clock: 0, prev: null, fired: new Set(), shake: [], flash: [], glow: [], punch: [], parts: [], end: null, done: false, ready: false, xf: null, bgm: null, prevBgm: sfx.bgmWant && !sfx.bgmWant.startsWith('intro') ? sfx.bgmWant : sfx.bgmNow };   // v38.2 '지금 나오는 곡'이 아니라 '틀려던 곡'으로 돌아간다: 로비 곡을 아직 푸는 중(bgmNow = null)에 다시 보기를 누르면 끝난 뒤 로비가 조용해졌다
     el.classList.add('on'); fit(); addEventListener('resize', fit);
     cx.setTransform(1, 0, 0, 1, 0, 0); cx.fillStyle = '#0c0818'; cx.fillRect(0, 0, cv.width, cv.height);
     const s0 = st; Promise.race([loadAll(), new Promise(r => setTimeout(r, 6000))]).then(() => { if (st === s0) { s0.ready = true; s0.t = 0; if (cuts[0].music) bgm(cuts[0].music); cuts.forEach(c => c.music && bufOf(c.music)); } });   // 2장 곡도 미리 풀어 둬야 탭하는 순간 바로 바뀐다

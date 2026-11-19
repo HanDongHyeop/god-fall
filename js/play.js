@@ -62,7 +62,8 @@ function startRun(opt = {}) {
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
-  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 };
+  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null;
+  g.firstRun = !!Meta.s.ftue && !(Meta.s.total.runs > 0) && !opt.debug; g.firstLegend = false;   // v39 첫 판 = 튜토리얼을 거친 새 계정이 처음 하는 판(한 판이라도 끝냈으면 아님)
   beginWave(opt.noIntro ? 0 : DESCENT.first); g.hintT = Meta.s.seenTip ? 0 : 4;
   Meta.s.seenTip = true;
   input.blockUntil = performance.now() + 150;
@@ -126,7 +127,7 @@ function buildWave() {
   for (let r = 0; r < rows; r++) { lvl.set(0, r, HARD); lvl.set(COLS - 1, r, HARD); }
   const lastRow = boss || rest ? F - arenaRows - 2 : F - 8;
   const put = (c, r, t) => { if (c > 0 && c < COLS - 1 && r > 7 + sh && r < lastRow) { lvl.set(c, r, t); if (t === BREAK) lvl.hp[r * COLS + c] = tileHp; } };
-  const landings = [];
+  const landings = [], breakLands = [];   // v39 breakLands = 부서지는 돌 뭉치 위(땅 괴물을 놓을 자리)
   let r = 11 + sh;
   // 안착 발판: 맵과 상관없이 같은 자리, 양옆은 내려가는 길
   if (sh) for (let c = 3; c <= 5; c++) lvl.set(c, sh, HARD);
@@ -142,6 +143,7 @@ function buildWave() {
     } else if (roll < .58) { // 부서지는 블록 뭉치
       const c0 = 1 + Math.floor(R() * (COLS - 4)), ww = 1 + Math.floor(R() * 3), hh = 1 + Math.floor(R() * 2);
       for (let i = 0; i < ww; i++) for (let t = 0; t < hh; t++) put(c0 + i, r + t, BREAK);
+      if (ww >= 2) breakLands.push([c0, c0 + ww - 1, r]);
     } else if (roll < .76) { // 통과 발판
       const c0 = 1 + Math.floor(R() * (COLS - 4)), ww = 2 + Math.floor(R() * 2);
       for (let i = 0; i < ww; i++) put(c0 + i, r, ONEWAY);
@@ -210,18 +212,29 @@ function buildWave() {
   }
   // 땅 위 적과 장식
   const walkChance = rest ? -1 : Math.min(.82, .5 + L * .035);
-  for (const [c0, c1, rr] of landings) {
-    const dc = c0 + Math.floor(R() * (c1 - c0 + 1));
-    if (R() < .22 && lvl.at(dc, rr) !== EMPTY && lvl.at(dc, rr) !== SPIKE && lvl.at(dc, rr - 1) === EMPTY) g.decor.push({ x: (dc + .5) * TILE, y: rr * TILE, n: R() < .5 ? 'o_decor' : 'o_decor2' });
-    if (R() > walkChance) continue;
-    const c = c0 + Math.floor(R() * (c1 - c0 + 1));
-    if (lvl.at(c, rr) === SPIKE || lvl.at(c, rr - 1) !== EMPTY) continue;
+  const putWalker = (c, rr) => {
     const tb = g.biome.enemies, rollK = R(), W_ = tb.mound + tb.tick + tb.spit;
     let kind = rollK < tb.mound / W_ ? 'mound' : rollK < (tb.mound + tb.tick) / W_ ? 'tick' : 'spit';
     if (w < 2 && g.chapter === 0) kind = 'mound';
     if (kind === 'spit' && w < 3 && g.chapter === 0) kind = 'mound';
     const rad = ENEMY[kind].r;
     g.enemies.push(mkEnemy(kind, (c + .5) * TILE, rr * TILE - rad, { dir: R() < .5 ? -1 : 1, spd: (32 + g.lvM * 3) * (R() < .3 ? 1.4 : 1), shootT: 1 + R() * 2 }));
+  };
+  for (const [c0, c1, rr] of landings) {
+    const dc = c0 + Math.floor(R() * (c1 - c0 + 1));
+    if (R() < .22 && lvl.at(dc, rr) !== EMPTY && lvl.at(dc, rr) !== SPIKE && lvl.at(dc, rr - 1) === EMPTY) g.decor.push({ x: (dc + .5) * TILE, y: rr * TILE, n: R() < .5 ? 'o_decor' : 'o_decor2' });
+    if (R() > walkChance) continue;
+    const c = c0 + Math.floor(R() * (c1 - c0 + 1));
+    if (lvl.at(c, rr) === SPIKE || lvl.at(c, rr - 1) !== EMPTY) continue;
+    putWalker(c, rr);
+  }
+  // v39 부서지는 돌 위의 땅 괴물(사용자 요청): 돌을 미리 쏴서 부수면 괴물이 아래로 떨어져 거기서 다시 돌아다닌다(깎인 체력 그대로).
+  //   옆 돌만 부서지면 다닐 길만 줄고(끝에서 돌아선다), 딛고 선 돌이 부서져야 떨어진다(updateEnemies의 땅 괴물 낙하). 들이받기(뿔 · 황소)는 머리로 돌을 부순다
+  if (!rest) for (const [c0, c1, rr] of breakLands) {
+    if (R() > walkChance * .75) continue;
+    const c = c0 + Math.floor(R() * (c1 - c0 + 1));
+    if (lvl.at(c, rr) !== BREAK || lvl.at(c, rr - 1) !== EMPTY) continue;
+    putWalker(c, rr);
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   const p = g.p;
@@ -518,7 +531,7 @@ function tick(dt) {
     fireVolley(p.x, by, hand, mul, buff);
     if (has('echo') && p.shots % 2 === 0) fireVolley(p.x, by - 18, hand, mul, buff);   // v33: 갈래 탄도 통째로 한 번 더
     if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .8, bounce: 3 });
-    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: mul * .7, seekR: 60, seekTurn: 10 });   // 올빼미 탄도 공격력·치명·관통·번개·불꽃·독니·유도가 그대로 붙는다
+    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: mul * .7 * petMul(), seekR: 60, seekTurn: 10 });   // 올빼미 탄도 공격력·치명·관통·번개·불꽃·독니·유도가 그대로 붙는다
     if (has('strike') && p.shots % 4 === 0) smite();
     g.fx.push({ type: 'gustHand', x: p.x + hand, y: by - 3, t: 0, life: .09 });
     if (p.shotN % 3 === 0) feathers(p.x + (Math.random() - .5) * 20, p.y - 26, 1, 40);
@@ -538,6 +551,11 @@ function tick(dt) {
   p.vy = Math.min(p.vy + T.grav * dt, T.maxFall);
   const wasGround = p.onGround; p.onGround = false;
   moveX(p, p.vx * dt);
+  if (p.vy < 0 && famLv('butt') >= 2) {   // v39 들이받기: 머리가 닿는 부서지는 돌을 부순다(그 위의 괴물은 떨어진다). 올라가던 힘은 크게 줄어든다
+    const hr = Math.floor((p.y + p.vy * dt - p.h / 2) / TILE), hc0 = Math.floor((p.x - p.w / 2 + 1) / TILE), hc1 = Math.floor((p.x + p.w / 2 - 1) / TILE); let n = 0;
+    for (let c = hc0; c <= hc1; c++) if (lvl.at(c, hr) === BREAK) { breakTile(c, hr); n++; }
+    if (n) { p.vy *= .35; p.squash = .22; g.kick = -4; g.fx.push({ type: 'ring', x: p.x, y: p.y - p.h / 2, r: 44, col: famLv('butt') >= 3 ? 'rgba(255,90,110,.95)' : 'rgba(255,214,120,.95)', t: 0, life: .2 }); }
+  }
   const hit = moveY(p, p.vy * dt);
   // v31 보이지 않는 천장: 보스·중간 보스·연습 방은 위를 벽돌로 막지 않고 화면 위 끝에서 멈춘다
   if (g.room || (g.isBossWave && g.camLock) || g.tut) { const top = g.cam + 6; if (p.y - p.h / 2 < top) { p.y = top + p.h / 2; if (p.vy < 0) p.vy = 0; } }
@@ -589,7 +607,7 @@ function tick(dt) {
   updateBullets(dt);
   tickWaves(edt); if (g.state === 'dying') return;
   // 궤도 구슬·천둥 폭풍(skills.js)
-  orbTick(edt); stormTick(dt);
+  orbTick(edt); stormTick(dt); petTick(edt);
   // 파편
   const magnet = has('magnet') ? 112 : 56;   // v33 자석 신상: 2배
   for (const s of g.shards) {
@@ -621,7 +639,7 @@ function updateEnemies(dt, jumpHeld) {
     const tt = g.t + (e.ph || 0), k = e.kind, ox0 = e.x, oy0 = e.y;
     if (k === 'mound' || k === 'tick' || k === 'spit') {
       const c = Math.floor(e.x / TILE), r = Math.floor((e.y + e.r + 2) / TILE);
-      if (!lvl.at(c, r)) { e.vy = Math.min(e.vy + T.grav * dt, 400); e.y += e.vy * dt; const rr = Math.floor((e.y + e.r) / TILE); if (lvl.at(Math.floor(e.x / TILE), rr)) { e.y = rr * TILE - e.r; e.vy = 0; } }
+      if (!lvl.at(c, r)) { e.vy = Math.min(e.vy + T.grav * dt, 400); e.y += e.vy * dt; const rr = Math.floor((e.y + e.r) / TILE); if (lvl.at(Math.floor(e.x / TILE), rr)) { if (e.vy > 160) puff(e.x, rr * TILE - 2, 4, 10, 5); e.y = rr * TILE - e.r; e.vy = 0; } }
       else if (k !== 'spit') {
         const nx2 = e.x + e.dir * e.spd * dt * (e.tele > 0 ? 0 : 1), front = Math.floor((nx2 + e.dir * e.r) / TILE);
         if (!lvl.at(front, r) || isSolid(lvl.at(front, Math.floor(e.y / TILE)))) e.dir *= -1; else e.x = nx2;

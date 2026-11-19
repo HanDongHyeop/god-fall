@@ -337,7 +337,7 @@ function drawHero() {
       ctx.fillStyle = on ? '#bff3ff' : fl ? '#ff5068' : 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.arc(x, y0, r, 0, 7); ctx.fill();
     }
   }
-  if (has('owl')) { const im2 = IMG.c_owl, ox = wx(p.x + p.face * -24), oy = wy(p.y - 26 + Math.sin(g.t * 4) * 4); if (ok(im2)) ctx.drawImage(im2, ox - 11 * s, oy - 11 * s, 22 * s, 22 * s); }
+  drawPets();   // v39 동료 신수(올빼미 포함, pets.js)
   drawAuraFront();   // v33 신성 폭주 아우라(몸 앞 불씨·테두리). 예전의 금빛 원 하나는 없앴다
 }
 /* 새 이펙트: 타격 별, 방사선, 시체 섬광, 낙뢰, 전격 */
