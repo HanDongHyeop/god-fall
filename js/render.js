@@ -439,9 +439,11 @@ function drawHUD() {
     const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, '#3a86f0'); xg.addColorStop(1, '#7ff0ff'); ctx.fillStyle = max ? '#ffd24a' : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
     ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut(max ? 'MAX' : `Lv.${g.runLv + 1}`, left + bw + 4 * s, xy + xh / 2, max ? '#ffd24a' : '#bfefff', 2.4); ctx.textAlign = 'center';
   }
+  drawZoneHud(left, top + bh + 10.5 * s, bw);   // v41 수중: 산소 막대
+  drawModeHud();   // v42 도전 모드: 남은 시간 · 장어 체력
   // 판 표시: 챕터 안의 6칸(전투·휴식·보스). 휴식 칸은 초록 잎, 마지막은 보스 해골
   const wv = stageOf(g.wave) - 1, pipX = W * .635, pipY = top + 8 * s, gap = 14.5 * s, pr = 6.6 * s;
-  for (let i = 0; i < STAGES; i++) {
+  for (let i = 0; i < (g.mode ? 0 : STAGES); i++) {   // v42 도전 모드에서는 판 표시를 감춘다
     const x = pipX + (i - (STAGES - 1) / 2) * gap, done = i < wv, cur = i === wv, kind = STAGE_PLAN[i];
     ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill();
     if (kind === 'boss') { const sk = IMG.ui_skull; if (ok(sk)) ctx.drawImage(sk, x - pr * .85, pipY - pr * .85, pr * 1.7, pr * 1.7); if (!cur) { ctx.fillStyle = 'rgba(10,8,20,.45)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill(); } }
@@ -450,7 +452,7 @@ function drawHUD() {
     if (cur) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1.8 * s; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.stroke(); }
   }
   const pw = 80 * s, prog = g.room ? 1 : clamp(p.y / Math.max(1, (g.isBossWave ? g.arenaTop * TILE : g.floorRow * TILE)), 0, 1);
-  if (!g.boss) { ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw, 4 * s); ctx.fillStyle = '#ffd24a'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw * prog, 4 * s); }
+  if (!g.boss && !g.mode) { ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw, 4 * s); ctx.fillStyle = '#ffd24a'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw * prog, 4 * s); }
   // 파편
   const gx = W - 28 * s; ctx.font = `${15 * s}px ${FONT}`; ctx.textAlign = 'right';
   textOut(p.shards, gx, top + 9 * s, '#fff');
@@ -508,6 +510,7 @@ function render(dt) {
   // 중간 보스는 발판과 어두운 막 앞에 그린다. 바닥 아래만 잘라 땅에서 올라오는 모습은 그대로 둔다
   if (g.minis) { ctx.save(); ctx.beginPath(); ctx.rect(0, -view.H, view.W, view.H + wy(g.room.floorY)); ctx.clip(); drawMinis(); ctx.restore(); drawBossBits(); }
   for (const j of g.jars) if (j.alive) drawJar(j);
+  drawZoneObjs();   // v41 구역 물건
   for (const s of g.shards) drawShard(s);
   drawHearts();
   drawHaz();
@@ -515,10 +518,12 @@ function render(dt) {
   drawEnemyShots(); drawBullets();
   if (g.state !== 'dying' && g.state !== 'continue') { drawHero(); drawSkillsFront(); }
   drawFx(); drawFx2();
+  if (g.mode) drawModeFront();   // v42 장어는 주인공보다 앞 레이어
   if (g.room) drawRoomFront();
   drawDoorPrompt(); drawRestPrompt();
   ctx.restore();
   if (g.room) drawTrapWarn();   // v40 함정 경고(화면 전체)
+  drawZoneScreen(); drawZoneBanner();   // v41 어둠 · 물빛 · 구역 알림
   // 전체 화면 효과. 어둠(첫 번째 어둠의 2단계): 주인공 둘레만 보인다
   if (g.dark > 0 && g.p) { const px = wx(g.p.x), py = wy(g.p.y), q = ctx.createRadialGradient(px, py, 70 * view.s, px, py, 170 * view.s); q.addColorStop(0, 'rgba(6,2,16,0)'); q.addColorStop(1, `rgba(6,2,16,${.9 * Math.min(1, g.dark)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
   if (g.whiteout > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.85, g.whiteout)})`; ctx.fillRect(0, 0, view.W, view.H); }

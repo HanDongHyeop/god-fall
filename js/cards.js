@@ -30,6 +30,10 @@ const CARDS = [
   { id: 'pet_fire', name: '불씨 도롱뇽', tier: '일반', pet: true, desc: '도롱뇽이 따라다니며 가까운 적에게 불씨를 뱉습니다(피해 90%).' },
   { id: 'pet_snake', name: '새끼 히드라', tier: '일반', pet: true, desc: '새끼 히드라가 따라다니며 독을 뱉습니다(피해 60%). 맞은 적은 3초 동안 중독됩니다.' },
   { id: 'pet_bolt', name: '아기 독수리', tier: '일반', pet: true, desc: '아기 독수리가 번개를 모았다가 가까운 적에게 한 번에 내리칩니다(피해 220%).' },
+  // v41 구역 전용(zone): 그 구역 챕터에서만 나온다. 구역의 규칙을 없애지는 않고 덜어 준다
+  { id: 'z_lung', name: '큰 숨', tier: '일반', zone: 'water', noMini: true, desc: '산소 최대치 +40. 조개를 밟으면 숨이 더 많이 찹니다.', apply: () => { game.o2 = Math.min(o2Max(), (game.o2 || 0) + 40); } },
+  { id: 'z_lamp', name: '횃불지기의 등불', tier: '일반', zone: 'dark', noMini: true, desc: '어둠 속 시야가 40% 넓어집니다.' },
+  { id: 'z_cloak', name: '깃털 망토', tier: '일반', zone: 'spike', noMini: true, desc: '떨어지는 속도가 15% 느려집니다.' },
   // ── 희귀: 탄·몸에 새 모양이 붙는다 ──
   { id: 'twin', name: '두 갈래 탄', tier: '희귀', fam: 'shot', lv: 1, desc: '탄이 나란히 2발씩 나갑니다. 1발 피해는 75%.' },
   { id: 'seek2', name: '사냥꾼의 눈', tier: '희귀', fam: 'seek', lv: 2, w: 1.2, desc: '탄이 조금 떨어진 적에게도 휘어 갑니다.' },
@@ -46,6 +50,10 @@ const CARDS = [
   { id: 'interest', name: '이자 신탁', tier: '희귀', desc: '웨이브를 넘길 때 가진 파편의 25%를 더 받습니다.', noMini: true },
   { id: 'member', name: '떠돌이 회원권', tier: '희귀', desc: '웨이브마다 좌판이 나오고 30% 할인됩니다.', noMini: true },
   { id: 'pet_ice', name: '눈송이 정령', tier: '희귀', pet: true, desc: '눈송이 정령이 따라다니며 얼음 조각을 쏩니다(피해 80%). 맞은 적은 잠깐 업니다.', note: '보스와 중간 보스는 얼지 않습니다' },
+  { id: 'z_gill', name: '아가미 부적', tier: '희귀', zone: 'water', noMini: true, desc: '산소가 30% 느리게 줄어듭니다.' },
+  { id: 'z_pearl', name: '진주 조개잡이', tier: '희귀', zone: 'water', noMini: true, desc: '조개를 밟을 때마다 체력 4% 회복.' },
+  { id: 'z_ember', name: '불씨 주머니', tier: '희귀', zone: 'dark', noMini: true, desc: '횃불을 켤 때마다 체력 5% 회복.' },
+  { id: 'z_thorn', name: '굳은살', tier: '희귀', zone: 'spike', desc: '다친 뒤 무적 시간이 2배가 됩니다.' },
   { id: 'pet_up', name: '신수 조련', tier: '희귀', need: () => hasPet(), desc: '따라다니는 동료의 피해 +40%.' },
   // ── 영웅: 강한 동작. 꼬리·막기처럼 눈에 띄는 연출이 붙는다 ──
   { id: 'pet_laser', name: '아르고스의 눈', tier: '영웅', pet: true, desc: '떠다니는 눈이 가까운 적 쪽으로 광선을 쏩니다. 지나는 길의 적 모두에게 3번(1번 피해 90%).' },
@@ -90,7 +98,7 @@ const CARD_GROUP = {
   stomp: { name: '밟기', ids: ['titan', 'titan2', 'titan3', 'horn', 'bull', 'wings', 'overload', 'avatar', 'swift'] },
   ammo: { name: '탄창', ids: ['rapid1', 'rapid', 'mag', 'atlas', 'cell', 'might', 'keen', 'ares'] },
 };
-const cardPool = () => CARDS.filter(c => (c.repeat || !game.cards.has(c.id)) && !(c.fam && famLv(c.fam) >= c.lv) && !(c.need && !c.need()));   // v39 need = 조건이 맞을 때만 나온다(동료 강화는 동료가 있을 때)   // 사다리: 같은 묶음의 같거나 낮은 등급은 뺀다
+const cardPool = () => CARDS.filter(c => (c.repeat || !game.cards.has(c.id)) && !(c.fam && famLv(c.fam) >= c.lv) && !(c.need && !c.need()) && !(c.zone && c.zone !== game.zone));   // v39 need = 조건이 맞을 때만 나온다(동료 강화는 동료가 있을 때)   // 사다리: 같은 묶음의 같거나 낮은 등급은 뺀다
 function applyCard(c) {
   const g = game;
   if (!c.repeat) g.cards.add(c.id);

@@ -12,7 +12,7 @@ const ZONE_INFO = {
 };
 const ZONE = {
   dark: { sight: 118, torch: 170, every: [15, 19], gate: 2 },                                  // 시야 반지름 · 켠 횃불이 밝히는 반지름 · 봉인 바닥 간격(칸) · 열리는 틈(칸)
-  water: { grav: .5, maxFall: .52, run: .86, o2: 100, drain: 3.6, clam: 45, hurt: .06, every: 1 },   // 산소 100이 약 28초. 0이면 1초마다 최대 체력의 6%
+  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13 },   // 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%
   spike: { spacing: .55, net: [16, 20], gap: 3, wallDmg: 18 },                                  // 떠다니는 괴물 간격 배수 · 가시 바닥 간격(칸) · 틈(칸) · 벽 가시 피해(챕터 배수 전)
 };
 for (const [k, f] of [['z_torch', 'torch'], ['z_clam', 'clam_shut'], ['z_clam_open', 'clam_open']]) loadImg(k, `assets/map/zone/${f}.webp`);
@@ -33,6 +33,7 @@ function zoneBuild(R, F, lastRow, sh) {
         clearRows(r - 3, r - 1); for (let c = 1; c < COLS - 1; c++) lvl.set(c, r, HARD);
         const gc = 1 + Math.floor(R() * (COLS - 2 - ZONE.dark.gate + 1)), gate = []; for (let i = 0; i < ZONE.dark.gate; i++) gate.push(gc + i);
         let tc; do { tc = 1 + Math.floor(R() * (COLS - 2)); } while (Math.abs(tc - gc - (ZONE.dark.gate - 1) / 2) < 2.4);
+        for (const c of gate) for (let q = 1; q <= 3; q++) if (r + q < lastRow) lvl.set(c, r + q, EMPTY);   // 틈 바로 아래가 돌로 막혀 있으면 열려도 못 내려간다(30판 중 2판) → 3칸을 비운다
         g.torches.push({ x: (tc + .5) * TILE, y: r * TILE, row: r, gate, lit: false, t: 0 });
         g.enemies = g.enemies.filter(e => !(e.y > (r - 3.2) * TILE && e.y < (r + 1.2) * TILE)); g.jars = g.jars.filter(j => !(j.y > (r - 3.2) * TILE && j.y < (r + 1.2) * TILE));
       }
@@ -42,7 +43,7 @@ function zoneBuild(R, F, lastRow, sh) {
     // 조개: 발판 위(항아리 자리 + 따로 찾은 자리)에 약 10칸마다 하나
     let last = -99;
     for (let r = 14 + sh; r < lastRow - 2; r++) {
-      if (r - last < 9) continue;
+      if (r - last < ZONE.water.gap) continue;
       const cs = []; for (let c = 1; c < COLS - 1; c++) { const t = lvl.at(c, r); if ((t === HARD || t === ONEWAY) && lvl.at(c, r - 1) === EMPTY && lvl.at(c, r - 2) === EMPTY) cs.push(c); }
       if (!cs.length) continue;
       const c = cs[Math.floor(R() * cs.length)], x = (c + .5) * TILE, y = r * TILE;
@@ -83,7 +84,8 @@ function zoneTick(dt) {
   } else if (g.zone === 'water') {
     const Z = ZONE.water, max = o2Max();
     for (const c of g.clams) {
-      c.t += dt; if (c.open || !stompOn(c, 16, 20)) continue;
+      c.t += dt; if (!c.open && Math.random() < dt * 1.6 && Math.abs(c.y - p.y) < 500) g.fx.push({ type: 'dot', x: c.x + (Math.random() - .5) * 10, y: c.y - 20, vx: 0, vy: -40, t: 0, life: .9, r: 2, col: 'rgba(200,245,255,.8)', g: 0 });   // 닫힌 조개의 공기 방울(그리기가 아니라 여기서 만든다: 카드 창이 떠 있는 동안 쌓이지 않게)
+      if (c.open || !stompOn(c, 16, 20)) continue;
       c.open = true; c.t = 0; p.vy = -T.stompV * .9; p.squash = -.22; refill(p); g.o2 = Math.min(max, g.o2 + Z.clam + (has('z_lung') ? 15 : 0)); sfx.ping(); vibrate(20);
       g.fx.push({ type: 'ring', x: c.x, y: c.y - 16, r: 70, col: 'rgba(140,230,255,.95)', t: 0, life: .35 }); popup(c.x, c.y - 50, '숨 +', '#9feaff', true);
       for (let i = 0; i < 10; i++) g.fx.push({ type: 'dot', x: c.x + (Math.random() - .5) * 24, y: c.y - 14, vx: (Math.random() - .5) * 40, vy: -60 - Math.random() * 90, t: 0, life: .9, r: 2 + Math.random() * 3, col: 'rgba(200,245,255,.9)', g: 0 });
@@ -119,12 +121,11 @@ function drawZoneObjs() {
     const x = wx(c.x), y = wy(c.y); if (y < -80 || y > view.H + 80) continue;
     const im = c.open ? IMG.z_clam_open : IMG.z_clam, h = (c.open ? 44 : 30) * s * (c.open ? Math.min(1, .7 + c.t * 3) : 1 + .04 * Math.sin(g.t * 3 + c.x));
     if (ok(im)) { const w = h * im.naturalWidth / im.naturalHeight; ctx.globalAlpha = c.open ? .8 : 1; ctx.drawImage(im, x - w / 2, y - h + 2 * s, w, h); ctx.globalAlpha = 1; }
-    if (!c.open && Math.random() < .03) g.fx.push({ type: 'dot', x: c.x + (Math.random() - .5) * 10, y: c.y - 20, vx: 0, vy: -40, t: 0, life: .9, r: 2, col: 'rgba(200,245,255,.8)', g: 0 });
   }
   if (g.zone === 'spike') {   // 양쪽 벽의 가시 띠(화면에 보이는 만큼)
     const top = Math.floor(g.cam / 14) * 14, n = Math.ceil(view.worldH / 14) + 2;
     for (let i = 0; i < n; i++) {
-      const yy = wy(top + i * 14), x0 = wx(TILE), x1 = wx(WORLD_W - TILE), w = 9 * s, hh = 6.2 * s;
+      const yy = wy(top + i * 14), x0 = wx(TILE), x1 = wx(WORLD_W - TILE), w = 13 * s, hh = 6.6 * s;
       for (const [bx, d] of [[x0, 1], [x1, -1]]) { ctx.fillStyle = '#3a1322'; ctx.beginPath(); ctx.moveTo(bx, yy); ctx.lineTo(bx + d * w, yy + hh); ctx.lineTo(bx, yy + hh * 2); ctx.fill(); ctx.fillStyle = '#ff5a7a'; ctx.beginPath(); ctx.moveTo(bx + d * w * .45, yy + hh * .55); ctx.lineTo(bx + d * w, yy + hh); ctx.lineTo(bx + d * w * .45, yy + hh * 1.45); ctx.fill(); }
     }
   }
@@ -141,10 +142,19 @@ function drawZoneScreen() {
   if (g.zone === 'dark') {
     const holes = [[wx(p.x), wy(p.y - 6), zoneSight() * s]];
     for (const t of g.torches) if (t.lit) { const y = wy(t.y - 30); if (y > -300 * s && y < H + 300 * s) holes.push([wx(t.x), y, ZONE.dark.torch * s * Math.min(1, .3 + t.t * 2)]); }
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); for (const [x, y, r] of holes) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2, true); }
-    ctx.fillStyle = 'rgba(4,3,10,.94)'; ctx.fill('evenodd'); ctx.restore();
-    // 구멍 가장자리를 부드럽게: 안쪽으로 번지는 고리(겹친 구멍 안은 서로 밝혀 주므로 가장 바깥 고리만 살짝 보인다)
-    for (const [x, y, r] of holes) { const rg = ctx.createRadialGradient(x, y, r * .55, x, y, r); rg.addColorStop(0, 'rgba(4,3,10,0)'); rg.addColorStop(1, 'rgba(4,3,10,.9)'); ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip(); let lone = true; for (const [x2, y2, r2] of holes) if ((x2 !== x || y2 !== y) && Math.hypot(x2 - x, y2 - y) < r2) lone = false; if (lone) { ctx.fillStyle = rg; ctx.fillRect(x - r, y - r, r * 2, r * 2); } ctx.restore(); }
+    // 어둠 = 가로 띠로 나눠 '구멍들의 합집합'을 뺀 곳만 칠한다(구멍이 겹쳐도 겹친 곳이 다시 어두워지지 않는다). 반지름을 줄여 가며 3번 겹쳐 가장자리를 부드럽게
+    const band = Math.max(3, Math.round(2.2 * s));
+    for (const [k, a] of [[.7, .38], [.86, .5], [1, .8]]) {
+      ctx.fillStyle = `rgba(4,3,10,${a})`;
+      for (let y0 = 0; y0 < H; y0 += band) {
+        const yc = y0 + band / 2, iv = [];
+        for (const [x, y, r0] of holes) { const r = r0 * k, dy = yc - y; if (Math.abs(dy) < r) { const hw = Math.sqrt(r * r - dy * dy); iv.push([x - hw, x + hw]); } }
+        if (!iv.length) { ctx.fillRect(0, y0, W, band); continue; }
+        iv.sort((p1, p2) => p1[0] - p2[0]); let cur = 0;
+        for (const [l, r] of iv) { if (l > cur) ctx.fillRect(cur, y0, l - cur, band); if (r > cur) cur = r; }
+        if (cur < W) ctx.fillRect(cur, y0, W - cur, band);
+      }
+    }
     // 꺼진 횃불의 불씨는 어둠 위에도 보인다
     for (const t of g.torches) if (!t.lit) { const x = wx(t.x), y = wy(t.y - 30); if (y < -20 || y > H + 20) continue; const a = .5 + .4 * Math.sin(g.t * 5 + t.x); ctx.fillStyle = `rgba(255,150,60,${a})`; ctx.beginPath(); ctx.arc(x, y, 3 * s, 0, 7); ctx.fill(); ctx.fillStyle = `rgba(255,170,80,${a * .25})`; ctx.beginPath(); ctx.arc(x, y, 12 * s, 0, 7); ctx.fill(); }
   }
@@ -162,7 +172,7 @@ function drawZoneHud(left, y, bw) {
 /* 판 시작 알림: 구역 이름과 규칙 한 줄(2.6초) */
 function drawZoneBanner() {
   const g = game, s = view.s, W = view.W, H = view.H; if (!g.zone || g.room || g.zoneT === undefined || g.zoneT > 2.6 || g.state === 'card') return;
-  const Z = ZONE_INFO[g.zone], a = clamp(g.zoneT / .25, 0, 1) * clamp((2.6 - g.zoneT) / .4, 0, 1), y = H * .3;
+  const Z = ZONE_INFO[g.zone], a = clamp(g.zoneT / .25, 0, 1) * clamp((2.6 - g.zoneT) / .4, 0, 1), y = H * .355;   // 판 알림 띠 바로 아래
   ctx.globalAlpha = a; ctx.fillStyle = 'rgba(8,6,16,.78)'; ctx.fillRect(0, y - 30 * s, W, 60 * s); ctx.fillStyle = Z.col; ctx.fillRect(0, y - 30 * s, W, 2 * s); ctx.fillRect(0, y + 28 * s, W, 2 * s);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${22 * s}px ${FONT}`; textOut(Z.title, W / 2, y - 8 * s, Z.col, 3.6); ctx.font = `${13 * s}px ${FONT}`; textOut(Z.rule, W / 2, y + 15 * s, '#fff', 2.8);
   ctx.globalAlpha = 1;

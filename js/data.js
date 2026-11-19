@@ -269,6 +269,9 @@ const MINI = { power: .4, tempo: .55, hp: .55, minShots: 24,
    챕터 12개: 1~6은 맵 6종, 7~12는 같은 맵의 '심층'(더 어둡고, 능력·강화 몬스터가 많고, 더 단단하다).
    g.wave = 통산 판 번호(챕터 c의 s번째 판 = c*6 + s). 난이도는 판 번호가 아니라 난이도 단계 dlv로 잰다 */
 const STAGES = 6, STAGE_PLAN = ['fight', 'fight', 'rest', 'fight', 'fight', 'boss'];
+/* v41 구역 규칙(zones.js): 챕터마다 하나. 테마에 맞췄다 — 2 스틱스 강 = 수중, 4 코키토스(얼음) = 가시 림보, 6 에레보스(어둠) = 지하묘지. 1 · 3 · 5는 기본 규칙(쉬어 가는 챕터).
+   심연(7~12챕터)은 기본 없이 세 규칙이 돌아간다. 보스 판 · 휴식 판에는 규칙이 없다 */
+const ZONE_PLAN = [null, 'water', null, 'spike', null, 'dark', 'spike', 'dark', 'water', 'dark', 'water', 'spike'];
 const CHAPTERS = 12;
 /* 휴식 판(rest.js): 어떤 휴식이 나올지와 룰렛 칸(w = 무게). 카드 칸은 희귀부터 사다리로 오른다 */
 const REST = {

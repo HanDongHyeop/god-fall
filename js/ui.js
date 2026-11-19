@@ -95,10 +95,11 @@ const UI = {
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
     setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
       <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div></div>`);
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
       const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
       if (e.target.closest('#bStart')) this.start();
+      if (e.target.closest('#bModes')) { sfx.tap(); this.openModes(); }
     };
   },
   start() {
@@ -171,6 +172,24 @@ const UI = {
     el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? `챕터 ${r.chapter + 1} 클리어!` : '심연에 떨어졌다'}</div>
       <div class="rs-g"><div><b class="oL">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>통과한 판</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.high || 0}번</b>신성 폭주</div></div>
       <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${REWARD.gemFirstClear}</div>` : ''}${rw.newGod ? `<div class="rs-note first oL">새 신 ${GOD_BY[rw.newGod].name} 합류!</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
+      <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
+    $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
+    sfx.reward();
+  },
+
+  /* v42 도전 모드: 목록 창과 결과 창 */
+  openModes() {
+    const card = id => { const M = MODES[id], open = modeOpen(id), m = modeState(id), left = modeLeft(id);
+      return `<div class="md ${open ? '' : 'lock'}"><div class="md-t">${M.name}</div><div class="md-s">${M.sub}</div><div class="md-i">${open ? `최고 기록 <b>${m.best || 0}%</b> · 오늘 남은 횟수 <b>${left}/${M.tries}</b>` : `챕터 ${M.open}을 깨면 열립니다`}</div><button class="btn ${id === 'eel' ? 'red' : 'gold'}" data-mode="${id}" ${open && left > 0 ? '' : 'disabled'}>${open ? (left > 0 ? '도전하기' : '내일 다시') : '잠김'}</button></div>`; };
+    this.popup(`<div class="card-pop modes" style="--c:#a64af0;--d:#4e1a8c"><div class="hd">도전</div><button class="x" data-close>✕</button>${card('seal')}${card('eel')}<div class="note">도전은 에너지를 쓰지 않습니다. 하루 횟수는 날이 바뀌면 다시 찹니다.</div></div>`);
+    $('pop').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { if (!Meta.s.equip.weapon) { this.toast('무기를 장착해야 출발할 수 있습니다'); return; } this.closePop(); $('lobby').classList.remove('on'); if (!startMode(b.dataset.mode)) { $('lobby').classList.add('on'); this.toast('지금은 도전할 수 없습니다'); } });
+  },
+  showModeResult(o) {
+    $('pause').classList.remove('on');
+    const el = $('mResult'); el.classList.add('on');
+    el.innerHTML = `<div class="rs-t oL" style="color:${o.win ? '#ffd24a' : '#ff6a78'}">${o.title}</div>
+      <div class="rs-g">${o.stats.map(([v, l]) => `<div><b class="oL">${v}</b>${l}</div>`).join('')}</div>
+      <div class="rs-r"><h4>획득 보상</h4>${o.best ? `<div class="rs-note first oL">최고 기록 갱신! ${o.bestScore}%</div>` : `<div class="rs-note">최고 기록 ${o.bestScore || 0}%</div>`}<div class="rs-items"><div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(o.gold)}</b></div>${o.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${o.gem}</b></div>` : ''}</div></div>
       <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
     $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
     sfx.reward();

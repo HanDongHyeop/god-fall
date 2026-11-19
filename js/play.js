@@ -62,7 +62,8 @@ function startRun(opt = {}) {
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
-  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null; g.runLv = 0; g.xp = 0; g.xpNeed = 0; g.lvPend = 0; g.hearts = []; g.themeLast = false;
+  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null; g.zone = null; g.torches = []; g.clams = []; g.mode = opt.mode || null; g.eel = null; g.seal = null; g.runLv = 0;   // v42 도전 모드(modes.js)
+  g.xp = 0; g.xpNeed = 0; g.lvPend = 0; g.hearts = []; g.themeLast = false;
   g.firstRun = !!Meta.s.ftue && !(Meta.s.total.runs > 0) && !opt.debug; g.firstLegend = false;   // v39 첫 판 = 튜토리얼을 거친 새 계정이 처음 하는 판(한 판이라도 끝냈으면 아님)
   beginWave(opt.noIntro ? 0 : DESCENT.first); g.hintT = Meta.s.seenTip ? 0 : 4;
   Meta.s.seenTip = true;
@@ -97,6 +98,7 @@ function beginWave(rows) {
   g.camLock = false; g.bossCam = undefined; g.boss = null;
   g.introRows = (window.__manual && !window.__intro) || window.__noIntro ? 0 : rows;
   buildWave();
+  if (g.mode) modeBuild();   // v42 도전 모드: 판을 모드에 맞게 고친다
   if (g.introRows > 0) { g.state = 'descend'; g.landed = false; g.descT = DESCENT.settle; g.cine = 0; input.clearAll(); g.p.y = 30; $('pause').style.visibility = 'hidden'; if (g.banner) g.banner.life = Math.max(g.banner.life, g.introRows * TILE / T.maxFall + .5); }
   else g.state = 'play';
 }
@@ -115,6 +117,7 @@ function tickDescent(dt) {
 function buildWave() {
   const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w), rest = isRestWave(w), L = g.lv = dlv(w); g.lvM = Math.min(L, MOVE_L_CAP);
   g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
+  g.zone = boss || rest || g.mode ? null : window.__zone !== undefined ? window.__zone : ZONE_PLAN[chapterOf(w) % ZONE_PLAN.length];   // v41 구역 규칙(zones.js). 시험에서는 window.__zone으로 고정한다(null = 규칙 없음)
   const restKind = rest ? pickRestKind(R) : null;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
   g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.cfx = []; g.dark = 0; g.darkT = 0;
@@ -131,6 +134,7 @@ function buildWave() {
   let r = 11 + sh;
   // 안착 발판: 맵과 상관없이 같은 자리, 양옆은 내려가는 길
   if (sh) for (let c = 3; c <= 5; c++) lvl.set(c, sh, HARD);
+  if (g.zone === 'spike') { zoneSpikeLevel(R, put, r, lastRow); r = lastRow; }   // v41 림보: 발판 없이 가시 턱 · 가시 바닥만
   while (r < lastRow - 2) {
     const roll = R(), side = R() < .5 ? 0 : 1;
     if (roll < .30) { // 벽에서 튀어나온 턱
@@ -157,7 +161,7 @@ function buildWave() {
   }
   // 샛길 문: 벽에 난 입구와 그 앞 턱
   const nDoors = (R() < DOOR.chance ? 1 : 0) + (has('member') ? 1 : 0);
-  if (!boss && !rest) for (let i = 0; i < nDoors; i++) {
+  if (!boss && !rest && g.zone !== 'spike') for (let i = 0; i < nDoors; i++) {
     const rowD = Math.floor(sh + 11 + (lastRow - sh - 11) * (DOOR.from + (DOOR.to - DOOR.from) * (nDoors > 1 ? (i + R() * .7) / nDoors : R()))), side = R() < .5 ? 0 : 1;
     const c1 = side ? COLS - 2 : 1, c2 = side ? COLS - 3 : 2, c3 = side ? COLS - 4 : 3;
     for (let rr = rowD - 3; rr <= rowD; rr++) for (const cc of [c1, c2, c3]) lvl.set(cc, rr, EMPTY);
@@ -189,7 +193,7 @@ function buildWave() {
   // 황금 낙하: 발판마다 항아리, 공중에는 파편 덩어리(통과 발판 위)
   if (restKind === 'gold') for (const [c0, c1, rr] of landings) for (let c = c0; c <= c1; c += 2) if (!lvl.at(c, rr - 1)) g.jars.push({ x: (c + .5) * TILE, y: rr * TILE - 14, r: 13, alive: true });
   // 공중 적: 다운웰처럼 촘촘하게
-  const spacing = DIFF.spacing(w), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
+  const spacing = DIFF.spacing(w) * (g.zone === 'spike' ? ZONE.spike.spacing : 1), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
   const free = (x, y) => lvl.at(Math.floor(x / TILE), Math.floor(y / TILE)) === EMPTY;
   for (let y = 380 + sh * TILE; y < endY; y += spacing * (.55 + R() * .9)) {
     const roll = R();
@@ -198,14 +202,15 @@ function buildWave() {
       for (let i = 0; i < n; i++) { const x = clamp(cx + (R() - .5) * 110, TILE + 12, WORLD_W - TILE - 12), yy = y + R() * 70; if (free(x, yy)) g.enemies.push(mkEnemy('bat', x, yy, { sleep: true, ph: R() * 6 })); }
       y += 40; continue;
     }
-    if (roll < .13 + Math.min(.12, L * .012)) { // 가시 장벽: 한 줄에 틈 하나
+    if (g.zone !== 'spike' && roll < .13 + Math.min(.12, L * .012)) { // 가시 장벽: 한 줄에 틈 하나
       const gap = 1 + Math.floor(R() * (COLS - 3));
       for (let c = 1; c < COLS - 1; c += 2) { if (c === gap || c === gap + 1) continue; const x = (c + .5) * TILE; if (free(x, y)) g.enemies.push(mkEnemy('urchin', x, y, { baseX: x, baseY: y, ph: R() * 6, still: true })); }
       y += 70; continue;
     }
     const c = 1 + Math.floor(R() * (COLS - 2)), x = (c + .5) * TILE;
     if (!free(x, y) && pickKind(R, w) !== 'shade') continue;
-    const kind = pickKind(R, w);
+    let kind = pickKind(R, w);
+    if (g.zone === 'spike' && kind !== 'eye' && kind !== 'sac' && kind !== 'bat') kind = R() < .6 ? 'eye' : 'sac';   // v41 림보: 밟을 수 있는 떠다니는 괴물만
     if (kind === 'leech') { const left = R() < .5; g.enemies.push(mkEnemy('leech', left ? TILE + 11 : WORLD_W - TILE - 11, y, { dir: R() < .5 ? -1 : 1, baseY: y, wall: left ? -1 : 1 })); }
     else if (kind === 'bat') g.enemies.push(mkEnemy('bat', x, y, { sleep: true, ph: R() * 6 }));
     else g.enemies.push(mkEnemy(kind, x, y, { baseX: x, baseY: y, ph: R() * 6 }));
@@ -237,6 +242,7 @@ function buildWave() {
     putWalker(c, rr);
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
+  zoneBuild(R, F, lastRow, sh);   // v41 구역 물건(횃불 · 봉인 바닥 · 조개)
   g.hearts = [];
   if (!rest && g.enemies.length) g.xpNeed = Math.max(XP.min, Math.round(g.enemies.reduce((a, e) => a + xpOf(e), 0) * XP.k));   // v40 이번 판 괴물의 약 1/3을 잡을 때마다 레벨업
   const p = g.p;
@@ -354,7 +360,7 @@ function hurt(from, dmg0) {
   if (p.olive) { p.olive = false; p.inv = 1.2; popup(p.x, p.y - 26, '올리브 관', '#b8ffb0', true); g.fx.push({ type: 'ring', x: p.x, y: p.y - 10, r: 60, col: 'rgba(170,255,160,.95)', t: 0, life: .35 }); sfx.ping(); return; }
   const dmg = Math.max(1, Math.round(dmg0 * (1 - st.dmgCut)));
   // v31 연습 방(g.tut): 맞는 모습은 그대로, 체력은 줄지 않는다
-  if (!g.tut) p.hp -= dmg; p.inv = (has('aegis') ? 1.8 : 1) * (1 + st.invPct); p.hurtT = .34; p.spin = 0; p.attackPose = 0; p.throwT = 0; p.hitFlash = .12;
+  if (!g.tut) p.hp -= dmg; p.inv = (has('aegis') ? 1.8 : 1) * (has('z_thorn') ? 2 : 1) * (1 + st.invPct); p.hurtT = .34; p.spin = 0; p.attackPose = 0; p.throwT = 0; p.hitFlash = .12;
   feathers(p.x, p.y - 20, 3, 120);
   chunks(p.x, p.y - 10, 6, ['#ff6c7b', '#ffffff'], 240, 3.4);
   g.fx.push({ type: 'ring', x: p.x, y: p.y - 10, r: 64, col: 'rgba(255,90,110,.95)', t: 0, life: .25 });
@@ -385,6 +391,7 @@ function revive() {
 }
 function finishRun(gaveUp) {
   const g = game;
+  if (g.mode) { modeFinish(gaveUp); return; }   // v42 도전 모드는 점수로 정산한다(modes.js)
   g.state = 'result';
   const r = { wave: g.wave, startWave: g.startWave, kills: g.kills, bosses: g.bosses, combo: g.maxCombo, high: g.highN || 0, chapter: g.chapter, shards: g.shardTotal, gaveUp, clear: !!g.clear };
   const reward = Meta.settle(r);
@@ -487,7 +494,7 @@ function step(dt0) {
   g.vign = Math.max(0, g.vign - dt0 * 2.2); g.whiteout = Math.max(0, g.whiteout - dt0 * 2.4);
   g.shake = approachSnap(g.shake, 0, 16, dt0, .05); g.kick = approachSnap(g.kick, 0, 26, dt0, .02);
   if (g.fadeOut) tickFade(dt0);
-  if (g.state === 'dying') { g.overT -= dt0; if (g.overT <= 0) { if (!UI.offerContinue()) finishRun(false); return; } }
+  if (g.state === 'dying') { g.overT -= dt0; if (g.overT <= 0) { if (g.mode || !UI.offerContinue()) finishRun(false); return; } }   // v42 도전 모드는 이어하기 없이 바로 결과
   if (!['play', 'descend', 'intro', 'bossdead', 'dying'].includes(g.state)) return;
   if (g.state === 'play' && g.hintT > 0) g.hintT -= dt0;
   if (g.hitStop > 0) { g.hitStop -= dt0; return; }
@@ -519,7 +526,8 @@ function tick(dt) {
   if (jumpHeld) p.holdT = (p.holdT || 0) + dt; else { p.holdT = 0; if (!p.tapShot) p.pressFire = false; }   // v35: 한 프레임 안에 뗀 탭도 한 발은 쏘게 tapShot이 남아 있는 동안은 지우지 않는다
   const st = g.st;
   // 좌우
-  const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct);
+  const zw = g.zone === 'water' && !g.room && g.state === 'play' ? ZONE.water : null;   // 시작 낙하 연출(descend)은 물속이어도 평소 속도   // v41 수중: 천천히 움직이고 천천히 떨어진다
+  const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct) * (zw ? zw.run : 1);
   const target = axis * run, acc = T.accel * dt;
   p.vx += clamp(target - p.vx, -acc, acc);
   if (Math.abs(axis) > .001) p.face = Math.sign(axis);
@@ -574,7 +582,7 @@ function tick(dt) {
     g.kick = Math.min(g.kick + 2.6, 6);
     // 반동: 떨어지는 중에만 낙하를 늦춘다. 올라가는 중에는 더 띄우지 않는다(저절로 쏘므로 점프 높이가 늘지 않게)
     const rec = g.god_.recoil * (has('heavy') ? .7 : 1);
-    if (p.vy > 0) p.vy = p.vy * rec - 30;
+    if (p.vy > 0) p.vy = zw ? p.vy * (rec + .12) - 18 : p.vy * rec - 30;   // v41 수중: 중력이 약해 쏘는 동안 거의 멈춰 버렸다(봇: 2분에 절반도 못 내려감) → 반동을 줄인다
     p.squash = Math.max(p.squash, .12);
   } else if (firing && p.ammo <= 0 && p.emptyT <= 0) { p.emptyT = .6; p.ammoFlash = .25; }
   if (p.ammo <= 0 || p.onGround) p.tapShot = false;   // 쏠 수 없으면 탭 한 발 약속은 끝
@@ -583,7 +591,7 @@ function tick(dt) {
   if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .3) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
   if (p.ammoFlash) p.ammoFlash = Math.max(0, p.ammoFlash - dt);
   // 이동
-  p.vy = Math.min(p.vy + T.grav * dt, T.maxFall);
+  p.vy = Math.min(p.vy + T.grav * (zw ? zw.grav : 1) * dt, T.maxFall * (zw ? zw.maxFall : 1) * (has('z_cloak') ? .85 : 1));
   const wasGround = p.onGround; p.onGround = false;
   moveX(p, p.vx * dt);
   if (p.vy < 0 && famLv('butt') >= 2) {   // v39 들이받기: 머리가 닿는 부서지는 돌을 부순다(그 위의 괴물은 떨어진다). 올라가던 힘은 크게 줄어든다
@@ -653,9 +661,9 @@ function tick(dt) {
     if (d < 22 || (s.t > SHARD.auto && d < 30)) { s.dead = true; gainShard(s); }
   }
   g.shards = g.shards.filter(s => !s.dead);
-  heartTick(dt);
+  heartTick(dt); zoneTick(dt);
   // v40 레벨업: 경험치가 차면 잠깐 뒤 카드 창(처치 연출을 먼저 보여 준다). 방 · 보스전 · 연습 중에는 미룬다
-  if (g.xpNeed > 0 && g.xp >= g.xpNeed && g.runLv < XP.cap && g.state === 'play' && !g.room && !(g.boss && g.camLock) && !g.tut) { g.lvPend += dt; if (g.lvPend > .28) levelUp(); } else g.lvPend = 0;
+  if (g.xpNeed > 0 && g.xp >= g.xpNeed && g.runLv < XP.cap && g.state === 'play' && !g.room && !(g.boss && g.camLock) && !g.tut && !g.mode) { g.lvPend += dt; if (g.lvPend > .28) levelUp(); } else g.lvPend = 0;
   // 카메라
   if (g.bossCam !== undefined && g.isBossWave && g.camLock) g.cam = approachSnap(g.cam, g.bossCam, 7, dt, .05);
   else {
@@ -664,6 +672,7 @@ function tick(dt) {
   }
   // 보스방: 체력 막대 뒤로 캐릭터가 숨지 않게 막대 아래에서 막는다
   if (g.boss && g.camLock && g.state === 'play') { const minY = g.cam + view.safeT / view.s + 72; if (p.y < minY) { p.y = minY; if (p.vy < 0) p.vy = 0; } }
+  if (g.mode) modeTick(dt);   // v42 도전 모드(장어 · 봉인전 시계, 카메라)
 }
 function updateEnemies(dt, jumpHeld) {
   const g = game, p = g.p, top = g.cam - 160, bot = g.cam + view.worldH + 200, spd = DIFF.speed(g.wave);

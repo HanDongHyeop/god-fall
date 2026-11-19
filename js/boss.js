@@ -77,7 +77,8 @@ function hitBoss(dmg, crit, x, y, raw) {
   if (b.hp <= 0) bossDie();
 }
 function bossDie() {
-  const g = game, b = g.boss; g.bossDone = true; b.hp = 0; b.hidden = false; b.alpha = 1; g.darkT = 0; g.haz = []; b.state = 'dead'; b.t = 0; g.state = 'bossdead'; g.timeScale = .28; g.bosses++; input.clearAll(); g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false);
+  const g = game, b = g.boss;
+  if (g.mode === 'seal' && g.seal) { g.seal.dmg += b.maxHp; b.hp = b.maxHp; g.whiteout = .25; popup(b.x, b.y - b.h - 20, '봉인이 다시 조여든다', '#ffd28a', true); return; }   // v42 봉인전: 보스는 쓰러지지 않고 체력이 다시 찬다(준 피해는 계속 센다) g.bossDone = true; b.hp = 0; b.hidden = false; b.alpha = 1; g.darkT = 0; g.haz = []; b.state = 'dead'; b.t = 0; g.state = 'bossdead'; g.timeScale = .28; g.bosses++; input.clearAll(); g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false);
   sfx.roar(); g.whiteout = .6; g.shake = 18; vibrate(120);
 }
 function bossWarn(b, x0, x1, y0, y1, life) { b.path = { x0, x1, y0, y1 }; game.fx.push({ type: 'warn', x0, x1, y0, y1, x: 0, y: 0, t: 0, life }); }
