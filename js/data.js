@@ -342,10 +342,20 @@ const TIER = {
 const STOMP = { small: 1, normal: 3, elite: 5, mini: 18, boss: 45 };
 const stompN = e => e.child || e.kind === 'bat' ? STOMP.small : e.elite ? STOMP.elite : STOMP.normal;
 const stompDmg = e => Math.ceil((e.maxHp || e.hp) / stompN(e));
-const CARD_UP = { base: [.60, .45, .35], boost: [.75, .55, .45] };
+const CARD_UP = { base: [.50, .35, .24], boost: [.75, .55, .45] };   // v40 판 끝 대신 싸우는 중간에 레벨업으로 고른다(챕터당 약 4번 → 10번 안팎). 고르는 횟수가 늘어난 만큼 사다리를 낮췄다(예전 [.60, .45, .35]: 카드 1장 전설 9.5% → 4.2%)
+/* v40(2026-11-19 사용자 요청) 파편 줄이기 · 자동 흡수 · 하트 · 레벨업
+   SHARD: k = 나오는 양 배수, small = 작은 파편 1개 값(조각 수가 준다), auto = 나온 뒤 이 시간이 지나면 주인공에게 날아온다
+   HEART: 괴물을 잡으면 chance 확률로(강화 개체 elite) 하트. 몸이 닿아야 먹는다(자동 흡수 아님). heal = 최대 체력 비율, life = 사라질 때까지 초
+   XP: 잡은 괴물 경험치(박쥐 · 새끼 1, 보통 2, 강화 5)가 '이번 판 괴물 경험치 합 × k'만큼 차면 레벨업 → 카드 창. 한 판(챕터)에 cap번까지 */
+const SHARD = { k: .8, small: 3, auto: .45 };
+const HEART = { chance: .05, small: .02, elite: .22, heal: .08, life: 14, r: 11 };
+const XP = { k: .34, min: 8, cap: 12 };
+const xpOf = e => e.child || e.kind === 'bat' ? 1 : e.elite ? 5 : 2;
+/* 카드 창을 묶음으로 내기(궁수의 전설 2: 화염 · 번개 · 폭탄 요정 3장처럼 같은 계열이 한꺼번에 나올 때가 있다). chance 확률로 한 묶음에서만 3장, 두 번 연속은 없다 */
+const CARD_THEME = { chance: .2 };
 /* v38 초반 후한 카드: 깬 챕터 수가 적을수록 등급 사다리가 잘 오른다(띵띵띵 승급 연출이 자주 보이게). [깬 챕터 수 미만, 사다리]
    챕터 1을 깨기 전: 카드 창에 영웅 이상 약 95% · 전설 약 63% / 챕터 3을 깨기 전: 영웅 약 79% · 전설 약 42% / 그 뒤 = 기본(영웅 61% · 전설 26%) */
 const CARD_EARLY = [];   // v39 초반 후한 확률을 없앴다(예전 [[1, [.85, .70, .50]], [3, [.72, .56, .42]]]: 챕터 1을 깨기 전 카드 창의 63%에 전설 → 보스가 한 방). 이제 첫 판만 '첫 카드 창 전설 1장 확정 + 그 뒤 영웅까지'(cards.js firstRun), 두 번째 판부터 기본 확률
 /* v38 챕터별 권장 전투력: 성장 시뮬레이션(tools/test/econ_v38.py)에서 '이 전투력이면 60판쯤 해 본 실력으로 60% 깬다'로 뽑은 값. 전투 화면에 내 전투력과 견주어 보여 준다 */
 const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 3260, 3610, 4000, 4390, 4810, 5280];   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
-const CARD_PITY = { after: 2, hero: .25, legend: .2 };
+const CARD_PITY = { after: 3, hero: .15, legend: .1 };   // v40 고르는 횟수가 늘어 보정도 느슨하게(예전 after 2 · hero .25 · legend .2)

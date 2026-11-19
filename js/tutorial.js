@@ -122,6 +122,6 @@ function ftueCardTip() {
   const f = Meta.s.ftue; if (!f || (f.tips && f.tips.card)) return;
   (f.tips || (f.tips = {})).card = true; Meta.save();
   const wait = () => { if (game.state !== 'card') return; if (!modal.ready) { setTimeout(wait, 150); return; }
-    Guide.card({ sel: '#cards', pad: 2, hand: false, text: '판을 넘을 때마다 <b>능력 카드</b>를 하나 골라.<br>초록 → 파랑 → 보라 → <b>금색</b> 순으로 강해.' }); };
+    Guide.card({ sel: '#cards', pad: 2, hand: false, text: '괴물을 잡아 <b>경험치</b>가 차면 <b>능력 카드</b>를 하나 골라.<br>초록 → 파랑 → 보라 → <b>금색</b> 순으로 강해.' }); };
   setTimeout(wait, 400);
 }

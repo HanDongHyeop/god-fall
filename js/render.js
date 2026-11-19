@@ -105,6 +105,18 @@ function drawJar(j) {
   const h = 32 * s, w = h * im.naturalWidth / im.naturalHeight;
   ctx.drawImage(im, wx(j.x) - w / 2, y + 14 * s - h, w, h);
 }
+/* v40 하트: 통통 뛰는 크기 + 분홍 빛. 사라지기 3초 전부터 깜박인다 */
+function drawHearts() {
+  const g = game, s = view.s, im = IMG.ui_heart; if (!g.hearts || !g.hearts.length) return;
+  for (const h of g.hearts) {
+    const x = wx(h.x), y = wy(h.y + Math.sin(g.t * 3.2 + h.x) * 2.5); if (y < -30 || y > view.H + 30) continue;
+    const left = HEART.life - h.t; if (left < 3 && Math.floor(left * 6) % 2 === 0) continue;
+    const beat = 1 + .1 * Math.max(0, Math.sin(g.t * 7 + h.x)), sz = 22 * s * beat * Math.min(1, h.t * 6 + .3);
+    const gl = ctx.createRadialGradient(x, y, 2 * s, x, y, 24 * s); gl.addColorStop(0, 'rgba(255,120,150,.5)'); gl.addColorStop(1, 'rgba(255,120,150,0)'); ctx.fillStyle = gl; ctx.fillRect(x - 24 * s, y - 24 * s, 48 * s, 48 * s);
+    if (ok(im)) { const w = sz * im.naturalWidth / im.naturalHeight; ctx.drawImage(im, x - w / 2, y - sz / 2, w, sz); }
+    else { ctx.fillStyle = '#ff4a6a'; ctx.beginPath(); ctx.arc(x - sz * .2, y - sz * .1, sz * .28, 0, 7); ctx.arc(x + sz * .2, y - sz * .1, sz * .28, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - sz * .46, y); ctx.lineTo(x, y + sz * .5); ctx.lineTo(x + sz * .46, y); ctx.fill(); }
+  }
+}
 function drawShard(sh) {
   const s = view.s, x = wx(sh.x), y = wy(sh.y), gold = sh.v >= 10, im = gold ? IMG.o_gold : IMG.o_rose;
   if (y < -20 || y > view.H + 20 || !ok(im)) return;
@@ -419,6 +431,14 @@ function drawHUD() {
   if (flash > 0) { ctx.globalAlpha = flash * .55; ctx.fillStyle = '#7dffa8'; ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f, bh - 4 * s); ctx.globalAlpha = flash; ctx.strokeStyle = '#8dffb0'; ctx.lineWidth = 2.6 * s; rr(left - 1 * s, top - 1 * s, bw + 2 * s, bh + 2 * s, 7 * s); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   textOut(`${hpShown} / ${p.maxHp}`, left + bw / 2, top + bh / 2 + .5 * s, '#fff', 2.6);
+  // v40 경험치 막대(체력 막대 바로 아래) + 레벨. 가득 차면 레벨업 → 카드
+  if (!g.tut && g.xpNeed > 0 && !(g.boss && g.boss.barK > 0)) {
+    const xy = top + bh + 2 * s, xh = 6 * s, max = g.runLv >= XP.cap, k = max ? 1 : clamp(g.xp / g.xpNeed, 0, 1);
+    g.hudXp = hudLive ? approachSnap(g.hudXp === undefined ? k : g.hudXp, k, 8, 1 / 60, .002) : (g.hudXp || 0);
+    ctx.fillStyle = 'rgba(10,8,20,.85)'; rr(left, xy, bw, xh, 2.2 * s); ctx.fill();
+    const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, '#3a86f0'); xg.addColorStop(1, '#7ff0ff'); ctx.fillStyle = max ? '#ffd24a' : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
+    ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut(max ? 'MAX' : `Lv.${g.runLv + 1}`, left + bw + 4 * s, xy + xh / 2, max ? '#ffd24a' : '#bfefff', 2.4); ctx.textAlign = 'center';
+  }
   // 판 표시: 챕터 안의 6칸(전투·휴식·보스). 휴식 칸은 초록 잎, 마지막은 보스 해골
   const wv = stageOf(g.wave) - 1, pipX = W * .635, pipY = top + 8 * s, gap = 14.5 * s, pr = 6.6 * s;
   for (let i = 0; i < STAGES; i++) {
@@ -481,6 +501,7 @@ function render(dt) {
   if (!g.minis && g.boss && g.boss.alive !== false) drawBoss();
   // 중간 보스 방은 발판이 전투 공간이라 어두운 막 위에 그린다. 다른 방은 막이 앞쪽이다
   const miniRoom = g.room && g.room.kind === 'mini';
+  if (g.room) drawRoomBg();   // v40 방마다 다른 배경 그림(발판 뒤)
   if (miniRoom) drawRoomBack();
   drawSkillsBack(); drawTiles(); drawDoors(); drawRest(); drawPortal(); if (!g.minis) drawBossBits();
   if (g.room && !miniRoom) drawRoomBack();
@@ -488,6 +509,7 @@ function render(dt) {
   if (g.minis) { ctx.save(); ctx.beginPath(); ctx.rect(0, -view.H, view.W, view.H + wy(g.room.floorY)); ctx.clip(); drawMinis(); ctx.restore(); drawBossBits(); }
   for (const j of g.jars) if (j.alive) drawJar(j);
   for (const s of g.shards) drawShard(s);
+  drawHearts();
   drawHaz();
   for (const e of g.enemies) if (e.alive) drawEnemy(e);
   drawEnemyShots(); drawBullets();
@@ -496,6 +518,7 @@ function render(dt) {
   if (g.room) drawRoomFront();
   drawDoorPrompt(); drawRestPrompt();
   ctx.restore();
+  if (g.room) drawTrapWarn();   // v40 함정 경고(화면 전체)
   // 전체 화면 효과. 어둠(첫 번째 어둠의 2단계): 주인공 둘레만 보인다
   if (g.dark > 0 && g.p) { const px = wx(g.p.x), py = wy(g.p.y), q = ctx.createRadialGradient(px, py, 70 * view.s, px, py, 170 * view.s); q.addColorStop(0, 'rgba(6,2,16,0)'); q.addColorStop(1, `rgba(6,2,16,${.9 * Math.min(1, g.dark)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
   if (g.whiteout > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(.85, g.whiteout)})`; ctx.fillRect(0, 0, view.W, view.H); }

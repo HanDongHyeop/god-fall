@@ -411,9 +411,9 @@ function chunks(x, y, n, cols, sp = 220, size = 4.5) {
 }
 /* piece: 한 알의 값을 정할 때(루비 광맥 = 5, 작은 루비 그림). 없으면 10짜리 황금과 2짜리 루비로 나눈다 */
 function spawnShards(x, y, value, piece) {
-  let left = value;
+  let left = Math.max(1, Math.round(value * SHARD.k));   // v40 양 × 0.8, 작은 조각 값 2 → 3(조각 수는 약 절반)
   while (left > 0) {
-    const v = piece ? Math.min(piece, left) : left >= 10 ? 10 : 2; left -= v;
+    const v = piece ? Math.min(piece, left) : left >= 10 ? 10 : Math.min(SHARD.small, left); left -= v;
     const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, sp = 150 + Math.random() * 190;
     game.shards.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, v, t: 0 });
   }

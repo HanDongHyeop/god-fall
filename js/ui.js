@@ -464,7 +464,7 @@ const UI = {
 };
 
 /* ───── 부팅 ───── */
-loadImg('ui_skull', uiIcon('ico_skull'));
+loadImg('ui_skull', uiIcon('ico_skull')); loadImg('ui_heart', uiIcon('ico_heart'));
 const _layout0 = layout;
 layout = function () { _layout0(); stage.style.setProperty('--u', (view.W / 100) + 'px'); };
 layout();

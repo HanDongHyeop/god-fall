@@ -62,7 +62,7 @@ function startRun(opt = {}) {
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
-  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null;
+  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null; g.runLv = 0; g.xp = 0; g.xpNeed = 0; g.lvPend = 0; g.hearts = []; g.themeLast = false;
   g.firstRun = !!Meta.s.ftue && !(Meta.s.total.runs > 0) && !opt.debug; g.firstLegend = false;   // v39 첫 판 = 튜토리얼을 거친 새 계정이 처음 하는 판(한 판이라도 끝냈으면 아님)
   beginWave(opt.noIntro ? 0 : DESCENT.first); g.hintT = Meta.s.seenTip ? 0 : 4;
   Meta.s.seenTip = true;
@@ -237,6 +237,8 @@ function buildWave() {
     putWalker(c, rr);
   }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
+  g.hearts = [];
+  if (!rest && g.enemies.length) g.xpNeed = Math.max(XP.min, Math.round(g.enemies.reduce((a, e) => a + xpOf(e), 0) * XP.k));   // v40 이번 판 괴물의 약 1/3을 잡을 때마다 레벨업
   const p = g.p;
   p.x = WORLD_W / 2; p.y = 120; p.vx = 0; p.vy = 0; p.onGround = false; p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.olive = has('olive');
   if (g.st.waveHeal) healBy(p.maxHp * g.st.waveHeal);
@@ -286,6 +288,10 @@ function killEnemy(e, byStomp) {
   const g = game, p = g.p, E = ENEMY[e.kind], st = g.st;
   e.alive = false; g.kills++;
   if (!g.tut) spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));   // v31 연습 방: 재화 없음
+  if (!g.tut && !g.noXp) {   // v40 경험치 · 하트
+    if (!g.room) g.xp += xpOf(e);
+    if (Math.random() < (e.elite ? HEART.elite : e.child || e.kind === 'bat' ? HEART.small : HEART.chance)) g.hearts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90, vy: -170, t: 0 });
+  }
   // 처치: 하얗게 커졌다가 터진다
   g.fx.push({ type: 'corpse', name: E.frames[0], x: e.x, y: e.y, h: E.h, flip: e.face, t: 0, life: .07 });
   inkBurst(e.x, e.y, e.r, E.col, byStomp);
@@ -385,6 +391,35 @@ function finishRun(gaveUp) {
   UI.showResult(r, reward);
 }
 /* v33: 파편은 돈일 뿐이다(이어 먹어 신성 폭주가 켜지던 것은 없앴다). sndChain은 이어 먹을 때 소리가 올라가게만 쓴다 */
+/* v40 레벨업: 카드 창을 띄우고, 고르면 그 자리에서 이어서 싸운다(잠깐 무적) */
+function levelUp() {
+  const g = game, p = g.p; g.xp -= g.xpNeed; g.runLv++; g.lvPend = 0;
+  g.fx.push({ type: 'ring', x: p.x, y: p.y - 8, r: 90, col: 'rgba(120,220,255,.95)', t: 0, life: .4 }); sparks(p.x, p.y - 10, 12, '#8fe6ff', 260, .4);
+  openCards(false, { title: '레벨 업!', sub: '새로운 능력을 선택하세요!', after: () => { g.state = 'play'; p.inv = Math.max(p.inv, .8); input.clearAll(); input.blockUntil = performance.now() + 150; } });
+}
+/* v40 하트: 괴물이 가끔 떨어뜨린다. 발판에 내려앉고, 몸이 닿아야 먹는다. 자석 신상이 있으면 가까이서 끌려온다 */
+function heartTick(dt) {
+  const g = game, p = g.p; if (!g.hearts || !g.hearts.length) return;
+  for (const h of g.hearts) {
+    h.t += dt;
+    const dx = p.x - h.x, dy = p.y - h.y, d = Math.hypot(dx, dy) || 1;
+    if (has('magnet') && d < 120) { h.x += dx / d * 300 * dt; h.y += dy / d * 300 * dt; h.vy = 0; }
+    else {
+      const c = Math.floor(h.x / TILE), r = Math.floor((h.y + HEART.r + 1) / TILE);
+      if (h.vy >= 0 && lvl.at(c, r)) { h.y = r * TILE - HEART.r; h.vy = 0; h.vx = 0; }
+      else { h.vy = Math.min(h.vy + 620 * dt, 240); h.x = clamp(h.x + h.vx * dt, TILE + 12, WORLD_W - TILE - 12); h.y += h.vy * dt; }
+    }
+    if (Math.abs(dx) < p.w / 2 + HEART.r && Math.abs(dy) < p.h / 2 + HEART.r && g.state === 'play') {
+      h.dead = true; const hp0 = p.hp; healBy(p.maxHp * HEART.heal); const n = p.hp - hp0;
+      g.hpFrom = hp0; g.hudHp = p.hp; g.hpFlash = 1;   // 체력 막대가 초록으로 차오른다
+      popup(p.x, p.y - 44, n > 0 ? '+' + n : '가득', '#ff9db0', true); g.fx.push({ type: 'ring', x: h.x, y: h.y, r: 46, col: 'rgba(255,140,170,.95)', t: 0, life: .3 });
+      for (let i = 0; i < 7; i++) g.fx.push({ type: 'dot', x: h.x + (Math.random() - .5) * 16, y: h.y, vx: (Math.random() - .5) * 90, vy: -70 - Math.random() * 90, t: 0, life: .55, r: 3, col: i % 2 ? '#ff6a8a' : '#ffd0dc', g: 0 });
+      sfx.ping(); vibrate(15);
+    }
+    if (h.t > HEART.life || h.y < g.cam - 260) h.dead = true;
+  }
+  g.hearts = g.hearts.filter(h => !h.dead);
+}
 function gainShard(s) {
   const p = game.p;
   p.shards += s.v; game.shardTotal += s.v; p.sndChain = (p.sndT > 0 ? p.sndChain || 0 : 0) + s.v; p.sndT = .5; sfx.gem(p.sndChain);
@@ -609,17 +644,18 @@ function tick(dt) {
   // 궤도 구슬·천둥 폭풍(skills.js)
   orbTick(edt); stormTick(dt); petTick(edt);
   // 파편
-  const magnet = has('magnet') ? 112 : 56;   // v33 자석 신상: 2배
+  // v40 파편은 나온 뒤 SHARD.auto초가 지나면 어디에 있든 주인공에게 날아온다(사용자 요청). 처음엔 튀어 흩어지는 모습을 그대로 보여 준다
   for (const s of g.shards) {
     s.t += dt;
-    const dx = p.x - s.x, dy = p.y - s.y, d = Math.hypot(dx, dy);
-    if (d < magnet && s.t > .1) { const pull = 900 * (1 - d / (magnet + 20)) + 160; s.vx += dx / (d || 1) * pull * dt * 8; s.vy += dy / (d || 1) * pull * dt * 8; const mx = 720, sp = Math.hypot(s.vx, s.vy); if (sp > mx) { s.vx *= mx / sp; s.vy *= mx / sp; } }
-    else { s.vx *= Math.exp(-3 * dt); s.vy = s.vy * Math.exp(-3 * dt) + 26 * dt; }
-    s.x = clamp(s.x + s.vx * dt, TILE + 5, WORLD_W - TILE - 5); s.y += s.vy * dt;
-    if (d < 20) { s.dead = true; gainShard(s); }
-    if (s.y < g.cam - 200) s.dead = true;
+    const dx = p.x - s.x, dy = p.y - 6 - s.y, d = Math.hypot(dx, dy) || 1;
+    if (s.t > SHARD.auto) { const v = 460 + (s.t - SHARD.auto) * 1600, k = Math.min(1, dt * 16); s.vx += (dx / d * v - s.vx) * k; s.vy += (dy / d * v - s.vy) * k; s.x += s.vx * dt; s.y += s.vy * dt; }
+    else { s.vx *= Math.exp(-3 * dt); s.vy = s.vy * Math.exp(-3 * dt) + 26 * dt; s.x = clamp(s.x + s.vx * dt, TILE + 5, WORLD_W - TILE - 5); s.y += s.vy * dt; }
+    if (d < 22 || (s.t > SHARD.auto && d < 30)) { s.dead = true; gainShard(s); }
   }
   g.shards = g.shards.filter(s => !s.dead);
+  heartTick(dt);
+  // v40 레벨업: 경험치가 차면 잠깐 뒤 카드 창(처치 연출을 먼저 보여 준다). 방 · 보스전 · 연습 중에는 미룬다
+  if (g.xpNeed > 0 && g.xp >= g.xpNeed && g.runLv < XP.cap && g.state === 'play' && !g.room && !(g.boss && g.camLock) && !g.tut) { g.lvPend += dt; if (g.lvPend > .28) levelUp(); } else g.lvPend = 0;
   // 카메라
   if (g.bossCam !== undefined && g.isBossWave && g.camLock) g.cam = approachSnap(g.cam, g.bossCam, 7, dt, .05);
   else {
@@ -809,7 +845,7 @@ function waveClear() {
   // 휴식 판은 카드 없이 다음 판으로, 보스 판은 챕터 클리어로 판이 끝난다
   if (isRestWave(g.wave)) { nextWave(); return; }
   if (isBossWave(g.wave)) { chapterClear(); return; }
-  sfx.reward(); openCards(false);
+  sfx.reward(); nextWave();   // v40 카드는 판 끝이 아니라 싸우는 중간의 레벨업에서 고른다
 }
 function chapterClear() {
   const g = game; g.clear = true; g.wave++; input.clearAll(); sfx.reward();

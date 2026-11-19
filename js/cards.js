@@ -19,7 +19,7 @@ const CARDS = [
   { id: 'ambrosia', name: '암브로시아', tier: '일반', desc: '최대 체력이 20% 늘어납니다.', repeat: true, apply: p => { p.maxHp = Math.round(p.maxHp * 1.2); } },
   { id: 'hebe', name: '헤베의 잔', tier: '일반', desc: '최대 체력의 30%만큼 체력을 회복합니다.', noMini: true, apply: p => { healBy(p.maxHp * .3); } },
   { id: 'aegis', name: '아이기스 잔광', tier: '일반', desc: '맞은 뒤 무적 시간이 80% 늘어납니다.' },
-  { id: 'magnet', name: '자석 신상', tier: '일반', desc: '파편을 끌어당기는 범위가 2배가 됩니다.', noMini: true },
+  { id: 'magnet', name: '자석 신상', tier: '일반', desc: '가까이 있는 하트를 끌어당깁니다.', noMini: true },   // v40 파편이 저절로 날아오게 되어 하트를 끄는 카드로 바꿨다
   { id: 'overload', name: '신성 과부하', tier: '일반', desc: '신성 폭주 시간이 80% 늘어납니다.', noMini: true },
   // v39 기본기 5장(조금씩 세지는 카드를 늘린다: "좋은 것만 나와 너무 금방 세진다"는 의견) + 동료 신수(pets.js) 일반 3장
   { id: 'keen', name: '날 선 촉', tier: '일반', desc: '치명타 확률 +8%.', repeat: true, apply: () => { game.st.crit += .08; } },
@@ -81,6 +81,15 @@ const CARDS = [
 ];
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
 for (const c of CARDS) loadImg('c_' + c.id, `assets/card/${c.id}.webp`);
+/* v40 카드 묶음(묶음 창에 쓰는 계열). 한 카드가 두 묶음에 들어가도 된다 */
+const CARD_GROUP = {
+  pet: { name: '동료', ids: ['owl', 'pet_fire', 'pet_snake', 'pet_bolt', 'pet_ice', 'pet_laser', 'pet_up', 'pet_rage'] },
+  shot: { name: '탄', ids: ['twin', 'triple', 'fan5', 'bounce', 'echo', 'pierce', 'apollo', 'heavy', 'hydra', 'burn', 'chain'] },
+  bolt: { name: '번개', ids: ['chain', 'strike', 'storm', 'pet_bolt', 'orbit3'] },
+  body: { name: '생존', ids: ['ambrosia', 'hebe', 'aegis', 'hide', 'giant', 'nike', 'olive', 'feast', 'snack', 'thanatos', 'magnet'] },
+  stomp: { name: '밟기', ids: ['titan', 'titan2', 'titan3', 'horn', 'bull', 'wings', 'overload', 'avatar', 'swift'] },
+  ammo: { name: '탄창', ids: ['rapid1', 'rapid', 'mag', 'atlas', 'cell', 'might', 'keen', 'ares'] },
+};
 const cardPool = () => CARDS.filter(c => (c.repeat || !game.cards.has(c.id)) && !(c.fam && famLv(c.fam) >= c.lv) && !(c.need && !c.need()));   // v39 need = 조건이 맞을 때만 나온다(동료 강화는 동료가 있을 때)   // 사다리: 같은 묶음의 같거나 낮은 등급은 뺀다
 function applyCard(c) {
   const g = game;
@@ -122,6 +131,17 @@ function pickCards(boost, filter) {
   if (g.firstRun) { if (!g.firstLegend) { const L = pool.filter(c => c.tier === '전설'); if (L.length) { gift = L[Math.floor(Math.random() * L.length)]; g.firstLegend = true; } } pool = pool.filter(c => c.tier !== '전설'); }
   while (out.length < n - (gift ? 1 : 0) && pool.length) { const c = takeOfTier(pool, rollTier(boost, 0, pity)); if (!c) break; out.push(c); }
   if (gift) out.splice(Math.min(1, out.length), 0, gift);
+  // v40 묶음 창: CARD_THEME.chance 확률로 한 계열에서만 3장(연속 두 번은 없다, 첫 판의 전설 확정 창 · 조건이 걸린 창은 빼고)
+  g.themeNow = null;
+  if (!gift && !filter && !g.themeLast && Math.random() < CARD_THEME.chance) {
+    const ok = Object.keys(CARD_GROUP).filter(k => pool.concat(out).filter(c => CARD_GROUP[k].ids.includes(c.id)).length >= n);
+    if (ok.length) {
+      const k = ok[Math.floor(Math.random() * ok.length)], gp = pool.concat(out).filter(c => CARD_GROUP[k].ids.includes(c.id)), pick = [];
+      while (pick.length < n && gp.length) { const c = takeOfTier(gp, rollTier(boost, 0, pity)); if (!c) break; pick.push(c); }
+      if (pick.length === n) { out.length = 0; out.push(...pick); g.themeNow = k; }
+    }
+  }
+  g.themeLast = !!g.themeNow;
   const pt = game.pity, rk = out.map(c => TIER_SEQ.indexOf(c.tier));
   pt.hero = rk.some(r => r >= 2) ? 0 : pt.hero + 1; pt.legend = rk.includes(3) ? 0 : pt.legend + 1;
   return out;
@@ -142,9 +162,10 @@ function openCards(boost, opt) {
   const g = game; g.state = 'card'; g.shake = 0; g.kick = 0; input.clearAll(); sfx.cardOpen(); modal.after = opt && opt.after || null;
   const box = $('cards'), root = $('mCard'); box.innerHTML = ''; clearCardTimers();
   root.className = 'modal on'; box.className = 'pcards';
+  modal.list = pickCards(boost, opt && opt.filter);
   $('cardTitle').textContent = opt && opt.title || (boost ? '보스의 전리품' : '신의 선물');
-  $('cardSub').textContent = opt && opt.sub || '새로운 능력을 선택하세요!';
-  modal.list = pickCards(boost, opt && opt.filter); modal.sel = 0; modal.openedAt = performance.now(); modal.ready = false;
+  $('cardSub').textContent = g.themeNow ? `${CARD_GROUP[g.themeNow].name} 능력 중에서 고르세요!` : opt && opt.sub || '새로운 능력을 선택하세요!';   // v40 묶음 창이면 계열 이름을 알린다
+ ; modal.sel = 0; modal.openedAt = performance.now(); modal.ready = false;
   if (typeof ftueCardTip === 'function') ftueCardTip();   // v38 새 계정: 첫 카드 창 설명
   /* 등급 승급 연출(궁수의 전설 2): 모두 일반(초록)으로 나와 아이콘이 돈다 → 단계마다 확률에 걸린 카드만 번쩍이며 한 등급 오른다.
      걸리지 않은 카드는 그 등급에서 멈춘다. 높은 등급으로 오를수록 터짐·흔들림·빛이 커진다. 실제 결과는 뽑을 때 이미 정해져 있다 */

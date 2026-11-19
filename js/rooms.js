@@ -3,26 +3,41 @@
 const ROOM_LABEL = { shop: '좌판', treasure: '보물 동굴', altar: '신의 제단', spring: '치유의 샘' };
 const ROOM_TITLE = { shop: ['떠돌이 신의 좌판', '파편으로 사세요'], treasure: ['보물 동굴', '거대한 파편 덩어리를 쏘세요'], altar: ['신의 제단', '하나만 가져갈 수 있습니다'], spring: ['치유의 샘', '다가가 마시세요'] };
 
+/* v40 방마다 다른 배경(사용자: "안쪽이 디자인으로 구분이 안 돼 헷갈린다"). base = 그림에서 바닥 선이 놓일 높이(위에서부터의 비율), top = 그림 위쪽을 이어 칠할 색
+   함정(중간 보스)은 가짜 방의 배경 · 미끼 물건으로 시작해서 경고 → 섬광과 함께 trap 배경으로 바뀌고 발판이 솟는다 */
+const ROOM_BG = { shop: { base: .826, top: '#130c0a' }, treasure: { base: .775, top: '#2a1c2a' }, altar: { base: .89, top: '#25211e' }, spring: { base: .855, top: '#142d30' }, trap: { base: .854, top: '#1a0e11' } };
+for (const k in ROOM_BG) loadImg('room_' + k, `assets/map/room/${k}.webp`);
+const MINI_T = { warn: .9, reveal: 2.0 };   // 방에 들어온 뒤 경고가 뜨는 때 · 배경과 구조가 바뀌는 때(초)
+function drawRoomBg() {
+  const g = game, r = g.room, s = view.s; if (!r || !r.bg) return;
+  const x0 = wx(TILE), w = (WORLD_W - 2 * TILE) * s, yF = wy(r.floorY);
+  const paint = (k, a) => {
+    const b = ROOM_BG[k], im = IMG['room_' + k]; ctx.globalAlpha = a; ctx.fillStyle = b.top; ctx.fillRect(x0, -60 * s, w, yF + 60 * s);
+    if (ok(im)) { const iw = w * 1.12, ih = iw * im.naturalHeight / im.naturalWidth; ctx.save(); ctx.beginPath(); ctx.rect(x0, -60 * s, w, yF + 62 * s); ctx.clip(); ctx.drawImage(im, x0 - (iw - w) / 2, yF - ih * b.base, iw, ih); ctx.restore(); }
+    ctx.globalAlpha = 1;
+  };
+  paint(r.bg, 1); if (r.bg2 && r.bgK > 0) paint(r.bg2, r.bgK);
+  ctx.fillStyle = 'rgba(8,6,16,.16)'; ctx.fillRect(x0, -60 * s, w, yF + 60 * s);   // 앞의 물건 · 주인공이 잘 보이게 살짝 누른다
+}
 function enterRoom(d) {
   const g = game, p = g.p; d.used = true; sfx.door();
-  g.saved = { haz: g.haz, grid: lvl.grid, hp: lvl.hp, rows: lvl.rows, enemies: g.enemies, jars: g.jars, shards: g.shards, decor: g.decor, portal: g.portal, levelH: g.levelH, cam: g.cam, px: p.x, py: p.y, doors: g.doors, ebul: g.ebul, decals: g.decals, door: d, arenaTop: g.arenaTop, isBossWave: g.isBossWave, floorRow: g.floorRow };
+  g.saved = { haz: g.haz, grid: lvl.grid, hp: lvl.hp, rows: lvl.rows, enemies: g.enemies, jars: g.jars, shards: g.shards, decor: g.decor, portal: g.portal, levelH: g.levelH, cam: g.cam, px: p.x, py: p.y, doors: g.doors, ebul: g.ebul, decals: g.decals, door: d, arenaTop: g.arenaTop, isBossWave: g.isBossWave, floorRow: g.floorRow, hearts: g.hearts };
+  g.hearts = [];
   g.isBossWave = false;
   const rows = Math.max(Math.ceil(view.worldH / TILE) + 1, 14), F = rows - 4; lvl.rows = rows; g.floorRow = F; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
   // v31: 위를 깰 수 없는 벽으로 막지 않는다(화면 밖 맨 윗줄만). 보이지 않는 천장은 화면 위 끝(playerCeil)
   for (let r = 0; r < rows; r++) for (let c = 0; c < COLS; c++) { if (r < 1 || r >= F || c === 0 || c === COLS - 1) lvl.set(c, r, HARD); }
   g.arenaTop = 1;
-  if (d.kind === 'mini') buildMiniRoom(F);
   g.levelH = (rows - 1) * TILE; g.enemies = []; g.jars = []; g.shards = []; g.decor = []; g.portal = null; g.doors = []; g.ebul = []; g.decals = []; g.bullets = []; g.haz = []; g.later = [];
   const side = d.side, floorY = F * TILE;
   p.x = side ? WORLD_W - TILE - 40 : TILE + 40; p.y = floorY - p.h / 2 - 1; p.vx = 0; p.vy = 0; p.onGround = true; p.inv = 0;
   refill(p);
-  const room = g.room = { kind: d.kind, floorY, side, items: [], t: 0, exit: { x: side ? WORLD_W - TILE : TILE, y: floorY - 40, side, used: false }, crystal: null, title: ROOM_TITLE[d.fake || d.kind] };
+  const room = g.room = { kind: d.kind, floorY, side, items: [], t: 0, exit: { x: side ? WORLD_W - TILE : TILE, y: floorY - 40, side, used: false }, crystal: null, title: ROOM_TITLE[d.fake || d.kind], bg: d.kind === 'mini' ? (d.fake || 'shop') : d.kind, bg2: null, bgK: 0 };
+  const kind = d.kind === 'mini' ? (d.fake || 'shop') : d.kind;   // v40 함정은 가짜 방의 물건을 미끼로 차려 놓는다(살 수는 없다)
   // 값은 이번 판에 내려온 깊이로 오른다. 파편은 판마다 새로 모으기 때문
   const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .7 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
   const price = n => Math.round(n * disc);
-  if (d.kind === 'mini') {
-    startMini(room);
-  } else if (d.kind === 'shop') {
+  if (kind === 'shop') {
     const stock = [
       { id: 'heal', name: '암브로시아', sub: '체력 35% 회복', icon: 'ambrosia', cost: price(70 + sec * 30), buy: () => healBy(p.maxHp * .35) },
       { id: 'ammo', name: '탄창 보강', sub: '탄창 +2', icon: 'mag', cost: price(100 + sec * 40), buy: () => { p.maxAmmo += 2; p.ammo = p.maxAmmo; } },
@@ -32,21 +47,22 @@ function enterRoom(d) {
     ];
     for (let i = stock.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [stock[i], stock[j]] = [stock[j], stock[i]]; }
     stock.slice(0, 3).forEach((it, i) => room.items.push({ ...it, x: spots[i], y: floorY }));
-  } else if (d.kind === 'treasure') {
+  } else if (kind === 'treasure') {
     // 황금 수정(큰 파편) 또는 루비 광맥(작은 루비가 쏟아진다). 받는 양은 같다
     const ruby = Math.random() < .5;
     room.crystal = { x: WORLD_W / 2 + (side ? -30 : 30), y: floorY - 34, hp: 4, shake: 0, ruby };
     if (ruby) room.title = ['루비 광맥', '거대한 루비를 쏘세요'];
-  } else if (d.kind === 'altar') {
+  } else if (kind === 'altar') {
     // 제단은 희귀부터 시작해 같은 등급 사다리로 오른다
     const pool = cardPool().filter(c => c.tier !== '일반'), pick = [];
     while (pick.length < 3 && pool.length) { const c = takeOfTier(pool, rollTier(true, 1)); if (!c) break; pick.push(c); }
     pick.forEach((c, i) => room.items.push({ id: 'c_' + c.id, name: c.name, sub: c.desc, note: c.note, icon: c.id, cost: 0, tier: c.tier, card: c, once: true, buy: () => applyCard(c), hpCost: i === 2 ? .2 : 0 }));
     room.items.forEach((it, i) => { it.x = spots[i]; it.y = floorY; });
-  } else if (d.kind === 'spring') {
+  } else if (kind === 'spring') {
     room.items.push({ id: 'spring', name: '샘물', sub: '체력 50% 회복, 탄창 +1', icon: 'ambrosia', cost: 0, once: true, buy: () => { healBy(p.maxHp * .5); p.maxAmmo++; p.ammo = p.maxAmmo; }, x: WORLD_W / 2, y: floorY });
   }
   for (const it of room.items) if (it.icon) loadImg('c_' + it.icon, `assets/card/${it.icon}.webp`);
+  if (d.kind === 'mini') { room.bait = room.items; room.items = []; room.baitCrystal = room.crystal; room.crystal = null; startMini(room); }
   g.cam = Math.max(0, g.levelH + TILE - view.worldH);
   g.fade = 1; g.fadeOut = -1;
 }
@@ -174,15 +190,28 @@ function startMini(room) {
   g.minis = spots.map((x0, i) => ({ def, idx: g.biome.boss, mini: true, slot: i - (cfg.n - 1) / 2, alive: true, x: room.side ? WORLD_W - x0 : x0, y: floorY + h + 20, w, h, floorY, hp: total / cfg.n, maxHp: total / cfg.n, state: 'idle', t: 0, flash: 0, pop: 0, open: 0, barK: 0, cool: 1.2, phase: 1, vy: 0, vx: 0, sx: 1, sy: 1, dir: 1, step: 0, hitC: 0 }));
   g.boss = g.minis[0]; g.state = 'intro'; room.introT = 0; input.clearAll();
 }
-const MINI_CARD_T = 2.65;   // 문을 연 뒤 카드 창이 뜰 때까지(공개 .7 → 등장 끝 1.4 → 보여 주기)
+const MINI_CARD_T = MINI_T.reveal + 1.95;   // 문을 연 뒤 카드 창이 뜰 때까지(경고 .9 → 전환 2.0 → 등장 끝 2.7 → 보여 주기)
 function miniTick(dt, r) {
   const g = game, p = g.p;
+  if (r.bg2) r.bgK = Math.min(1, r.bgK + dt * 3.2);
   if (g.state === 'intro') {
-    r.introT += dt; const t = r.introT;
-    if (t > .7 && !r.revealed) { r.revealed = true; r.title = ['함정이다!', '쓰러뜨려야 나갈 수 있습니다']; g.whiteout = .3; g.shake = 12; sfx.roar(); sfx.bgmFor && sfx.bgmFor('boss'); popup(WORLD_W / 2, r.floorY - 150, '중간 보스', '#ff8a8a', true); }
+    r.introT += has('kronos') ? dt / .6 : dt; const t = r.introT;   // v40 등장 연출은 크로노스(적 40% 느림)에 느려지지 않는다(경고가 6초 넘게 늘어졌다)
+    const RV = MINI_T.reveal;
+    // v40 ① 경고(WARNING 띠 · 붉은 깜박임 · 흔들림, drawRoomFront) → ② 섬광과 함께 배경이 함정 굴로 바뀌고 미끼가 터지며 발판이 솟는다 → ③ 중간 보스가 올라온다
+    if (t > MINI_T.warn && !r.warned) { r.warned = true; g.shake = 7; sfx.roar(); sfx.bgmFor && sfx.bgmFor('boss'); vibrate(40); }
+    if (r.warned && !r.revealed) { const q = Math.floor((t - MINI_T.warn) / .36); if (q !== r.warnQ) { r.warnQ = q; g.shake = Math.max(g.shake, 5); if (q > 0) sfx.drum && sfx.drum(); } }
+    if (t > RV && !r.revealed) {
+      r.revealed = true; r.title = ['함정이다!', '쓰러뜨려야 나갈 수 있습니다']; g.whiteout = .45; g.shake = 14; sfx.roar(); sfx.boom(); vibrate(60); popup(WORLD_W / 2, r.floorY - 150, '중간 보스', '#ff8a8a', true);
+      r.bg2 = 'trap'; r.bgK = 0;
+      for (const it of r.bait || []) { puff(it.x, it.y - 26, 5, 16, 8); chunks(it.x, it.y - 20, 7, ['#ff6c7b', '#2a0f12', '#ffffff'], 260, 4); }
+      if (r.baitCrystal) { puff(r.baitCrystal.x, r.baitCrystal.y, 7, 22, 10); chunks(r.baitCrystal.x, r.baitCrystal.y, 10, ['#ff6c7b', '#2a0f12', '#ffffff'], 300, 5); }
+      r.bait = null; r.baitCrystal = null;
+      buildMiniRoom(g.floorRow);   // 발판이 이때 생긴다(구조가 바뀐다)
+      for (const k in g.miniLayout.cells) { const [h, c] = k.split(':').map(Number); puff((c + .5) * TILE, (g.floorRow - h + .5) * TILE, 2, 10, 7); }
+    }
     // 다 올라온 뒤 포효하며 잠시 보여 준다. 무엇이 나왔는지 알아본 다음에 카드를 고른다
-    if (t > 1.45 && !r.shown) { r.shown = true; g.shake = Math.max(g.shake, 9); sfx.roar(); for (const m of g.minis) { m.sy = 1.14; m.sx = .9; } }
-    if (t > .7 && !r.carded) for (const m of g.minis) { m.sx = approachSnap(m.sx, 1, 7, dt); m.sy = approachSnap(m.sy, 1, 7, dt); const k = clamp((t - .7) / .7, 0, 1), e = 1 - Math.pow(1 - k, 3); m.y = r.floorY + (m.h + 20) * (1 - e); m.open = t > 1.1 ? 1 : 0; if (k < 1 && Math.random() < .4) puff(m.x + (Math.random() - .5) * m.w, r.floorY - 4, 1, 7, 8); m.barK = clamp((t - 1) / .6, 0, 1); }
+    if (t > RV + .75 && !r.shown) { r.shown = true; g.shake = Math.max(g.shake, 9); sfx.roar(); for (const m of g.minis) { m.sy = 1.14; m.sx = .9; } }
+    if (t > RV && !r.carded) for (const m of g.minis) { m.sx = approachSnap(m.sx, 1, 7, dt); m.sy = approachSnap(m.sy, 1, 7, dt); const k = clamp((t - RV) / .7, 0, 1), e = 1 - Math.pow(1 - k, 3); m.y = r.floorY + (m.h + 20) * (1 - e); m.open = t > RV + .4 ? 1 : 0; if (k < 1 && Math.random() < .4) puff(m.x + (Math.random() - .5) * m.w, r.floorY - 4, 1, 7, 8); m.barK = clamp((t - RV - .3) / .6, 0, 1); }
     if (t > MINI_CARD_T && !r.carded) {
       r.carded = true; for (const m of g.minis) { m.open = 0; m.barK = 1; m.y = r.floorY; m.t = 0; }
       // 함정의 대가: 무작위 3장 중 하나(보스 전리품과 같은 가중치). 고르면 체력이 가득 찬 채로 싸운다
@@ -239,7 +268,8 @@ function exitRoom() {
   g.room = null; g.saved = null; g.bullets = [];
   p.x = s.px; p.y = s.py; p.x = d.side ? WORLD_W - TILE - 34 : TILE + 34; p.vx = 0; p.vy = 0; p.inv = 1.2; g.cam = s.cam;
   // 다운웰처럼 입구 근처의 적은 사라진다
-  for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 110) { e.sk = null; killEnemy(e, false); }
+  g.noXp = true; for (const e of g.enemies) if (e.alive && Math.hypot(e.x - p.x, e.y - p.y) < 110) { e.sk = null; killEnemy(e, false); } g.noXp = false;
+  g.hearts = s.hearts || [];
   g.fade = 1; g.fadeOut = -1; refill(p);
 }
 /* 바닥을 밟고 입구 앞에 서 있을 때만 드나들 수 있다. 공중이거나 그냥 지나가면 아무 일도 없다 */
@@ -290,14 +320,12 @@ function roomTick(dt) {
 function drawRoomBack() {
   const g = game, r = g.room, s = view.s;
   // 안쪽 벽을 어둡게 해서 바깥과 다른 공간처럼 보이게 한다
-  const roomTop = Math.min(r.floorY - 9 * TILE, g.cam), rh = r.floorY - roomTop;   // v31: 방이 화면 전체로 넓어졌다
-  ctx.fillStyle = 'rgba(6,5,14,.42)'; ctx.fillRect(wx(TILE), wy(roomTop), (WORLD_W - 2 * TILE) * s, rh * s);
-  const gl = ctx.createRadialGradient(view.W / 2, wy(r.floorY - 40), 10 * s, view.W / 2, wy(r.floorY - 40), 170 * s);
-  gl.addColorStop(0, 'rgba(255,214,140,.22)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = gl; ctx.fillRect(0, wy(roomTop), view.W, rh * s);
-  if (r.crystal && r.crystal.hp > 0) {
-    const c = r.crystal, im = c.ruby ? IMG.r_ruby : IMG.o_gold; if (ok(im)) { const h = (c.ruby ? 80 : 74) * s, w = h * im.naturalWidth / im.naturalHeight, jx = (Math.random() - .5) * c.shake * 6 * s; ctx.drawImage(im, wx(c.x) - w / 2 + jx, wy(c.y) - h / 2 - 2 * s, w, h); }
+  // v40 어두운 막 · 노란 빛 대신 방마다 배경 그림(drawRoomBg, 발판보다 뒤)
+  const cr = r.crystal && r.crystal.hp > 0 ? r.crystal : r.baitCrystal;
+  if (cr) {
+    const c = cr, im = c.ruby ? IMG.r_ruby : IMG.o_gold; if (ok(im)) { const h = (c.ruby ? 80 : 74) * s, w = h * im.naturalWidth / im.naturalHeight, jx = (Math.random() - .5) * c.shake * 6 * s; ctx.drawImage(im, wx(c.x) - w / 2 + jx, wy(c.y) - h / 2 - 2 * s, w, h); }
   }
-  for (const it of r.items) {
+  for (const it of r.bait || r.items) {
     if (it.sold && !it.once) continue;
     const x = wx(it.x), y = wy(it.y);
     // 받침
@@ -307,6 +335,25 @@ function drawRoomBack() {
     const bob = Math.sin(g.t * 3 + it.x) * 2 * s, im = IMG['c_' + it.icon];
     if (ok(im)) ctx.drawImage(im, x - 15 * s, y - 50 * s + bob, 30 * s, 30 * s);
   }
+}
+/* v40 함정 경고: 붉은 깜박임 + 위아래 빗금 띠 + 가운데 WARNING. 전환 직후 0.5초까지 남아 사라진다 */
+function drawTrapWarn() {
+  const g = game, r = g.room, s = view.s, W = view.W, H = view.H; if (!r || r.kind !== 'mini' || !r.warned || r.introT === undefined) return;
+  const t = r.introT - MINI_T.warn, out = clamp((r.introT - MINI_T.reveal) / .5, 0, 1); if (out >= 1) return;
+  const a = (1 - out) * clamp(t / .15, 0, 1), blink = .5 + .5 * Math.sin(t * 17);
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * .22, W / 2, H / 2, H * .62); vg.addColorStop(0, 'rgba(255,30,40,0)'); vg.addColorStop(1, `rgba(255,30,40,${(.3 + .28 * blink) * a})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  const cy = H * .4, bh = 62 * s, sh = 13 * s;
+  ctx.globalAlpha = a; ctx.fillStyle = 'rgba(14,4,8,.9)'; ctx.fillRect(0, cy - bh / 2, W, bh);
+  for (const [y, dir] of [[cy - bh / 2 - sh, 1], [cy + bh / 2, -1]]) {   // 흐르는 빗금 띠
+    ctx.save(); ctx.beginPath(); ctx.rect(0, y, W, sh); ctx.clip(); ctx.fillStyle = '#ffcf2e'; ctx.fillRect(0, y, W, sh); ctx.fillStyle = '#1a0a0c';
+    const st = 26 * s, off = (t * 90 * s * dir) % st;
+    for (let x = -st * 2 + off; x < W + st; x += st) { ctx.beginPath(); ctx.moveTo(x, y + sh); ctx.lineTo(x + st * .5, y + sh); ctx.lineTo(x + st * .5 + sh, y); ctx.lineTo(x + sh, y); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const k = 1 + .05 * blink;
+  ctx.font = `${Math.round(32 * s * k)}px ${FONT}`; textOut('WARNING', W / 2, cy - 7 * s, blink > .5 ? '#ff3b4a' : '#ffd24a', 4.2);
+  ctx.font = `${13 * s}px ${FONT}`; textOut('함정이다! 무언가 올라온다', W / 2, cy + 19 * s, '#fff', 2.8);
+  ctx.globalAlpha = 1;
 }
 function drawRoomFront() {
   const g = game, r = g.room, s = view.s, p = g.p, top = Math.min(wy(r.floorY - 9 * TILE) + 26 * s, view.safeT + (g.minis ? 112 : 92) * s);   // v31: 넓어진 방에서는 화면 위쪽(정보 막대 아래)
