@@ -345,13 +345,14 @@ const Meta = {
     if (done) q.runs++;
     q.kills += r.kills; q.bosses += r.bosses; q.combo = Math.max(q.combo, r.combo || 0); q.high = Math.max(q.high || 0, r.high || 0);
     t.runs++; t.kills += r.kills; t.bosses += r.bosses; if (done) t.bestWave = Math.max(t.bestWave, r.wave); t.bestCombo = Math.max(t.bestCombo, r.combo || 0); t.bestHigh = Math.max(t.bestHigh || 0, r.high || 0); t.highN = (t.highN || 0) + (r.high || 0);
+    const best0 = s.best[r.chapter] || 0;   // v51 결과 화면 '새 기록' 표시용(저장 구조는 그대로)
     if (done) s.best[r.chapter] = r.clear || r.bosses > 0 ? STAGES : Math.min(STAGES, Math.max(s.best[r.chapter] || 0, R.cleared));
     // 첫 보스를 잡으면 다음 챕터가 열린다
     if (r.bosses > 0) { s.cleared[r.chapter] = true; }
     // v38 챕터 첫 클리어 보상으로 주는 신(GOD_GET.chapter)
     let newGod = null; if (first) for (const id in GOD_GET) if (GOD_GET[id].chapter === r.chapter + 1 && this.giveGod(id)) newGod = id;
     this.save();
-    return { gold, gem, scrolls, drops, cleared: R.cleared, first, newGod, abyss, firstGem: first ? REWARD.gemFirstClear * (hard ? HARDM.gemFirst : 1) : 0 };
+    return { newBest: done && (s.best[r.chapter] || 0) > best0, gold, gem, scrolls, drops, cleared: R.cleared, first, newGod, abyss, firstGem: first ? REWARD.gemFirstClear * (hard ? HARDM.gemFirst : 1) : 0 };
   },
   clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
   // v43 보통은 앞 챕터를 깨면 열린다. 어려움 n은 보통 n+2(마지막은 보통 6)를 깨고, 앞 어려움도 깨야 열린다(예전 '차례로 12개'보다 일찍 열릴 뿐 닫히는 것은 없다)

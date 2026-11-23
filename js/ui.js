@@ -217,13 +217,28 @@ const UI = {
     $('pause').classList.remove('on');
     const items = rw.drops.map(it => itemTile(it, 'mini', 'div')).join('');
     const sc = Object.keys(rw.scrolls).map(k => `<div class="cu"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" style="inset:auto;left:-6%;top:-6%;width:44%;height:44%" src="${uiIcon(k === 'weapon' ? 'w_' + Meta.s.god : k + '_a')}" alt=""><b class="oL">${rw.scrolls[k]}</b></div>`).join('');
-    const el = $('mResult'); el.classList.add('on');
-    el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? (isHard(r.chapter) ? `어려움 ${chapterInfo(r.chapter).no} 클리어!` : `챕터 ${r.chapter + 1} 클리어!`) : '심연에 떨어졌다'}</div>
-      <div class="rs-g"><div><b class="oL">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>통과한 판</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.high || 0}번</b>신성 폭주</div></div>
+    const el = $('mResult'); el.classList.add('on'); el.classList.remove('skip'); el.classList.toggle('win', !!r.clear);
+    // v51 결과 화면 연출: 제목(0초) → 숫자 칸(0.35초부터 0.1초 간격, 0.5초 동안 올라감) → 새 기록 도장 → 보상 칸(0.12초 간격) → 확인 단추
+    const nTile = (rw.gold ? 1 : 0) + (rw.gem ? 1 : 0) + (rw.abyss ? 1 : 0) + rw.drops.length + Object.keys(rw.scrolls).length, tRw = rw.newBest ? 1.35 : 1.1, tOk = tRw + .15 + Math.min(nTile, 12) * .12 + .25;
+    el.style.setProperty('--rw', tRw + 's'); el.style.setProperty('--ok', tOk + 's');
+    el.innerHTML = `${r.clear ? '<div class="rs-rays"></div>' : ''}<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? (isHard(r.chapter) ? `어려움 ${chapterInfo(r.chapter).no} 클리어!` : `챕터 ${r.chapter + 1} 클리어!`) : '심연에 떨어졌다'}</div>
+      <div class="rs-g"><div><b class="oL" data-n="${Math.min(STAGES, rw.cleared)}" data-suf="/${STAGES}">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>${rw.newBest ? '<i class="rs-new oL">새 기록!</i>' : ''}통과한 판</div><div><b class="oL" data-n="${r.kills}">${r.kills}</b>처치</div><div><b class="oL" data-n="${r.high || 0}" data-suf="번">${r.high || 0}번</b>신성 폭주</div></div>
       <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${rw.firstGem || REWARD.gemFirstClear}</div>` : ''}${rw.newGod ? `<div class="rs-note first oL">새 신 ${GOD_BY[rw.newGod].name} 합류!</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${rw.abyss ? `<div class="cu ab"><img src="${uiIcon('cur_abyss')}" alt=""><b class="oL">${rw.abyss}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
       <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
     $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
-    sfx.reward();
+    [...el.querySelectorAll('.rs-items > *')].forEach((t, i) => t.style.setProperty('--i', Math.min(i, 12)));
+    // 숫자 올라가기 + 소리 박자. 창이 닫히거나 다시 열리면 멈춘다(run 번호로 구분)
+    const run = this._rsRun = (this._rsRun || 0) + 1, t0 = performance.now(), nums = [...el.querySelectorAll('.rs-g b[data-n]')], alive = () => this._rsRun === run && el.classList.contains('on');
+    const setNums = k => nums.forEach((b, i) => { const n = +b.dataset.n, q = Math.max(0, Math.min(1, k - i * .2)); b.textContent = Math.round(n * (1 - Math.pow(1 - q, 3))) + (b.dataset.suf || ''); });
+    const later = (sec, f) => setTimeout(() => { if (alive() && !el.classList.contains('skip')) f(); }, sec * 1000);
+    setNums(0);
+    const tick = () => { if (!alive()) return; if (el.classList.contains('skip')) { setNums(9); return; } const k = (performance.now() - t0 - 350) / 500; setNums(k); if (k < 1.5) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    if (r.clear) { sfx.bigBoom(); later(.3, () => sfx.reward()); }
+    if (rw.newBest) later(.95, () => { sfx.cardLock(2); vibrate(20); });
+    for (let i = 0; i < Math.min(nTile, 12); i++) later(tRw + .15 + i * .12, () => sfx.ping());
+    if (!r.clear && nTile) later(tRw, () => sfx.reward());
+    el.onclick = e => { if (e.target.closest('#rsOk') || el.classList.contains('skip')) return; el.classList.add('skip'); setNums(9); };   // 빈 곳을 누르면 연출을 건너뛰고 바로 끝 모습
   },
 
   /* v42 도전 모드: 목록 창과 결과 창 */

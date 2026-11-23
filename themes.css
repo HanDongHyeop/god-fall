@@ -1,8 +1,8 @@
 /* UI 디자인 풍 시안(디버그 전용). tools/themes.src.css에서 만든 파일이라 직접 고치지 않는다: python tools/build_themes.py */
-#stage[data-theme="a"] { --p0: #1a1009; --p1: #291a0f; --p2: #382414; --p3: #130b06; --i1: #f8e9c6; --i2: #dcc59a; --i3: #b9a073; --ac: #f2bb4e; --ac2: #f08a4a; --ln: #7d5b30; --ol: #120a05; --pr1: #f6c964; --pr2: #c8861c; --prH: #ffe9a8; --prS: #6e430a; --prT: #2a1505; --g1: #4d7a30; --g2: #375c1e; --gT: #f8f0d0; --gS: #223c12; --b1: #3f7090; --b2: #2a5270; --bT: #f1f0e0; --bS: #142c40; --r1: #b4452e; --r2: #8a2c1c; --rT: #fff0dc; --rS: #4a140a; --y1: #5a4630; --y2: #45341f; --yT: #f0e0bc; --yS: #1c130a; --v1: #7a4a8a; --v2: #5a326a; --vT: #f6e6f6; --vS: #2c1436; --ok: #a9e08a; --no: #ff9a84; --sky: #b98c58; --skA: #1a1009e6; --skB: #1a100955; --skC: #1a100999; --tShop: #6c2470; --tQuest: #14302c; --tTalent: #4a2408; --ink: #1a1009; --panel: #291a0f; --panel2: #382414; --gold: #f2bb4e; --gold2: #f08a4a; --line: #7d5b30; }
-#stage[data-theme="b"] { --p0: #0e0c0a; --p1: #181512; --p2: #24201a; --p3: #090807; --i1: #f3e8d0; --i2: #d0c2a2; --i3: #a99c7e; --ac: #e6cd8e; --ac2: #c9a050; --ln: #6e5c36; --ol: #050403; --pr1: #f8e7b4; --pr2: #c9a252; --prH: #fff8dc; --prS: #5e4718; --prT: #1c1406; --g1: #2a2620; --g2: #1c1915; --gT: #b4e094; --gS: #050403; --b1: #2a2620; --b2: #1c1915; --bT: #a4cdf4; --bS: #050403; --r1: #2a2620; --r2: #1c1915; --rT: #f8a898; --rS: #050403; --y1: #2a2620; --y2: #1c1915; --yT: #d0c2a2; --yS: #050403; --v1: #2a2620; --v2: #1c1915; --vT: #d6b4f6; --vS: #050403; --ok: #b4e094; --no: #f8a898; --sky: #8f8068; --skA: #0e0c0aeb; --skB: #0e0c0a59; --skC: #0e0c0aa6; --tShop: #5c2268; --tQuest: #0c2e2e; --tTalent: #5a3008; --ink: #0e0c0a; --panel: #181512; --panel2: #24201a; --gold: #e6cd8e; --gold2: #c9a050; --line: #6e5c36; }
-#stage[data-theme="c"] { --p0: #0b101e; --p1: #131a2e; --p2: #1c2640; --p3: #070b16; --i1: #eaeffa; --i2: #bcc7de; --i3: #98a6c4; --ac: #d6e0f4; --ac2: #9db8ff; --ln: #4c5c88; --ol: #050812; --pr1: #eef3fd; --pr2: #a4b6da; --prH: #ffffff; --prS: #3a4a74; --prT: #0d1530; --g1: #2f7a6a; --g2: #205a50; --gT: #eafaf2; --gS: #0c2c28; --b1: #4064b4; --b2: #2c4a90; --bT: #eef2ff; --bS: #14244e; --r1: #a8406a; --r2: #7e2a50; --rT: #ffe8f0; --rS: #3e1028; --y1: #3a4664; --y2: #2a344e; --yT: #dfe6f6; --yS: #10162a; --v1: #6a4cb0; --v2: #4c348a; --vT: #f0e8ff; --vS: #22144a; --ok: #9aeac0; --no: #ff9ab4; --sky: #6a82c8; --skA: #0b101ee6; --skB: #0b101e59; --skC: #0b101e99; --tShop: #44288a; --tQuest: #0c3a44; --tTalent: #5a2a30; --ink: #0b101e; --panel: #131a2e; --panel2: #1c2640; --gold: #d6e0f4; --gold2: #9db8ff; --line: #4c5c88; }
-#stage[data-theme="d"] { --p0: #15180c; --p1: #222512; --p2: #2f321a; --p3: #0e1008; --i1: #f2e6be; --i2: #d0c596; --i3: #aca478; --ac: #e6cf7c; --ac2: #f0694e; --ln: #6c6c3a; --ol: #0a0c05; --pr1: #d24e34; --pr2: #a22e1c; --prH: #f0866a; --prS: #54120a; --prT: #fff2dc; --g1: #5a7a2e; --g2: #42601e; --gT: #f6f2d0; --gS: #1e300c; --b1: #2e6e6e; --b2: #1e5252; --bT: #eef6ea; --bS: #0c2c2c; --r1: #8a5a2a; --r2: #6a421a; --rT: #fff0d6; --rS: #32200a; --y1: #4c4e2e; --y2: #3a3c20; --yT: #f0e6c0; --yS: #16180a; --v1: #6a4a7a; --v2: #4e345c; --vT: #f6e8f6; --vS: #26162e; --ok: #b6e080; --no: #ff9c84; --sky: #a8a868; --skA: #15180ce6; --skB: #15180c55; --skC: #15180c99; --tShop: #4a2e8c; --tQuest: #0e3234; --tTalent: #48300a; --ink: #15180c; --panel: #222512; --panel2: #2f321a; --gold: #e6cf7c; --gold2: #f0694e; --line: #6c6c3a; }
+#stage[data-theme="a"] { --p0: #1a1009; --p1: #291a0f; --p2: #382414; --p3: #130b06; --p4: #4a3018; --i1: #f8e9c6; --i2: #dcc59a; --i3: #b9a073; --ac: #f2bb4e; --ac2: #f08a4a; --ln: #7d5b30; --ol: #120a05; --pr1: #f6c964; --pr2: #c8861c; --prH: #ffe9a8; --prS: #6e430a; --prT: #2a1505; --g1: #4d7a30; --g2: #375c1e; --gT: #f8f0d0; --gS: #223c12; --b1: #3f7090; --b2: #2a5270; --bT: #f1f0e0; --bS: #142c40; --r1: #b4452e; --r2: #8a2c1c; --rT: #fff0dc; --rS: #4a140a; --y1: #5a4630; --y2: #45341f; --yT: #f0e0bc; --yS: #1c130a; --v1: #7a4a8a; --v2: #5a326a; --vT: #f6e6f6; --vS: #2c1436; --ok: #a9e08a; --no: #ff9a84; --tShop: #6c2470; --tQuest: #14302c; --tTalent: #4a2408; --ink: #1a1009; --panel: #291a0f; --panel2: #382414; --gold: #f2bb4e; --gold2: #f08a4a; --line: #7d5b30; }
+#stage[data-theme="a2"] { --p0: #0f0f10; --p1: #1b1b1d; --p2: #28282b; --p3: #09090a; --p4: #38383c; --i1: #f1ece0; --i2: #cfc8b8; --i3: #a8a294; --ac: #f0d8a4; --ac2: #f0654a; --ln: #6a665c; --ol: #050505; --pr1: #d6452c; --pr2: #a82a18; --prH: #f58a6a; --prS: #54120a; --prT: #fff3e0; --g1: #4a7040; --g2: #34542c; --gT: #f2f4dc; --gS: #162a12; --b1: #3c6488; --b2: #284a6a; --bT: #eef2f6; --bS: #10263a; --r1: #8e2a3a; --r2: #6a1a2a; --rT: #ffe8e6; --rS: #300a12; --y1: #4a4a4e; --y2: #38383c; --yT: #ece6d8; --yS: #101012; --v1: #6c4c8c; --v2: #4e3468; --vT: #f4e8fa; --vS: #241434; --ok: #a9e08a; --no: #ff9a84; --tShop: #4a2466; --tQuest: #12302e; --tTalent: #40280e; --ink: #0f0f10; --panel: #1b1b1d; --panel2: #28282b; --gold: #f0d8a4; --gold2: #f0654a; --line: #6a665c; }
+#stage[data-theme="a3"] { --p0: #0a1022; --p1: #121b36; --p2: #1b274a; --p3: #060a18; --p4: #273764; --i1: #eef0f8; --i2: #c3cbe0; --i3: #9ba7c6; --ac: #f4d27a; --ac2: #ffb45a; --ln: #4d5f92; --ol: #040714; --pr1: #ffe07e; --pr2: #dba42a; --prH: #fff4c4; --prS: #6e4c0c; --prT: #141238; --g1: #2f7a62; --g2: #205a48; --gT: #eafaf0; --gS: #0c2c24; --b1: #3e68b8; --b2: #2a4c92; --bT: #eef2ff; --bS: #12224c; --r1: #a8405a; --r2: #7e2a42; --rT: #ffe8ee; --rS: #3e1022; --y1: #3a4668; --y2: #2a3450; --yT: #dfe6f6; --yS: #0e142a; --v1: #6a4cb0; --v2: #4c348a; --vT: #f0e8ff; --vS: #22144a; --ok: #9aeac0; --no: #ff9ab0; --tShop: #44288a; --tQuest: #0c3a44; --tTalent: #4a2a30; --ink: #0a1022; --panel: #121b36; --panel2: #1b274a; --gold: #f4d27a; --gold2: #ffb45a; --line: #4d5f92; }
+#stage[data-theme="a4"] { --p0: #0a1811; --p1: #11261b; --p2: #193526; --p3: #06100b; --p4: #264a36; --i1: #f0f1dc; --i2: #c8d0b0; --i3: #a2b090; --ac: #ead68c; --ac2: #f09a5c; --ln: #4a7458; --ol: #030a06; --pr1: #f4a05a; --pr2: #c8621e; --prH: #ffd2a4; --prS: #5e2a08; --prT: #2a1204; --g1: #457228; --g2: #30561a; --gT: #f8f8dc; --gS: #162a0a; --b1: #2e7080; --b2: #1e5462; --bT: #eef6f2; --bS: #0a2a32; --r1: #a8482e; --r2: #7e2e1c; --rT: #fff0dc; --rS: #40140a; --y1: #3e5244; --y2: #2e3e32; --yT: #e8eed8; --yS: #0c1810; --v1: #7a4a86; --v2: #5a3266; --vT: #f6e8f6; --vS: #2a1432; --ok: #b6e884; --no: #ff9c84; --tShop: #4a2a78; --tQuest: #0c343a; --tTalent: #44300c; --ink: #0a1811; --panel: #11261b; --panel2: #193526; --gold: #ead68c; --gold2: #f09a5c; --line: #4a7458; }
 #stage[data-theme="a"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
 #stage[data-theme="a"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
 #stage[data-theme="a"] .muted { color: var(--i2); }
@@ -26,7 +26,6 @@
 #stage[data-theme="a"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
 #stage[data-theme="a"] .nb { color: var(--i2); }
 #stage[data-theme="a"] .nb.on span { color: var(--ac); }
-#stage[data-theme="a"] .battle { background: linear-gradient(var(--skA), var(--skB) 34%, var(--skB) 62%, var(--skC)), url('assets/ui/lobby_bg.jpg') center/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
 #stage[data-theme="a"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
 #stage[data-theme="a"] .dt { color: var(--i2); }
 #stage[data-theme="a"] .dt.lock { color: var(--i3); }
@@ -53,7 +52,6 @@
 #stage[data-theme="a"] .tutTog b { color: var(--i3); }
 #stage[data-theme="a"] .tutTog.on { color: var(--i1); }
 #stage[data-theme="a"] .tutTog.on b { color: var(--ac); }
-#stage[data-theme="a"] .hero-stage { background: linear-gradient(#0000 40%, var(--skC)), url('assets/ui/stage_bg.jpg') center bottom/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
 #stage[data-theme="a"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
 #stage[data-theme="a"] .statbar .sl { color: var(--i2); }
 #stage[data-theme="a"] .statbar .iw { background: var(--i1); color: var(--p0); }
@@ -160,521 +158,533 @@
 #stage[data-theme="a"] .ip-gr.g6, #stage[data-theme="a"] .ip-gr.g7 { text-shadow: none; }
 #stage[data-theme="a"] .badge, #stage[data-theme="a"] .grid .it .new, #stage[data-theme="a"] .dt .dot, #stage[data-theme="a"] .modesbtn .dot { background: #b3172a; }
 #stage[data-theme="a"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
-#stage[data-theme="b"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
-#stage[data-theme="b"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="b"] .muted { color: var(--i2); }
-#stage[data-theme="b"] .btn { border-radius: var(--rad); }
-#stage[data-theme="b"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
-#stage[data-theme="b"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="b"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
-#stage[data-theme="b"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
-#stage[data-theme="b"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
-#stage[data-theme="b"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
-#stage[data-theme="b"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
-#stage[data-theme="b"] .btn.glass.dimb { color: var(--i3); }
-#stage[data-theme="b"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
-#stage[data-theme="b"] .btn .pr, #stage[data-theme="b"] .start small { color: inherit; }
-#stage[data-theme="b"] .btn .cnt { background: #0000004d; }
-#stage[data-theme="b"] #lobby { background: var(--pat), var(--p0); }
-#stage[data-theme="b"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
-#stage[data-theme="b"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="b"] .tb-2 .pw { color: var(--ac); }
-#stage[data-theme="b"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="b"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
-#stage[data-theme="b"] .nb { color: var(--i2); }
-#stage[data-theme="b"] .nb.on span { color: var(--ac); }
-#stage[data-theme="b"] .battle { background: linear-gradient(var(--skA), var(--skB) 34%, var(--skB) 62%, var(--skC)), url('assets/ui/lobby_bg.jpg') center/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="b"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="b"] .dt { color: var(--i2); }
-#stage[data-theme="b"] .dt.lock { color: var(--i3); }
-#stage[data-theme="b"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
-#stage[data-theme="b"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
-#stage[data-theme="b"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
-#stage[data-theme="b"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
-#stage[data-theme="b"] .ch-sub { color: var(--i1); }
-#stage[data-theme="b"] .ch-best { color: var(--ac); }
-#stage[data-theme="b"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
-#stage[data-theme="b"] .ch-pips .sp.done, #stage[data-theme="b"] .ch-pips .sp.boss.done { background: var(--ac); }
-#stage[data-theme="b"] .ch-pips .sp.rest { background: #24483a; }
-#stage[data-theme="b"] .ch-pips .sp.rest.done { background: var(--ok); }
-#stage[data-theme="b"] .ch-pips .sp.boss { background: #8a241c; }
-#stage[data-theme="b"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
-#stage[data-theme="b"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
-#stage[data-theme="b"] .lockmsg, #stage[data-theme="b"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="b"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
-#stage[data-theme="b"] .ch-hard b { color: #ffa898; }
-#stage[data-theme="b"] .ch-rec.ok b { color: var(--ok); }
-#stage[data-theme="b"] .ch-rec.low b { color: var(--no); }
-#stage[data-theme="b"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="b"] .tutTog { background: var(--p1); color: var(--i2); }
-#stage[data-theme="b"] .tutTog b { color: var(--i3); }
-#stage[data-theme="b"] .tutTog.on { color: var(--i1); }
-#stage[data-theme="b"] .tutTog.on b { color: var(--ac); }
-#stage[data-theme="b"] .hero-stage { background: linear-gradient(#0000 40%, var(--skC)), url('assets/ui/stage_bg.jpg') center bottom/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="b"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
-#stage[data-theme="b"] .statbar .sl { color: var(--i2); }
-#stage[data-theme="b"] .statbar .iw { background: var(--i1); color: var(--p0); }
-#stage[data-theme="b"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="b"] .slot .sl-nm { color: var(--i1); opacity: 1; }
-#stage[data-theme="b"] .sub-tabs { background: var(--p0); }
-#stage[data-theme="b"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
-#stage[data-theme="b"] .toolbar { background: var(--p1); }
-#stage[data-theme="b"] .sect, #stage[data-theme="b"] .god-act, #stage[data-theme="b"] .fg-grid, #stage[data-theme="b"] .bg-dark { background: var(--p1); }
-#stage[data-theme="b"] .grid, #stage[data-theme="b"] .scgrid, #stage[data-theme="b"] .gods, #stage[data-theme="b"] #godScroll { background: var(--pat), var(--p1); }
-#stage[data-theme="b"] .sect { color: var(--i2); }
-#stage[data-theme="b"] .sect b, #stage[data-theme="b"] .sect.top b { color: var(--ac); }
-#stage[data-theme="b"] .sect.ab b { color: var(--ac2); }
-#stage[data-theme="b"] .sect.ab span { color: var(--i1); }
-#stage[data-theme="b"] .sect.ab i { color: var(--i2); }
-#stage[data-theme="b"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
-#stage[data-theme="b"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
-#stage[data-theme="b"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
-#stage[data-theme="b"] .gc { background: var(--p3); }
-#stage[data-theme="b"] .gc.soon { background: var(--p2); }
-#stage[data-theme="b"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
-#stage[data-theme="b"] .gc.soon .pg { color: var(--i2); }
-#stage[data-theme="b"] .gabout, #stage[data-theme="b"] .gacc { background: var(--p2); color: var(--i1); }
-#stage[data-theme="b"] .gpanel { background: var(--p1); color: var(--i1); }
-#stage[data-theme="b"] .gsub { color: var(--i2); }
-#stage[data-theme="b"] .gtier i { color: var(--i1); background: #ffffff14; }
-#stage[data-theme="b"] .gl { background: var(--p3); color: var(--i3); }
-#stage[data-theme="b"] .gl b { color: var(--i3); }
-#stage[data-theme="b"] .gl.on { background: var(--p2); color: var(--i1); }
-#stage[data-theme="b"] .god-info { background: var(--p0); }
-#stage[data-theme="b"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
-#stage[data-theme="b"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
-#stage[data-theme="b"] .chest .dsc { color: var(--i1); }
-#stage[data-theme="b"] .chest .info { background: var(--i1); color: var(--p0); }
-#stage[data-theme="b"] .chest .feat { background: var(--p3); color: var(--i1); }
-#stage[data-theme="b"] .chest .pity { background: var(--p3); color: var(--ac); }
-#stage[data-theme="b"] .chest .note { color: var(--i2); }
-#stage[data-theme="b"] .ss-r { background: var(--p3); }
-#stage[data-theme="b"] .ss-f { background: #ffffff1a; }
-#stage[data-theme="b"] .ss-n small { color: var(--i2); }
-#stage[data-theme="b"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
-#stage[data-theme="b"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
-#stage[data-theme="b"] .qrow, #stage[data-theme="b"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="b"] .tc, #stage[data-theme="b"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="b"] .tc .dsc { color: var(--i1); }
-#stage[data-theme="b"] .tc .lvv, #stage[data-theme="b"] .h2 { color: var(--ac); }
-#stage[data-theme="b"] .qrow .bar { background: var(--p3); }
-#stage[data-theme="b"] .modal2 { background: #000000b8; }
-#stage[data-theme="b"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
-#stage[data-theme="b"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
-#stage[data-theme="b"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
-#stage[data-theme="b"] .ip-ds, #stage[data-theme="b"] .note { color: var(--i2); }
-#stage[data-theme="b"] .ip-slot { background: var(--p3); color: var(--i1); }
-#stage[data-theme="b"] .ip-own { color: var(--i2); }
-#stage[data-theme="b"] .ip-own b { color: var(--ac); }
-#stage[data-theme="b"] .ip-own.no, #stage[data-theme="b"] .ip-own.no b { color: var(--no); }
-#stage[data-theme="b"] .ip-st, #stage[data-theme="b"] .ip-lv { background: var(--p3); }
-#stage[data-theme="b"] .ip-st b { color: var(--ac); }
-#stage[data-theme="b"] .ip-st em { color: var(--ok); }
-#stage[data-theme="b"] .ip-sk .sk em { color: var(--h); filter: none; }
-#stage[data-theme="b"] .ip-sk .off, #stage[data-theme="b"] .ip-sk .sk.off { color: var(--i3); }
-#stage[data-theme="b"] .ip-sk .off i, #stage[data-theme="b"] .ip-sk .sk.off i { background: var(--ln); }
-#stage[data-theme="b"] .ip-sk .sk.off em { color: var(--i3); }
-#stage[data-theme="b"] .ip-sk .sk.sig.on span { color: var(--ac); }
-#stage[data-theme="b"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="b"] .ip-up .no { color: var(--no); }
-#stage[data-theme="b"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
-#stage[data-theme="b"] .ip-up .row.bulk b { color: var(--ac); }
-#stage[data-theme="b"] .ip-up .row.bulk.off i { color: var(--i3); }
-#stage[data-theme="b"] .ip-ban { background: #3a1210; color: #ffb0a0; }
-#stage[data-theme="b"] .ip-acc { background: var(--p3); color: var(--ac); }
-#stage[data-theme="b"] .ua-tabs button { background: var(--p3); color: var(--i2); }
-#stage[data-theme="b"] .ct-n { color: var(--no); }
-#stage[data-theme="b"] .ct-d { color: var(--i1); }
-#stage[data-theme="b"] .ct-l { color: var(--i2); }
-#stage[data-theme="b"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="b"] .card-pop.modes .md-t { color: var(--ac); }
-#stage[data-theme="b"] .card-pop.modes .md-s { color: var(--i1); }
-#stage[data-theme="b"] .card-pop.modes .md-i { color: var(--i2); }
-#stage[data-theme="b"] .card-pop.modes .md-i b { color: var(--ac); }
-#stage[data-theme="b"] .fg-ab { color: #dcb4ff; }
-#stage[data-theme="b"] .fg-ab.no { color: var(--no); }
-#stage[data-theme="b"] .sv-list { background: var(--p3); }
-#stage[data-theme="b"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="b"] #forge { background: var(--p0); }
-#stage[data-theme="b"] .fg-bot { background: var(--p0); }
-#stage[data-theme="b"] .fg-title { background: var(--p2); color: var(--i1); }
-#stage[data-theme="b"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
-#stage[data-theme="b"] .ga-nm { color: var(--i1); }
-#stage[data-theme="b"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
-#stage[data-theme="b"] .rs-g div { background: var(--p2); color: var(--i2); }
-#stage[data-theme="b"] .rs-g b { color: var(--i1); }
-#stage[data-theme="b"] .rs-r { background: var(--p1); }
-#stage[data-theme="b"] .rs-note { color: var(--i2); }
-#stage[data-theme="b"] .cu { background: var(--p2); }
-#stage[data-theme="b"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
-#stage[data-theme="b"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="b"] .ribbon::before, #stage[data-theme="b"] .ribbon::after { background: var(--prS); }
-#stage[data-theme="b"] .csub { color: var(--i1); }
-#stage[data-theme="b"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="b"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
-#stage[data-theme="b"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
-#stage[data-theme="b"] .it-s, #stage[data-theme="b"] .card-pop .hd, #stage[data-theme="b"] .ip-gr, #stage[data-theme="b"] .rates .r span, #stage[data-theme="b"] .qrow .bar span, #stage[data-theme="b"] .pcard .tag, #stage[data-theme="b"] .pcard .nm, #stage[data-theme="b"] .gc .rk, #stage[data-theme="b"] .grk, #stage[data-theme="b"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="b"] .ip-gr.g6, #stage[data-theme="b"] .ip-gr.g7 { text-shadow: none; }
-#stage[data-theme="b"] .badge, #stage[data-theme="b"] .grid .it .new, #stage[data-theme="b"] .dt .dot, #stage[data-theme="b"] .modesbtn .dot { background: #b3172a; }
-#stage[data-theme="b"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
-#stage[data-theme="c"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
-#stage[data-theme="c"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="c"] .muted { color: var(--i2); }
-#stage[data-theme="c"] .btn { border-radius: var(--rad); }
-#stage[data-theme="c"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
-#stage[data-theme="c"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="c"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
-#stage[data-theme="c"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
-#stage[data-theme="c"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
-#stage[data-theme="c"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
-#stage[data-theme="c"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
-#stage[data-theme="c"] .btn.glass.dimb { color: var(--i3); }
-#stage[data-theme="c"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
-#stage[data-theme="c"] .btn .pr, #stage[data-theme="c"] .start small { color: inherit; }
-#stage[data-theme="c"] .btn .cnt { background: #0000004d; }
-#stage[data-theme="c"] #lobby { background: var(--pat), var(--p0); }
-#stage[data-theme="c"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
-#stage[data-theme="c"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="c"] .tb-2 .pw { color: var(--ac); }
-#stage[data-theme="c"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="c"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
-#stage[data-theme="c"] .nb { color: var(--i2); }
-#stage[data-theme="c"] .nb.on span { color: var(--ac); }
-#stage[data-theme="c"] .battle { background: linear-gradient(var(--skA), var(--skB) 34%, var(--skB) 62%, var(--skC)), url('assets/ui/lobby_bg.jpg') center/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="c"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="c"] .dt { color: var(--i2); }
-#stage[data-theme="c"] .dt.lock { color: var(--i3); }
-#stage[data-theme="c"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
-#stage[data-theme="c"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
-#stage[data-theme="c"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
-#stage[data-theme="c"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
-#stage[data-theme="c"] .ch-sub { color: var(--i1); }
-#stage[data-theme="c"] .ch-best { color: var(--ac); }
-#stage[data-theme="c"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
-#stage[data-theme="c"] .ch-pips .sp.done, #stage[data-theme="c"] .ch-pips .sp.boss.done { background: var(--ac); }
-#stage[data-theme="c"] .ch-pips .sp.rest { background: #24483a; }
-#stage[data-theme="c"] .ch-pips .sp.rest.done { background: var(--ok); }
-#stage[data-theme="c"] .ch-pips .sp.boss { background: #8a241c; }
-#stage[data-theme="c"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
-#stage[data-theme="c"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
-#stage[data-theme="c"] .lockmsg, #stage[data-theme="c"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="c"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
-#stage[data-theme="c"] .ch-hard b { color: #ffa898; }
-#stage[data-theme="c"] .ch-rec.ok b { color: var(--ok); }
-#stage[data-theme="c"] .ch-rec.low b { color: var(--no); }
-#stage[data-theme="c"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="c"] .tutTog { background: var(--p1); color: var(--i2); }
-#stage[data-theme="c"] .tutTog b { color: var(--i3); }
-#stage[data-theme="c"] .tutTog.on { color: var(--i1); }
-#stage[data-theme="c"] .tutTog.on b { color: var(--ac); }
-#stage[data-theme="c"] .hero-stage { background: linear-gradient(#0000 40%, var(--skC)), url('assets/ui/stage_bg.jpg') center bottom/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="c"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
-#stage[data-theme="c"] .statbar .sl { color: var(--i2); }
-#stage[data-theme="c"] .statbar .iw { background: var(--i1); color: var(--p0); }
-#stage[data-theme="c"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="c"] .slot .sl-nm { color: var(--i1); opacity: 1; }
-#stage[data-theme="c"] .sub-tabs { background: var(--p0); }
-#stage[data-theme="c"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
-#stage[data-theme="c"] .toolbar { background: var(--p1); }
-#stage[data-theme="c"] .sect, #stage[data-theme="c"] .god-act, #stage[data-theme="c"] .fg-grid, #stage[data-theme="c"] .bg-dark { background: var(--p1); }
-#stage[data-theme="c"] .grid, #stage[data-theme="c"] .scgrid, #stage[data-theme="c"] .gods, #stage[data-theme="c"] #godScroll { background: var(--pat), var(--p1); }
-#stage[data-theme="c"] .sect { color: var(--i2); }
-#stage[data-theme="c"] .sect b, #stage[data-theme="c"] .sect.top b { color: var(--ac); }
-#stage[data-theme="c"] .sect.ab b { color: var(--ac2); }
-#stage[data-theme="c"] .sect.ab span { color: var(--i1); }
-#stage[data-theme="c"] .sect.ab i { color: var(--i2); }
-#stage[data-theme="c"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
-#stage[data-theme="c"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
-#stage[data-theme="c"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
-#stage[data-theme="c"] .gc { background: var(--p3); }
-#stage[data-theme="c"] .gc.soon { background: var(--p2); }
-#stage[data-theme="c"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
-#stage[data-theme="c"] .gc.soon .pg { color: var(--i2); }
-#stage[data-theme="c"] .gabout, #stage[data-theme="c"] .gacc { background: var(--p2); color: var(--i1); }
-#stage[data-theme="c"] .gpanel { background: var(--p1); color: var(--i1); }
-#stage[data-theme="c"] .gsub { color: var(--i2); }
-#stage[data-theme="c"] .gtier i { color: var(--i1); background: #ffffff14; }
-#stage[data-theme="c"] .gl { background: var(--p3); color: var(--i3); }
-#stage[data-theme="c"] .gl b { color: var(--i3); }
-#stage[data-theme="c"] .gl.on { background: var(--p2); color: var(--i1); }
-#stage[data-theme="c"] .god-info { background: var(--p0); }
-#stage[data-theme="c"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
-#stage[data-theme="c"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
-#stage[data-theme="c"] .chest .dsc { color: var(--i1); }
-#stage[data-theme="c"] .chest .info { background: var(--i1); color: var(--p0); }
-#stage[data-theme="c"] .chest .feat { background: var(--p3); color: var(--i1); }
-#stage[data-theme="c"] .chest .pity { background: var(--p3); color: var(--ac); }
-#stage[data-theme="c"] .chest .note { color: var(--i2); }
-#stage[data-theme="c"] .ss-r { background: var(--p3); }
-#stage[data-theme="c"] .ss-f { background: #ffffff1a; }
-#stage[data-theme="c"] .ss-n small { color: var(--i2); }
-#stage[data-theme="c"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
-#stage[data-theme="c"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
-#stage[data-theme="c"] .qrow, #stage[data-theme="c"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="c"] .tc, #stage[data-theme="c"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="c"] .tc .dsc { color: var(--i1); }
-#stage[data-theme="c"] .tc .lvv, #stage[data-theme="c"] .h2 { color: var(--ac); }
-#stage[data-theme="c"] .qrow .bar { background: var(--p3); }
-#stage[data-theme="c"] .modal2 { background: #000000b8; }
-#stage[data-theme="c"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
-#stage[data-theme="c"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
-#stage[data-theme="c"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
-#stage[data-theme="c"] .ip-ds, #stage[data-theme="c"] .note { color: var(--i2); }
-#stage[data-theme="c"] .ip-slot { background: var(--p3); color: var(--i1); }
-#stage[data-theme="c"] .ip-own { color: var(--i2); }
-#stage[data-theme="c"] .ip-own b { color: var(--ac); }
-#stage[data-theme="c"] .ip-own.no, #stage[data-theme="c"] .ip-own.no b { color: var(--no); }
-#stage[data-theme="c"] .ip-st, #stage[data-theme="c"] .ip-lv { background: var(--p3); }
-#stage[data-theme="c"] .ip-st b { color: var(--ac); }
-#stage[data-theme="c"] .ip-st em { color: var(--ok); }
-#stage[data-theme="c"] .ip-sk .sk em { color: var(--h); filter: none; }
-#stage[data-theme="c"] .ip-sk .off, #stage[data-theme="c"] .ip-sk .sk.off { color: var(--i3); }
-#stage[data-theme="c"] .ip-sk .off i, #stage[data-theme="c"] .ip-sk .sk.off i { background: var(--ln); }
-#stage[data-theme="c"] .ip-sk .sk.off em { color: var(--i3); }
-#stage[data-theme="c"] .ip-sk .sk.sig.on span { color: var(--ac); }
-#stage[data-theme="c"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="c"] .ip-up .no { color: var(--no); }
-#stage[data-theme="c"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
-#stage[data-theme="c"] .ip-up .row.bulk b { color: var(--ac); }
-#stage[data-theme="c"] .ip-up .row.bulk.off i { color: var(--i3); }
-#stage[data-theme="c"] .ip-ban { background: #3a1210; color: #ffb0a0; }
-#stage[data-theme="c"] .ip-acc { background: var(--p3); color: var(--ac); }
-#stage[data-theme="c"] .ua-tabs button { background: var(--p3); color: var(--i2); }
-#stage[data-theme="c"] .ct-n { color: var(--no); }
-#stage[data-theme="c"] .ct-d { color: var(--i1); }
-#stage[data-theme="c"] .ct-l { color: var(--i2); }
-#stage[data-theme="c"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="c"] .card-pop.modes .md-t { color: var(--ac); }
-#stage[data-theme="c"] .card-pop.modes .md-s { color: var(--i1); }
-#stage[data-theme="c"] .card-pop.modes .md-i { color: var(--i2); }
-#stage[data-theme="c"] .card-pop.modes .md-i b { color: var(--ac); }
-#stage[data-theme="c"] .fg-ab { color: #dcb4ff; }
-#stage[data-theme="c"] .fg-ab.no { color: var(--no); }
-#stage[data-theme="c"] .sv-list { background: var(--p3); }
-#stage[data-theme="c"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="c"] #forge { background: var(--p0); }
-#stage[data-theme="c"] .fg-bot { background: var(--p0); }
-#stage[data-theme="c"] .fg-title { background: var(--p2); color: var(--i1); }
-#stage[data-theme="c"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
-#stage[data-theme="c"] .ga-nm { color: var(--i1); }
-#stage[data-theme="c"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
-#stage[data-theme="c"] .rs-g div { background: var(--p2); color: var(--i2); }
-#stage[data-theme="c"] .rs-g b { color: var(--i1); }
-#stage[data-theme="c"] .rs-r { background: var(--p1); }
-#stage[data-theme="c"] .rs-note { color: var(--i2); }
-#stage[data-theme="c"] .cu { background: var(--p2); }
-#stage[data-theme="c"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
-#stage[data-theme="c"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="c"] .ribbon::before, #stage[data-theme="c"] .ribbon::after { background: var(--prS); }
-#stage[data-theme="c"] .csub { color: var(--i1); }
-#stage[data-theme="c"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="c"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
-#stage[data-theme="c"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
-#stage[data-theme="c"] .it-s, #stage[data-theme="c"] .card-pop .hd, #stage[data-theme="c"] .ip-gr, #stage[data-theme="c"] .rates .r span, #stage[data-theme="c"] .qrow .bar span, #stage[data-theme="c"] .pcard .tag, #stage[data-theme="c"] .pcard .nm, #stage[data-theme="c"] .gc .rk, #stage[data-theme="c"] .grk, #stage[data-theme="c"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="c"] .ip-gr.g6, #stage[data-theme="c"] .ip-gr.g7 { text-shadow: none; }
-#stage[data-theme="c"] .badge, #stage[data-theme="c"] .grid .it .new, #stage[data-theme="c"] .dt .dot, #stage[data-theme="c"] .modesbtn .dot { background: #b3172a; }
-#stage[data-theme="c"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
-#stage[data-theme="d"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
-#stage[data-theme="d"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="d"] .muted { color: var(--i2); }
-#stage[data-theme="d"] .btn { border-radius: var(--rad); }
-#stage[data-theme="d"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
-#stage[data-theme="d"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="d"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
-#stage[data-theme="d"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
-#stage[data-theme="d"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
-#stage[data-theme="d"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
-#stage[data-theme="d"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
-#stage[data-theme="d"] .btn.glass.dimb { color: var(--i3); }
-#stage[data-theme="d"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
-#stage[data-theme="d"] .btn .pr, #stage[data-theme="d"] .start small { color: inherit; }
-#stage[data-theme="d"] .btn .cnt { background: #0000004d; }
-#stage[data-theme="d"] #lobby { background: var(--pat), var(--p0); }
-#stage[data-theme="d"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
-#stage[data-theme="d"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="d"] .tb-2 .pw { color: var(--ac); }
-#stage[data-theme="d"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
-#stage[data-theme="d"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
-#stage[data-theme="d"] .nb { color: var(--i2); }
-#stage[data-theme="d"] .nb.on span { color: var(--ac); }
-#stage[data-theme="d"] .battle { background: linear-gradient(var(--skA), var(--skB) 34%, var(--skB) 62%, var(--skC)), url('assets/ui/lobby_bg.jpg') center/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="d"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="d"] .dt { color: var(--i2); }
-#stage[data-theme="d"] .dt.lock { color: var(--i3); }
-#stage[data-theme="d"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
-#stage[data-theme="d"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
-#stage[data-theme="d"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
-#stage[data-theme="d"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
-#stage[data-theme="d"] .ch-sub { color: var(--i1); }
-#stage[data-theme="d"] .ch-best { color: var(--ac); }
-#stage[data-theme="d"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
-#stage[data-theme="d"] .ch-pips .sp.done, #stage[data-theme="d"] .ch-pips .sp.boss.done { background: var(--ac); }
-#stage[data-theme="d"] .ch-pips .sp.rest { background: #24483a; }
-#stage[data-theme="d"] .ch-pips .sp.rest.done { background: var(--ok); }
-#stage[data-theme="d"] .ch-pips .sp.boss { background: #8a241c; }
-#stage[data-theme="d"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
-#stage[data-theme="d"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
-#stage[data-theme="d"] .lockmsg, #stage[data-theme="d"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="d"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
-#stage[data-theme="d"] .ch-hard b { color: #ffa898; }
-#stage[data-theme="d"] .ch-rec.ok b { color: var(--ok); }
-#stage[data-theme="d"] .ch-rec.low b { color: var(--no); }
-#stage[data-theme="d"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="d"] .tutTog { background: var(--p1); color: var(--i2); }
-#stage[data-theme="d"] .tutTog b { color: var(--i3); }
-#stage[data-theme="d"] .tutTog.on { color: var(--i1); }
-#stage[data-theme="d"] .tutTog.on b { color: var(--ac); }
-#stage[data-theme="d"] .hero-stage { background: linear-gradient(#0000 40%, var(--skC)), url('assets/ui/stage_bg.jpg') center bottom/cover, var(--sky); background-blend-mode: normal, multiply, normal; }
-#stage[data-theme="d"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
-#stage[data-theme="d"] .statbar .sl { color: var(--i2); }
-#stage[data-theme="d"] .statbar .iw { background: var(--i1); color: var(--p0); }
-#stage[data-theme="d"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="d"] .slot .sl-nm { color: var(--i1); opacity: 1; }
-#stage[data-theme="d"] .sub-tabs { background: var(--p0); }
-#stage[data-theme="d"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
-#stage[data-theme="d"] .toolbar { background: var(--p1); }
-#stage[data-theme="d"] .sect, #stage[data-theme="d"] .god-act, #stage[data-theme="d"] .fg-grid, #stage[data-theme="d"] .bg-dark { background: var(--p1); }
-#stage[data-theme="d"] .grid, #stage[data-theme="d"] .scgrid, #stage[data-theme="d"] .gods, #stage[data-theme="d"] #godScroll { background: var(--pat), var(--p1); }
-#stage[data-theme="d"] .sect { color: var(--i2); }
-#stage[data-theme="d"] .sect b, #stage[data-theme="d"] .sect.top b { color: var(--ac); }
-#stage[data-theme="d"] .sect.ab b { color: var(--ac2); }
-#stage[data-theme="d"] .sect.ab span { color: var(--i1); }
-#stage[data-theme="d"] .sect.ab i { color: var(--i2); }
-#stage[data-theme="d"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
-#stage[data-theme="d"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
-#stage[data-theme="d"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
-#stage[data-theme="d"] .gc { background: var(--p3); }
-#stage[data-theme="d"] .gc.soon { background: var(--p2); }
-#stage[data-theme="d"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
-#stage[data-theme="d"] .gc.soon .pg { color: var(--i2); }
-#stage[data-theme="d"] .gabout, #stage[data-theme="d"] .gacc { background: var(--p2); color: var(--i1); }
-#stage[data-theme="d"] .gpanel { background: var(--p1); color: var(--i1); }
-#stage[data-theme="d"] .gsub { color: var(--i2); }
-#stage[data-theme="d"] .gtier i { color: var(--i1); background: #ffffff14; }
-#stage[data-theme="d"] .gl { background: var(--p3); color: var(--i3); }
-#stage[data-theme="d"] .gl b { color: var(--i3); }
-#stage[data-theme="d"] .gl.on { background: var(--p2); color: var(--i1); }
-#stage[data-theme="d"] .god-info { background: var(--p0); }
-#stage[data-theme="d"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
-#stage[data-theme="d"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
-#stage[data-theme="d"] .chest .dsc { color: var(--i1); }
-#stage[data-theme="d"] .chest .info { background: var(--i1); color: var(--p0); }
-#stage[data-theme="d"] .chest .feat { background: var(--p3); color: var(--i1); }
-#stage[data-theme="d"] .chest .pity { background: var(--p3); color: var(--ac); }
-#stage[data-theme="d"] .chest .note { color: var(--i2); }
-#stage[data-theme="d"] .ss-r { background: var(--p3); }
-#stage[data-theme="d"] .ss-f { background: #ffffff1a; }
-#stage[data-theme="d"] .ss-n small { color: var(--i2); }
-#stage[data-theme="d"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
-#stage[data-theme="d"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
-#stage[data-theme="d"] .qrow, #stage[data-theme="d"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="d"] .tc, #stage[data-theme="d"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
-#stage[data-theme="d"] .tc .dsc { color: var(--i1); }
-#stage[data-theme="d"] .tc .lvv, #stage[data-theme="d"] .h2 { color: var(--ac); }
-#stage[data-theme="d"] .qrow .bar { background: var(--p3); }
-#stage[data-theme="d"] .modal2 { background: #000000b8; }
-#stage[data-theme="d"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
-#stage[data-theme="d"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
-#stage[data-theme="d"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
-#stage[data-theme="d"] .ip-ds, #stage[data-theme="d"] .note { color: var(--i2); }
-#stage[data-theme="d"] .ip-slot { background: var(--p3); color: var(--i1); }
-#stage[data-theme="d"] .ip-own { color: var(--i2); }
-#stage[data-theme="d"] .ip-own b { color: var(--ac); }
-#stage[data-theme="d"] .ip-own.no, #stage[data-theme="d"] .ip-own.no b { color: var(--no); }
-#stage[data-theme="d"] .ip-st, #stage[data-theme="d"] .ip-lv { background: var(--p3); }
-#stage[data-theme="d"] .ip-st b { color: var(--ac); }
-#stage[data-theme="d"] .ip-st em { color: var(--ok); }
-#stage[data-theme="d"] .ip-sk .sk em { color: var(--h); filter: none; }
-#stage[data-theme="d"] .ip-sk .off, #stage[data-theme="d"] .ip-sk .sk.off { color: var(--i3); }
-#stage[data-theme="d"] .ip-sk .off i, #stage[data-theme="d"] .ip-sk .sk.off i { background: var(--ln); }
-#stage[data-theme="d"] .ip-sk .sk.off em { color: var(--i3); }
-#stage[data-theme="d"] .ip-sk .sk.sig.on span { color: var(--ac); }
-#stage[data-theme="d"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="d"] .ip-up .no { color: var(--no); }
-#stage[data-theme="d"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
-#stage[data-theme="d"] .ip-up .row.bulk b { color: var(--ac); }
-#stage[data-theme="d"] .ip-up .row.bulk.off i { color: var(--i3); }
-#stage[data-theme="d"] .ip-ban { background: #3a1210; color: #ffb0a0; }
-#stage[data-theme="d"] .ip-acc { background: var(--p3); color: var(--ac); }
-#stage[data-theme="d"] .ua-tabs button { background: var(--p3); color: var(--i2); }
-#stage[data-theme="d"] .ct-n { color: var(--no); }
-#stage[data-theme="d"] .ct-d { color: var(--i1); }
-#stage[data-theme="d"] .ct-l { color: var(--i2); }
-#stage[data-theme="d"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
-#stage[data-theme="d"] .card-pop.modes .md-t { color: var(--ac); }
-#stage[data-theme="d"] .card-pop.modes .md-s { color: var(--i1); }
-#stage[data-theme="d"] .card-pop.modes .md-i { color: var(--i2); }
-#stage[data-theme="d"] .card-pop.modes .md-i b { color: var(--ac); }
-#stage[data-theme="d"] .fg-ab { color: #dcb4ff; }
-#stage[data-theme="d"] .fg-ab.no { color: var(--no); }
-#stage[data-theme="d"] .sv-list { background: var(--p3); }
-#stage[data-theme="d"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
-#stage[data-theme="d"] #forge { background: var(--p0); }
-#stage[data-theme="d"] .fg-bot { background: var(--p0); }
-#stage[data-theme="d"] .fg-title { background: var(--p2); color: var(--i1); }
-#stage[data-theme="d"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
-#stage[data-theme="d"] .ga-nm { color: var(--i1); }
-#stage[data-theme="d"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
-#stage[data-theme="d"] .rs-g div { background: var(--p2); color: var(--i2); }
-#stage[data-theme="d"] .rs-g b { color: var(--i1); }
-#stage[data-theme="d"] .rs-r { background: var(--p1); }
-#stage[data-theme="d"] .rs-note { color: var(--i2); }
-#stage[data-theme="d"] .cu { background: var(--p2); }
-#stage[data-theme="d"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
-#stage[data-theme="d"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
-#stage[data-theme="d"] .ribbon::before, #stage[data-theme="d"] .ribbon::after { background: var(--prS); }
-#stage[data-theme="d"] .csub { color: var(--i1); }
-#stage[data-theme="d"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
-#stage[data-theme="d"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
-#stage[data-theme="d"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
-#stage[data-theme="d"] .it-s, #stage[data-theme="d"] .card-pop .hd, #stage[data-theme="d"] .ip-gr, #stage[data-theme="d"] .rates .r span, #stage[data-theme="d"] .qrow .bar span, #stage[data-theme="d"] .pcard .tag, #stage[data-theme="d"] .pcard .nm, #stage[data-theme="d"] .gc .rk, #stage[data-theme="d"] .grk, #stage[data-theme="d"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
-#stage[data-theme="d"] .ip-gr.g6, #stage[data-theme="d"] .ip-gr.g7 { text-shadow: none; }
-#stage[data-theme="d"] .badge, #stage[data-theme="d"] .grid .it .new, #stage[data-theme="d"] .dt .dot, #stage[data-theme="d"] .modesbtn .dot { background: #b3172a; }
-#stage[data-theme="d"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
-#stage[data-theme="a"] { --rad: calc(var(--u) * 1.6); --pat: radial-gradient(130% 75% at 50% 40%, #0000 50%, #0000008c); }
-#stage[data-theme="a"] .btn.gold, #stage[data-theme="a"] .ribbon { outline: calc(var(--u) * .3) dashed #2a150599; outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a2"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
+#stage[data-theme="a2"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a2"] .muted { color: var(--i2); }
+#stage[data-theme="a2"] .btn { border-radius: var(--rad); }
+#stage[data-theme="a2"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
+#stage[data-theme="a2"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a2"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
+#stage[data-theme="a2"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
+#stage[data-theme="a2"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
+#stage[data-theme="a2"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
+#stage[data-theme="a2"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
+#stage[data-theme="a2"] .btn.glass.dimb { color: var(--i3); }
+#stage[data-theme="a2"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
+#stage[data-theme="a2"] .btn .pr, #stage[data-theme="a2"] .start small { color: inherit; }
+#stage[data-theme="a2"] .btn .cnt { background: #0000004d; }
+#stage[data-theme="a2"] #lobby { background: var(--pat), var(--p0); }
+#stage[data-theme="a2"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
+#stage[data-theme="a2"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a2"] .tb-2 .pw { color: var(--ac); }
+#stage[data-theme="a2"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a2"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
+#stage[data-theme="a2"] .nb { color: var(--i2); }
+#stage[data-theme="a2"] .nb.on span { color: var(--ac); }
+#stage[data-theme="a2"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a2"] .dt { color: var(--i2); }
+#stage[data-theme="a2"] .dt.lock { color: var(--i3); }
+#stage[data-theme="a2"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
+#stage[data-theme="a2"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
+#stage[data-theme="a2"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
+#stage[data-theme="a2"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
+#stage[data-theme="a2"] .ch-sub { color: var(--i1); }
+#stage[data-theme="a2"] .ch-best { color: var(--ac); }
+#stage[data-theme="a2"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
+#stage[data-theme="a2"] .ch-pips .sp.done, #stage[data-theme="a2"] .ch-pips .sp.boss.done { background: var(--ac); }
+#stage[data-theme="a2"] .ch-pips .sp.rest { background: #24483a; }
+#stage[data-theme="a2"] .ch-pips .sp.rest.done { background: var(--ok); }
+#stage[data-theme="a2"] .ch-pips .sp.boss { background: #8a241c; }
+#stage[data-theme="a2"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
+#stage[data-theme="a2"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
+#stage[data-theme="a2"] .lockmsg, #stage[data-theme="a2"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a2"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
+#stage[data-theme="a2"] .ch-hard b { color: #ffa898; }
+#stage[data-theme="a2"] .ch-rec.ok b { color: var(--ok); }
+#stage[data-theme="a2"] .ch-rec.low b { color: var(--no); }
+#stage[data-theme="a2"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a2"] .tutTog { background: var(--p1); color: var(--i2); }
+#stage[data-theme="a2"] .tutTog b { color: var(--i3); }
+#stage[data-theme="a2"] .tutTog.on { color: var(--i1); }
+#stage[data-theme="a2"] .tutTog.on b { color: var(--ac); }
+#stage[data-theme="a2"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
+#stage[data-theme="a2"] .statbar .sl { color: var(--i2); }
+#stage[data-theme="a2"] .statbar .iw { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a2"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a2"] .slot .sl-nm { color: var(--i1); opacity: 1; }
+#stage[data-theme="a2"] .sub-tabs { background: var(--p0); }
+#stage[data-theme="a2"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
+#stage[data-theme="a2"] .toolbar { background: var(--p1); }
+#stage[data-theme="a2"] .sect, #stage[data-theme="a2"] .god-act, #stage[data-theme="a2"] .fg-grid, #stage[data-theme="a2"] .bg-dark { background: var(--p1); }
+#stage[data-theme="a2"] .grid, #stage[data-theme="a2"] .scgrid, #stage[data-theme="a2"] .gods, #stage[data-theme="a2"] #godScroll { background: var(--pat), var(--p1); }
+#stage[data-theme="a2"] .sect { color: var(--i2); }
+#stage[data-theme="a2"] .sect b, #stage[data-theme="a2"] .sect.top b { color: var(--ac); }
+#stage[data-theme="a2"] .sect.ab b { color: var(--ac2); }
+#stage[data-theme="a2"] .sect.ab span { color: var(--i1); }
+#stage[data-theme="a2"] .sect.ab i { color: var(--i2); }
+#stage[data-theme="a2"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
+#stage[data-theme="a2"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
+#stage[data-theme="a2"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
+#stage[data-theme="a2"] .gc { background: var(--p3); }
+#stage[data-theme="a2"] .gc.soon { background: var(--p2); }
+#stage[data-theme="a2"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
+#stage[data-theme="a2"] .gc.soon .pg { color: var(--i2); }
+#stage[data-theme="a2"] .gabout, #stage[data-theme="a2"] .gacc { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a2"] .gpanel { background: var(--p1); color: var(--i1); }
+#stage[data-theme="a2"] .gsub { color: var(--i2); }
+#stage[data-theme="a2"] .gtier i { color: var(--i1); background: #ffffff14; }
+#stage[data-theme="a2"] .gl { background: var(--p3); color: var(--i3); }
+#stage[data-theme="a2"] .gl b { color: var(--i3); }
+#stage[data-theme="a2"] .gl.on { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a2"] .god-info { background: var(--p0); }
+#stage[data-theme="a2"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
+#stage[data-theme="a2"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
+#stage[data-theme="a2"] .chest .dsc { color: var(--i1); }
+#stage[data-theme="a2"] .chest .info { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a2"] .chest .feat { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a2"] .chest .pity { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a2"] .chest .note { color: var(--i2); }
+#stage[data-theme="a2"] .ss-r { background: var(--p3); }
+#stage[data-theme="a2"] .ss-f { background: #ffffff1a; }
+#stage[data-theme="a2"] .ss-n small { color: var(--i2); }
+#stage[data-theme="a2"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
+#stage[data-theme="a2"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
+#stage[data-theme="a2"] .qrow, #stage[data-theme="a2"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a2"] .tc, #stage[data-theme="a2"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a2"] .tc .dsc { color: var(--i1); }
+#stage[data-theme="a2"] .tc .lvv, #stage[data-theme="a2"] .h2 { color: var(--ac); }
+#stage[data-theme="a2"] .qrow .bar { background: var(--p3); }
+#stage[data-theme="a2"] .modal2 { background: #000000b8; }
+#stage[data-theme="a2"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
+#stage[data-theme="a2"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
+#stage[data-theme="a2"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
+#stage[data-theme="a2"] .ip-ds, #stage[data-theme="a2"] .note { color: var(--i2); }
+#stage[data-theme="a2"] .ip-slot { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a2"] .ip-own { color: var(--i2); }
+#stage[data-theme="a2"] .ip-own b { color: var(--ac); }
+#stage[data-theme="a2"] .ip-own.no, #stage[data-theme="a2"] .ip-own.no b { color: var(--no); }
+#stage[data-theme="a2"] .ip-st, #stage[data-theme="a2"] .ip-lv { background: var(--p3); }
+#stage[data-theme="a2"] .ip-st b { color: var(--ac); }
+#stage[data-theme="a2"] .ip-st em { color: var(--ok); }
+#stage[data-theme="a2"] .ip-sk .sk em { color: var(--h); filter: none; }
+#stage[data-theme="a2"] .ip-sk .off, #stage[data-theme="a2"] .ip-sk .sk.off { color: var(--i3); }
+#stage[data-theme="a2"] .ip-sk .off i, #stage[data-theme="a2"] .ip-sk .sk.off i { background: var(--ln); }
+#stage[data-theme="a2"] .ip-sk .sk.off em { color: var(--i3); }
+#stage[data-theme="a2"] .ip-sk .sk.sig.on span { color: var(--ac); }
+#stage[data-theme="a2"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a2"] .ip-up .no { color: var(--no); }
+#stage[data-theme="a2"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
+#stage[data-theme="a2"] .ip-up .row.bulk b { color: var(--ac); }
+#stage[data-theme="a2"] .ip-up .row.bulk.off i { color: var(--i3); }
+#stage[data-theme="a2"] .ip-ban { background: #3a1210; color: #ffb0a0; }
+#stage[data-theme="a2"] .ip-acc { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a2"] .ua-tabs button { background: var(--p3); color: var(--i2); }
+#stage[data-theme="a2"] .ct-n { color: var(--no); }
+#stage[data-theme="a2"] .ct-d { color: var(--i1); }
+#stage[data-theme="a2"] .ct-l { color: var(--i2); }
+#stage[data-theme="a2"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a2"] .card-pop.modes .md-t { color: var(--ac); }
+#stage[data-theme="a2"] .card-pop.modes .md-s { color: var(--i1); }
+#stage[data-theme="a2"] .card-pop.modes .md-i { color: var(--i2); }
+#stage[data-theme="a2"] .card-pop.modes .md-i b { color: var(--ac); }
+#stage[data-theme="a2"] .fg-ab { color: #dcb4ff; }
+#stage[data-theme="a2"] .fg-ab.no { color: var(--no); }
+#stage[data-theme="a2"] .sv-list { background: var(--p3); }
+#stage[data-theme="a2"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a2"] #forge { background: var(--p0); }
+#stage[data-theme="a2"] .fg-bot { background: var(--p0); }
+#stage[data-theme="a2"] .fg-title { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a2"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
+#stage[data-theme="a2"] .ga-nm { color: var(--i1); }
+#stage[data-theme="a2"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
+#stage[data-theme="a2"] .rs-g div { background: var(--p2); color: var(--i2); }
+#stage[data-theme="a2"] .rs-g b { color: var(--i1); }
+#stage[data-theme="a2"] .rs-r { background: var(--p1); }
+#stage[data-theme="a2"] .rs-note { color: var(--i2); }
+#stage[data-theme="a2"] .cu { background: var(--p2); }
+#stage[data-theme="a2"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
+#stage[data-theme="a2"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a2"] .ribbon::before, #stage[data-theme="a2"] .ribbon::after { background: var(--prS); }
+#stage[data-theme="a2"] .csub { color: var(--i1); }
+#stage[data-theme="a2"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a2"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
+#stage[data-theme="a2"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
+#stage[data-theme="a2"] .it-s, #stage[data-theme="a2"] .card-pop .hd, #stage[data-theme="a2"] .ip-gr, #stage[data-theme="a2"] .rates .r span, #stage[data-theme="a2"] .qrow .bar span, #stage[data-theme="a2"] .pcard .tag, #stage[data-theme="a2"] .pcard .nm, #stage[data-theme="a2"] .gc .rk, #stage[data-theme="a2"] .grk, #stage[data-theme="a2"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a2"] .ip-gr.g6, #stage[data-theme="a2"] .ip-gr.g7 { text-shadow: none; }
+#stage[data-theme="a2"] .badge, #stage[data-theme="a2"] .grid .it .new, #stage[data-theme="a2"] .dt .dot, #stage[data-theme="a2"] .modesbtn .dot { background: #b3172a; }
+#stage[data-theme="a2"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
+#stage[data-theme="a3"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
+#stage[data-theme="a3"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a3"] .muted { color: var(--i2); }
+#stage[data-theme="a3"] .btn { border-radius: var(--rad); }
+#stage[data-theme="a3"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
+#stage[data-theme="a3"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a3"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
+#stage[data-theme="a3"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
+#stage[data-theme="a3"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
+#stage[data-theme="a3"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
+#stage[data-theme="a3"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
+#stage[data-theme="a3"] .btn.glass.dimb { color: var(--i3); }
+#stage[data-theme="a3"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
+#stage[data-theme="a3"] .btn .pr, #stage[data-theme="a3"] .start small { color: inherit; }
+#stage[data-theme="a3"] .btn .cnt { background: #0000004d; }
+#stage[data-theme="a3"] #lobby { background: var(--pat), var(--p0); }
+#stage[data-theme="a3"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
+#stage[data-theme="a3"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a3"] .tb-2 .pw { color: var(--ac); }
+#stage[data-theme="a3"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a3"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
+#stage[data-theme="a3"] .nb { color: var(--i2); }
+#stage[data-theme="a3"] .nb.on span { color: var(--ac); }
+#stage[data-theme="a3"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a3"] .dt { color: var(--i2); }
+#stage[data-theme="a3"] .dt.lock { color: var(--i3); }
+#stage[data-theme="a3"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
+#stage[data-theme="a3"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
+#stage[data-theme="a3"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
+#stage[data-theme="a3"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
+#stage[data-theme="a3"] .ch-sub { color: var(--i1); }
+#stage[data-theme="a3"] .ch-best { color: var(--ac); }
+#stage[data-theme="a3"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
+#stage[data-theme="a3"] .ch-pips .sp.done, #stage[data-theme="a3"] .ch-pips .sp.boss.done { background: var(--ac); }
+#stage[data-theme="a3"] .ch-pips .sp.rest { background: #24483a; }
+#stage[data-theme="a3"] .ch-pips .sp.rest.done { background: var(--ok); }
+#stage[data-theme="a3"] .ch-pips .sp.boss { background: #8a241c; }
+#stage[data-theme="a3"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
+#stage[data-theme="a3"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
+#stage[data-theme="a3"] .lockmsg, #stage[data-theme="a3"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a3"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
+#stage[data-theme="a3"] .ch-hard b { color: #ffa898; }
+#stage[data-theme="a3"] .ch-rec.ok b { color: var(--ok); }
+#stage[data-theme="a3"] .ch-rec.low b { color: var(--no); }
+#stage[data-theme="a3"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a3"] .tutTog { background: var(--p1); color: var(--i2); }
+#stage[data-theme="a3"] .tutTog b { color: var(--i3); }
+#stage[data-theme="a3"] .tutTog.on { color: var(--i1); }
+#stage[data-theme="a3"] .tutTog.on b { color: var(--ac); }
+#stage[data-theme="a3"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
+#stage[data-theme="a3"] .statbar .sl { color: var(--i2); }
+#stage[data-theme="a3"] .statbar .iw { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a3"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a3"] .slot .sl-nm { color: var(--i1); opacity: 1; }
+#stage[data-theme="a3"] .sub-tabs { background: var(--p0); }
+#stage[data-theme="a3"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
+#stage[data-theme="a3"] .toolbar { background: var(--p1); }
+#stage[data-theme="a3"] .sect, #stage[data-theme="a3"] .god-act, #stage[data-theme="a3"] .fg-grid, #stage[data-theme="a3"] .bg-dark { background: var(--p1); }
+#stage[data-theme="a3"] .grid, #stage[data-theme="a3"] .scgrid, #stage[data-theme="a3"] .gods, #stage[data-theme="a3"] #godScroll { background: var(--pat), var(--p1); }
+#stage[data-theme="a3"] .sect { color: var(--i2); }
+#stage[data-theme="a3"] .sect b, #stage[data-theme="a3"] .sect.top b { color: var(--ac); }
+#stage[data-theme="a3"] .sect.ab b { color: var(--ac2); }
+#stage[data-theme="a3"] .sect.ab span { color: var(--i1); }
+#stage[data-theme="a3"] .sect.ab i { color: var(--i2); }
+#stage[data-theme="a3"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
+#stage[data-theme="a3"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
+#stage[data-theme="a3"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
+#stage[data-theme="a3"] .gc { background: var(--p3); }
+#stage[data-theme="a3"] .gc.soon { background: var(--p2); }
+#stage[data-theme="a3"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
+#stage[data-theme="a3"] .gc.soon .pg { color: var(--i2); }
+#stage[data-theme="a3"] .gabout, #stage[data-theme="a3"] .gacc { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a3"] .gpanel { background: var(--p1); color: var(--i1); }
+#stage[data-theme="a3"] .gsub { color: var(--i2); }
+#stage[data-theme="a3"] .gtier i { color: var(--i1); background: #ffffff14; }
+#stage[data-theme="a3"] .gl { background: var(--p3); color: var(--i3); }
+#stage[data-theme="a3"] .gl b { color: var(--i3); }
+#stage[data-theme="a3"] .gl.on { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a3"] .god-info { background: var(--p0); }
+#stage[data-theme="a3"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
+#stage[data-theme="a3"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
+#stage[data-theme="a3"] .chest .dsc { color: var(--i1); }
+#stage[data-theme="a3"] .chest .info { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a3"] .chest .feat { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a3"] .chest .pity { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a3"] .chest .note { color: var(--i2); }
+#stage[data-theme="a3"] .ss-r { background: var(--p3); }
+#stage[data-theme="a3"] .ss-f { background: #ffffff1a; }
+#stage[data-theme="a3"] .ss-n small { color: var(--i2); }
+#stage[data-theme="a3"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
+#stage[data-theme="a3"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
+#stage[data-theme="a3"] .qrow, #stage[data-theme="a3"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a3"] .tc, #stage[data-theme="a3"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a3"] .tc .dsc { color: var(--i1); }
+#stage[data-theme="a3"] .tc .lvv, #stage[data-theme="a3"] .h2 { color: var(--ac); }
+#stage[data-theme="a3"] .qrow .bar { background: var(--p3); }
+#stage[data-theme="a3"] .modal2 { background: #000000b8; }
+#stage[data-theme="a3"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
+#stage[data-theme="a3"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
+#stage[data-theme="a3"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
+#stage[data-theme="a3"] .ip-ds, #stage[data-theme="a3"] .note { color: var(--i2); }
+#stage[data-theme="a3"] .ip-slot { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a3"] .ip-own { color: var(--i2); }
+#stage[data-theme="a3"] .ip-own b { color: var(--ac); }
+#stage[data-theme="a3"] .ip-own.no, #stage[data-theme="a3"] .ip-own.no b { color: var(--no); }
+#stage[data-theme="a3"] .ip-st, #stage[data-theme="a3"] .ip-lv { background: var(--p3); }
+#stage[data-theme="a3"] .ip-st b { color: var(--ac); }
+#stage[data-theme="a3"] .ip-st em { color: var(--ok); }
+#stage[data-theme="a3"] .ip-sk .sk em { color: var(--h); filter: none; }
+#stage[data-theme="a3"] .ip-sk .off, #stage[data-theme="a3"] .ip-sk .sk.off { color: var(--i3); }
+#stage[data-theme="a3"] .ip-sk .off i, #stage[data-theme="a3"] .ip-sk .sk.off i { background: var(--ln); }
+#stage[data-theme="a3"] .ip-sk .sk.off em { color: var(--i3); }
+#stage[data-theme="a3"] .ip-sk .sk.sig.on span { color: var(--ac); }
+#stage[data-theme="a3"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a3"] .ip-up .no { color: var(--no); }
+#stage[data-theme="a3"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
+#stage[data-theme="a3"] .ip-up .row.bulk b { color: var(--ac); }
+#stage[data-theme="a3"] .ip-up .row.bulk.off i { color: var(--i3); }
+#stage[data-theme="a3"] .ip-ban { background: #3a1210; color: #ffb0a0; }
+#stage[data-theme="a3"] .ip-acc { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a3"] .ua-tabs button { background: var(--p3); color: var(--i2); }
+#stage[data-theme="a3"] .ct-n { color: var(--no); }
+#stage[data-theme="a3"] .ct-d { color: var(--i1); }
+#stage[data-theme="a3"] .ct-l { color: var(--i2); }
+#stage[data-theme="a3"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a3"] .card-pop.modes .md-t { color: var(--ac); }
+#stage[data-theme="a3"] .card-pop.modes .md-s { color: var(--i1); }
+#stage[data-theme="a3"] .card-pop.modes .md-i { color: var(--i2); }
+#stage[data-theme="a3"] .card-pop.modes .md-i b { color: var(--ac); }
+#stage[data-theme="a3"] .fg-ab { color: #dcb4ff; }
+#stage[data-theme="a3"] .fg-ab.no { color: var(--no); }
+#stage[data-theme="a3"] .sv-list { background: var(--p3); }
+#stage[data-theme="a3"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a3"] #forge { background: var(--p0); }
+#stage[data-theme="a3"] .fg-bot { background: var(--p0); }
+#stage[data-theme="a3"] .fg-title { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a3"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
+#stage[data-theme="a3"] .ga-nm { color: var(--i1); }
+#stage[data-theme="a3"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
+#stage[data-theme="a3"] .rs-g div { background: var(--p2); color: var(--i2); }
+#stage[data-theme="a3"] .rs-g b { color: var(--i1); }
+#stage[data-theme="a3"] .rs-r { background: var(--p1); }
+#stage[data-theme="a3"] .rs-note { color: var(--i2); }
+#stage[data-theme="a3"] .cu { background: var(--p2); }
+#stage[data-theme="a3"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
+#stage[data-theme="a3"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a3"] .ribbon::before, #stage[data-theme="a3"] .ribbon::after { background: var(--prS); }
+#stage[data-theme="a3"] .csub { color: var(--i1); }
+#stage[data-theme="a3"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a3"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
+#stage[data-theme="a3"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
+#stage[data-theme="a3"] .it-s, #stage[data-theme="a3"] .card-pop .hd, #stage[data-theme="a3"] .ip-gr, #stage[data-theme="a3"] .rates .r span, #stage[data-theme="a3"] .qrow .bar span, #stage[data-theme="a3"] .pcard .tag, #stage[data-theme="a3"] .pcard .nm, #stage[data-theme="a3"] .gc .rk, #stage[data-theme="a3"] .grk, #stage[data-theme="a3"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a3"] .ip-gr.g6, #stage[data-theme="a3"] .ip-gr.g7 { text-shadow: none; }
+#stage[data-theme="a3"] .badge, #stage[data-theme="a3"] .grid .it .new, #stage[data-theme="a3"] .dt .dot, #stage[data-theme="a3"] .modesbtn .dot { background: #b3172a; }
+#stage[data-theme="a3"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
+#stage[data-theme="a4"] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .92 0 0 0 0 .74 0 0 0 .34 -.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); --blot: radial-gradient(70% 45% at 12% 8%, #ffffff0b, #fff0 70%), radial-gradient(60% 40% at 92% 70%, #0000002e, #0000 70%), radial-gradient(50% 30% at 40% 100%, #00000026, #0000 70%); }
+#stage[data-theme="a4"] .oL { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a4"] .muted { color: var(--i2); }
+#stage[data-theme="a4"] .btn { border-radius: var(--rad); }
+#stage[data-theme="a4"] .btn:active { transform: translateY(calc(var(--u) * .3)); }
+#stage[data-theme="a4"] .btn.gold { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a4"] .btn.green { background: linear-gradient(var(--g1), var(--g2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--gS); color: var(--gT); }
+#stage[data-theme="a4"] .btn.blue { background: linear-gradient(var(--b1), var(--b2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--bS); color: var(--bT); }
+#stage[data-theme="a4"] .btn.red { background: linear-gradient(var(--r1), var(--r2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--rS); color: var(--rT); }
+#stage[data-theme="a4"] .btn.gray { background: linear-gradient(var(--y1), var(--y2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff24, 0 calc(var(--u) * .6) 0 var(--yS); color: var(--yT); }
+#stage[data-theme="a4"] .btn.glass { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
+#stage[data-theme="a4"] .btn.glass.dimb { color: var(--i3); }
+#stage[data-theme="a4"] .btn.modesbtn { background: linear-gradient(var(--v1), var(--v2)); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffffff2e, 0 calc(var(--u) * .6) 0 var(--vS); color: var(--vT); }
+#stage[data-theme="a4"] .btn .pr, #stage[data-theme="a4"] .start small { color: inherit; }
+#stage[data-theme="a4"] .btn .cnt { background: #0000004d; }
+#stage[data-theme="a4"] #lobby { background: var(--pat), var(--p0); }
+#stage[data-theme="a4"] #topbar { background: linear-gradient(var(--p0), var(--p0) 62%, #0000); color: var(--i1); }
+#stage[data-theme="a4"] .cur { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a4"] .tb-2 .pw { color: var(--ac); }
+#stage[data-theme="a4"] .tb-2 .set { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); color: var(--i1); }
+#stage[data-theme="a4"] #nav { background: var(--grain), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * -.6) calc(var(--u) * 2) #0006; }
+#stage[data-theme="a4"] .nb { color: var(--i2); }
+#stage[data-theme="a4"] .nb.on span { color: var(--ac); }
+#stage[data-theme="a4"] .dtab { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a4"] .dt { color: var(--i2); }
+#stage[data-theme="a4"] .dt.lock { color: var(--i3); }
+#stage[data-theme="a4"] .dt.on { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: none; color: var(--prT); text-shadow: none; }
+#stage[data-theme="a4"] .dt.hd.on { background: linear-gradient(#c8463a, #8e241c); box-shadow: none; color: #fff0e2; }
+#stage[data-theme="a4"] .ch-no { background: var(--i1); box-shadow: 0 calc(var(--u) * .4) 0 var(--ol); color: var(--p0); }
+#stage[data-theme="a4"] .ch-no.hd { background: linear-gradient(#e0604e, #a82a20); color: #fff3e6; }
+#stage[data-theme="a4"] .ch-sub { color: var(--i1); }
+#stage[data-theme="a4"] .ch-best { color: var(--ac); }
+#stage[data-theme="a4"] .ch-pips .sp { background: var(--p3); box-shadow: 0 0 0 calc(var(--u) * .3) var(--ol); }
+#stage[data-theme="a4"] .ch-pips .sp.done, #stage[data-theme="a4"] .ch-pips .sp.boss.done { background: var(--ac); }
+#stage[data-theme="a4"] .ch-pips .sp.rest { background: #24483a; }
+#stage[data-theme="a4"] .ch-pips .sp.rest.done { background: var(--ok); }
+#stage[data-theme="a4"] .ch-pips .sp.boss { background: #8a241c; }
+#stage[data-theme="a4"] .arrow { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--ac); }
+#stage[data-theme="a4"] .jump { background: linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ac), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--ac); text-shadow: none; }
+#stage[data-theme="a4"] .lockmsg, #stage[data-theme="a4"] .ch-rec { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a4"] .ch-hard { background: #2a0c0cf2; box-shadow: inset 0 0 0 calc(var(--u) * .3) #c8463a; color: var(--i1); }
+#stage[data-theme="a4"] .ch-hard b { color: #ffa898; }
+#stage[data-theme="a4"] .ch-rec.ok b { color: var(--ok); }
+#stage[data-theme="a4"] .ch-rec.low b { color: var(--no); }
+#stage[data-theme="a4"] .bsub { color: var(--i1); text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a4"] .tutTog { background: var(--p1); color: var(--i2); }
+#stage[data-theme="a4"] .tutTog b { color: var(--i3); }
+#stage[data-theme="a4"] .tutTog.on { color: var(--i1); }
+#stage[data-theme="a4"] .tutTog.on b { color: var(--ac); }
+#stage[data-theme="a4"] .statbar { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 #0006; color: var(--i1); }
+#stage[data-theme="a4"] .statbar .sl { color: var(--i2); }
+#stage[data-theme="a4"] .statbar .iw { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a4"] .slot.empty { background: radial-gradient(90% 90% at 50% 25%, var(--p2), var(--p3)); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a4"] .slot .sl-nm { color: var(--i1); opacity: 1; }
+#stage[data-theme="a4"] .sub-tabs { background: var(--p0); }
+#stage[data-theme="a4"] .st { background: var(--p1); color: var(--i2); box-shadow: inset 0 calc(var(--u) * -.4) 0 var(--p3); }
+#stage[data-theme="a4"] .toolbar { background: var(--p1); }
+#stage[data-theme="a4"] .sect, #stage[data-theme="a4"] .god-act, #stage[data-theme="a4"] .fg-grid, #stage[data-theme="a4"] .bg-dark { background: var(--p1); }
+#stage[data-theme="a4"] .grid, #stage[data-theme="a4"] .scgrid, #stage[data-theme="a4"] .gods, #stage[data-theme="a4"] #godScroll { background: var(--pat), var(--p1); }
+#stage[data-theme="a4"] .sect { color: var(--i2); }
+#stage[data-theme="a4"] .sect b, #stage[data-theme="a4"] .sect.top b { color: var(--ac); }
+#stage[data-theme="a4"] .sect.ab b { color: var(--ac2); }
+#stage[data-theme="a4"] .sect.ab span { color: var(--i1); }
+#stage[data-theme="a4"] .sect.ab i { color: var(--i2); }
+#stage[data-theme="a4"] .sect::after { background: linear-gradient(90deg, var(--ln), #0000); }
+#stage[data-theme="a4"] .sc { background: var(--p2); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff14, 0 calc(var(--u) * .4) 0 var(--p3); }
+#stage[data-theme="a4"] .it { box-shadow: 0 calc(var(--u) * .5) 0 var(--p3), 0 calc(var(--u) * .2) calc(var(--u) * 1.2) #0008; }
+#stage[data-theme="a4"] .gc { background: var(--p3); }
+#stage[data-theme="a4"] .gc.soon { background: var(--p2); }
+#stage[data-theme="a4"] .gc.soon .pt { background: repeating-linear-gradient(135deg, var(--p2) 0 calc(var(--u) * 2), var(--p1) calc(var(--u) * 2) calc(var(--u) * 4)); }
+#stage[data-theme="a4"] .gc.soon .pg { color: var(--i2); }
+#stage[data-theme="a4"] .gabout, #stage[data-theme="a4"] .gacc { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a4"] .gpanel { background: var(--p1); color: var(--i1); }
+#stage[data-theme="a4"] .gsub { color: var(--i2); }
+#stage[data-theme="a4"] .gtier i { color: var(--i1); background: #ffffff14; }
+#stage[data-theme="a4"] .gl { background: var(--p3); color: var(--i3); }
+#stage[data-theme="a4"] .gl b { color: var(--i3); }
+#stage[data-theme="a4"] .gl.on { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a4"] .god-info { background: var(--p0); }
+#stage[data-theme="a4"] .shop { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 25%, var(--tShop)), color-mix(in srgb, var(--p0) 45%, var(--tShop))); }
+#stage[data-theme="a4"] .chest { background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--t) 46%, #0000) 0%, #0000 72%), var(--grain), linear-gradient(color-mix(in srgb, var(--p2) 42%, var(--tShop)), color-mix(in srgb, var(--p1) 50%, var(--tShop))); box-shadow: inset 0 calc(var(--u) * .4) 0 #ffffff1f, 0 calc(var(--u) * .7) 0 var(--p3); }
+#stage[data-theme="a4"] .chest .dsc { color: var(--i1); }
+#stage[data-theme="a4"] .chest .info { background: var(--i1); color: var(--p0); }
+#stage[data-theme="a4"] .chest .feat { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a4"] .chest .pity { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a4"] .chest .note { color: var(--i2); }
+#stage[data-theme="a4"] .ss-r { background: var(--p3); }
+#stage[data-theme="a4"] .ss-f { background: #ffffff1a; }
+#stage[data-theme="a4"] .ss-n small { color: var(--i2); }
+#stage[data-theme="a4"] .bg-quest { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tQuest)), color-mix(in srgb, var(--p0) 55%, var(--tQuest))); }
+#stage[data-theme="a4"] .bg-talent { background: var(--pat), var(--grain), var(--blot), linear-gradient(color-mix(in srgb, var(--p1) 40%, var(--tTalent)), color-mix(in srgb, var(--p0) 55%, var(--tTalent))); }
+#stage[data-theme="a4"] .qrow, #stage[data-theme="a4"] .bg-quest .qrow { background: linear-gradient(color-mix(in srgb, var(--p2) 62%, var(--tQuest)), color-mix(in srgb, var(--p1) 62%, var(--tQuest))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a4"] .tc, #stage[data-theme="a4"] .bg-talent .tc { background: linear-gradient(color-mix(in srgb, var(--p2) 48%, var(--tTalent)), color-mix(in srgb, var(--p1) 48%, var(--tTalent))); box-shadow: inset 0 calc(var(--u) * .3) 0 #ffffff17, 0 calc(var(--u) * .5) 0 var(--p3); }
+#stage[data-theme="a4"] .tc .dsc { color: var(--i1); }
+#stage[data-theme="a4"] .tc .lvv, #stage[data-theme="a4"] .h2 { color: var(--ac); }
+#stage[data-theme="a4"] .qrow .bar { background: var(--p3); }
+#stage[data-theme="a4"] .modal2 { background: #000000b8; }
+#stage[data-theme="a4"] .card-pop { background: var(--grain), var(--blot), linear-gradient(var(--p2), var(--p1)); box-shadow: 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; color: var(--i1); }
+#stage[data-theme="a4"] .card-pop .hd { box-shadow: 0 calc(var(--u) * .5) 0 #0007; }
+#stage[data-theme="a4"] .card-pop .x { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--ac); color: var(--ac); }
+#stage[data-theme="a4"] .ip-ds, #stage[data-theme="a4"] .note { color: var(--i2); }
+#stage[data-theme="a4"] .ip-slot { background: var(--p3); color: var(--i1); }
+#stage[data-theme="a4"] .ip-own { color: var(--i2); }
+#stage[data-theme="a4"] .ip-own b { color: var(--ac); }
+#stage[data-theme="a4"] .ip-own.no, #stage[data-theme="a4"] .ip-own.no b { color: var(--no); }
+#stage[data-theme="a4"] .ip-st, #stage[data-theme="a4"] .ip-lv { background: var(--p3); }
+#stage[data-theme="a4"] .ip-st b { color: var(--ac); }
+#stage[data-theme="a4"] .ip-st em { color: var(--ok); }
+#stage[data-theme="a4"] .ip-sk .sk em { color: var(--h); filter: none; }
+#stage[data-theme="a4"] .ip-sk .off, #stage[data-theme="a4"] .ip-sk .sk.off { color: var(--i3); }
+#stage[data-theme="a4"] .ip-sk .off i, #stage[data-theme="a4"] .ip-sk .sk.off i { background: var(--ln); }
+#stage[data-theme="a4"] .ip-sk .sk.off em { color: var(--i3); }
+#stage[data-theme="a4"] .ip-sk .sk.sig.on span { color: var(--ac); }
+#stage[data-theme="a4"] .ip-up { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a4"] .ip-up .no { color: var(--no); }
+#stage[data-theme="a4"] .ip-up .row.bulk { border-top-color: var(--ln); color: var(--i2); }
+#stage[data-theme="a4"] .ip-up .row.bulk b { color: var(--ac); }
+#stage[data-theme="a4"] .ip-up .row.bulk.off i { color: var(--i3); }
+#stage[data-theme="a4"] .ip-ban { background: #3a1210; color: #ffb0a0; }
+#stage[data-theme="a4"] .ip-acc { background: var(--p3); color: var(--ac); }
+#stage[data-theme="a4"] .ua-tabs button { background: var(--p3); color: var(--i2); }
+#stage[data-theme="a4"] .ct-n { color: var(--no); }
+#stage[data-theme="a4"] .ct-d { color: var(--i1); }
+#stage[data-theme="a4"] .ct-l { color: var(--i2); }
+#stage[data-theme="a4"] .card-pop.modes .md { background: var(--p3); box-shadow: inset 0 0 0 calc(var(--u) * .25) var(--ln); }
+#stage[data-theme="a4"] .card-pop.modes .md-t { color: var(--ac); }
+#stage[data-theme="a4"] .card-pop.modes .md-s { color: var(--i1); }
+#stage[data-theme="a4"] .card-pop.modes .md-i { color: var(--i2); }
+#stage[data-theme="a4"] .card-pop.modes .md-i b { color: var(--ac); }
+#stage[data-theme="a4"] .fg-ab { color: #dcb4ff; }
+#stage[data-theme="a4"] .fg-ab.no { color: var(--no); }
+#stage[data-theme="a4"] .sv-list { background: var(--p3); }
+#stage[data-theme="a4"] .powpill { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); }
+#stage[data-theme="a4"] #forge { background: var(--p0); }
+#stage[data-theme="a4"] .fg-bot { background: var(--p0); }
+#stage[data-theme="a4"] .fg-title { background: var(--p2); color: var(--i1); }
+#stage[data-theme="a4"] #gacha { background: radial-gradient(circle at 50% 40%, var(--p2), var(--p3) 70%); }
+#stage[data-theme="a4"] .ga-nm { color: var(--i1); }
+#stage[data-theme="a4"] #mResult { background: color-mix(in srgb, var(--p3) 92%, #0000); }
+#stage[data-theme="a4"] .rs-g div { background: var(--p2); color: var(--i2); }
+#stage[data-theme="a4"] .rs-g b { color: var(--i1); }
+#stage[data-theme="a4"] .rs-r { background: var(--p1); }
+#stage[data-theme="a4"] .rs-note { color: var(--i2); }
+#stage[data-theme="a4"] .cu { background: var(--p2); }
+#stage[data-theme="a4"] .modal { background: color-mix(in srgb, var(--p3) 72%, #0000); }
+#stage[data-theme="a4"] .ribbon { background: linear-gradient(var(--pr1), var(--pr2)); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--prH), 0 calc(var(--u) * .6) 0 var(--prS); color: var(--prT); text-shadow: none; }
+#stage[data-theme="a4"] .ribbon::before, #stage[data-theme="a4"] .ribbon::after { background: var(--prS); }
+#stage[data-theme="a4"] .csub { color: var(--i1); }
+#stage[data-theme="a4"] .chip { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln); color: var(--i1); }
+#stage[data-theme="a4"] #toast { background: var(--p1); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .8) calc(var(--u) * 3) #0009; color: var(--i1); }
+#stage[data-theme="a4"] #pwToast { background: linear-gradient(var(--p2), var(--p1)); color: var(--i1); }
+#stage[data-theme="a4"] .it-s, #stage[data-theme="a4"] .card-pop .hd, #stage[data-theme="a4"] .ip-gr, #stage[data-theme="a4"] .rates .r span, #stage[data-theme="a4"] .qrow .bar span, #stage[data-theme="a4"] .pcard .tag, #stage[data-theme="a4"] .pcard .nm, #stage[data-theme="a4"] .gc .rk, #stage[data-theme="a4"] .grk, #stage[data-theme="a4"] .ga-tag { text-shadow: 0 .08em 0 var(--ol), .06em 0 0 var(--ol), -.06em 0 0 var(--ol), 0 -.06em 0 var(--ol); }
+#stage[data-theme="a4"] .ip-gr.g6, #stage[data-theme="a4"] .ip-gr.g7 { text-shadow: none; }
+#stage[data-theme="a4"] .badge, #stage[data-theme="a4"] .grid .it .new, #stage[data-theme="a4"] .dt .dot, #stage[data-theme="a4"] .modesbtn .dot { background: #b3172a; }
+#stage[data-theme="a4"] .ip-up .row > span[style*="color"] { color: var(--ok) !important; }
+#stage[data-theme="a"] { --rad: calc(var(--u) * 1.6); --pat: radial-gradient(130% 75% at 50% 40%, #0000 50%, #0000008c); --dash: color-mix(in srgb, var(--ac) 40%, #0000); }
+#stage[data-theme="a"] .btn.gold, #stage[data-theme="a"] .ribbon { outline: calc(var(--u) * .3) dashed color-mix(in srgb, var(--prT) 60%, #0000); outline-offset: calc(var(--u) * -.9); }
 #stage[data-theme="a"] .ava { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .4) var(--ac); }
-#stage[data-theme="a"] .nb.on { background: linear-gradient(var(--p2), #4a3018); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
-#stage[data-theme="a"] .st.on { background: linear-gradient(#4a3018, var(--p2)); box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
-#stage[data-theme="a"] .chest, #stage[data-theme="a"] .card-pop { outline: calc(var(--u) * .3) dashed #f2bb4e66; outline-offset: calc(var(--u) * -1.3); }
+#stage[data-theme="a"] #nav { background: repeating-linear-gradient(90deg, var(--dash) 0 calc(var(--u) * 1.3), #0000 calc(var(--u) * 1.3) calc(var(--u) * 2.3)) 0 calc(var(--u) * 1.2) / 100% calc(var(--u) * .3) no-repeat, var(--grain), linear-gradient(var(--p2), var(--p1)); }
+#stage[data-theme="a"] .nb.on { background: linear-gradient(var(--p2), var(--p4)); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a"] .st.on { background: linear-gradient(var(--p4), var(--p2)); box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a"] .chest, #stage[data-theme="a"] .card-pop { outline: calc(var(--u) * .3) dashed var(--dash); outline-offset: calc(var(--u) * -1.3); }
 #stage[data-theme="a"] .card-pop { border-radius: calc(var(--u) * 2.4); }
 #stage[data-theme="a"] .tile { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * 1) var(--c); }
-#stage[data-theme="b"] { --rad: calc(var(--u) * .5); --pat: repeating-linear-gradient(45deg, #ffffff06 0 calc(var(--u) * .25), #fff0 calc(var(--u) * .25) calc(var(--u) * .9)), repeating-linear-gradient(-45deg, #00000030 0 calc(var(--u) * .25), #0000 calc(var(--u) * .25) calc(var(--u) * .9)); }
-#stage[data-theme="b"] .btn.gold, #stage[data-theme="b"] .ribbon, #stage[data-theme="b"] .dt.on { background: linear-gradient(105deg, var(--pr2), var(--pr1) 32%, #fffbe6 46%, var(--pr1) 58%, var(--pr2)); }
-#stage[data-theme="b"] .btn.green { box-shadow: inset 0 calc(var(--u) * .35) 0 var(--gT), 0 calc(var(--u) * .6) 0 var(--gS); }
-#stage[data-theme="b"] .btn.blue { box-shadow: inset 0 calc(var(--u) * .35) 0 var(--bT), 0 calc(var(--u) * .6) 0 var(--bS); }
-#stage[data-theme="b"] .btn.red { box-shadow: inset 0 calc(var(--u) * .35) 0 var(--rT), 0 calc(var(--u) * .6) 0 var(--rS); }
-#stage[data-theme="b"] .btn.modesbtn { box-shadow: inset 0 calc(var(--u) * .35) 0 var(--vT), 0 calc(var(--u) * .6) 0 var(--vS); }
-#stage[data-theme="b"] .btn.gray { box-shadow: inset 0 calc(var(--u) * .35) 0 var(--ln), 0 calc(var(--u) * .6) 0 var(--yS); }
-#stage[data-theme="b"] .cur, #stage[data-theme="b"] .tb-2 .set, #stage[data-theme="b"] .dtab, #stage[data-theme="b"] .dt, #stage[data-theme="b"] .arrow, #stage[data-theme="b"] .jump, #stage[data-theme="b"] .lockmsg, #stage[data-theme="b"] .ch-rec, #stage[data-theme="b"] .ch-hard, #stage[data-theme="b"] .statbar, #stage[data-theme="b"] .slot, #stage[data-theme="b"] .slot > .it, #stage[data-theme="b"] .it, #stage[data-theme="b"] .sc, #stage[data-theme="b"] .gc, #stage[data-theme="b"] .gc .pt, #stage[data-theme="b"] .chest, #stage[data-theme="b"] .chip, #stage[data-theme="b"] #toast, #stage[data-theme="b"] .ip-st, #stage[data-theme="b"] .ip-up, #stage[data-theme="b"] .tile, #stage[data-theme="b"] .card-pop .hd, #stage[data-theme="b"] .card-pop .x, #stage[data-theme="b"] .ch-no, #stage[data-theme="b"] .qrow, #stage[data-theme="b"] .tc { border-radius: calc(var(--u) * .5); }
-#stage[data-theme="b"] .ch-pips .sp { border-radius: calc(var(--u) * .3); }
-#stage[data-theme="b"] .ava { border-radius: calc(var(--u) * .5); box-shadow: 0 0 0 calc(var(--u) * .3) var(--p0), 0 0 0 calc(var(--u) * .6) var(--ac); }
-#stage[data-theme="b"] #nav { background: var(--pat), linear-gradient(var(--p2), var(--p1)); box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ac2); }
-#stage[data-theme="b"] .nb.on { background: var(--p0); border-radius: 0; box-shadow: inset 0 calc(var(--u) * .7) 0 var(--ac), inset 0 calc(var(--u) * -.3) 0 var(--ac2); color: var(--ac); }
-#stage[data-theme="b"] .st.on { background: var(--p0); box-shadow: inset 0 calc(var(--u) * .7) 0 var(--ac); color: var(--ac); }
-#stage[data-theme="b"] .st { border-radius: 0; }
-#stage[data-theme="b"] .toolbar { background: var(--pat), var(--p1); }
-#stage[data-theme="b"] .chest { box-shadow: inset 0 calc(var(--u) * .3) 0 var(--ac2), 0 calc(var(--u) * .7) 0 var(--p3); }
-#stage[data-theme="b"] .card-pop { border-radius: calc(var(--u) * .8); outline: calc(var(--u) * .25) solid var(--ac2); outline-offset: calc(var(--u) * -1.2); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--ac), 0 calc(var(--u) * 1) 0 var(--p3), 0 calc(var(--u) * 1.6) calc(var(--u) * 5) #000a; }
-#stage[data-theme="b"] .tile { box-shadow: 0 0 0 calc(var(--u) * .4) var(--p0), 0 0 0 calc(var(--u) * .8) var(--c); }
-#stage[data-theme="c"] { --rad: calc(var(--u) * 2.6); --pat: radial-gradient(circle at 12% 18%, #ffffff5c 0 calc(var(--u) * .22), #fff0 calc(var(--u) * .3)), radial-gradient(circle at 78% 9%, #ffffff40 0 calc(var(--u) * .18), #fff0 calc(var(--u) * .26)), radial-gradient(circle at 46% 62%, #ffffff33 0 calc(var(--u) * .2), #fff0 calc(var(--u) * .28)), radial-gradient(circle at 90% 84%, #ffffff4d 0 calc(var(--u) * .16), #fff0 calc(var(--u) * .24)), radial-gradient(circle at 24% 92%, #ffffff33 0 calc(var(--u) * .18), #fff0 calc(var(--u) * .26)); }
-#stage[data-theme="c"] .ava { border-radius: 50%; box-shadow: 0 0 0 calc(var(--u) * .35) var(--ac), 0 0 calc(var(--u) * 2) #9db8ff80; }
-#stage[data-theme="c"] .cur, #stage[data-theme="c"] .tb-2 .set, #stage[data-theme="c"] .dtab, #stage[data-theme="c"] .dt, #stage[data-theme="c"] .statbar, #stage[data-theme="c"] .lockmsg, #stage[data-theme="c"] .chip { border-radius: 99px; }
-#stage[data-theme="c"] .arrow { border-radius: 50%; }
-#stage[data-theme="c"] .jump { border-radius: calc(var(--u) * 2.6); }
-#stage[data-theme="c"] .nb.on { background: linear-gradient(#2a3a66, var(--p2)); border-radius: calc(var(--u) * 3) calc(var(--u) * 3) 0 0; box-shadow: inset 0 calc(var(--u) * .5) 0 var(--ac), 0 calc(var(--u) * -1) calc(var(--u) * 3) #9db8ff40; color: var(--i1); }
-#stage[data-theme="c"] .st.on { background: linear-gradient(#2a3a66, var(--p2)); box-shadow: inset 0 calc(var(--u) * .5) 0 var(--ac); color: var(--i1); }
-#stage[data-theme="c"] .chest { box-shadow: inset 0 calc(var(--u) * .4) 0 #d6e0f44d, 0 calc(var(--u) * .7) 0 var(--p3), 0 0 calc(var(--u) * 3) #9db8ff1f; }
-#stage[data-theme="c"] .card-pop { border-radius: calc(var(--u) * 3.4); box-shadow: inset 0 calc(var(--u) * .4) 0 var(--ac), 0 calc(var(--u) * 1) 0 var(--p3), 0 0 calc(var(--u) * 5) #9db8ff40; }
-#stage[data-theme="c"] .tile { border-radius: calc(var(--u) * 2); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * .9) var(--c), 0 0 calc(var(--u) * 2.4) var(--c); }
-#stage[data-theme="d"] { --rad: calc(var(--u) * .9); --pat: repeating-linear-gradient(0deg, #e6cf7c0f 0 1px, #0000 1px calc(var(--u) * 9)), repeating-linear-gradient(90deg, #e6cf7c0f 0 1px, #0000 1px calc(var(--u) * 9)); }
-#stage[data-theme="d"] .btn.gold, #stage[data-theme="d"] .ribbon { outline: calc(var(--u) * .3) solid #fff2dc8c; outline-offset: calc(var(--u) * -1); }
-#stage[data-theme="d"] .btn.gold .oL, #stage[data-theme="d"] .ribbon { text-shadow: 0 .08em 0 #54120a, .06em 0 0 #54120a, -.06em 0 0 #54120a, 0 -.06em 0 #54120a; }
-#stage[data-theme="d"] .dt.on { color: var(--prT); }
-#stage[data-theme="d"] .ava { border-radius: calc(var(--u) * .9); box-shadow: 0 0 0 calc(var(--u) * .4) var(--i1); }
-#stage[data-theme="d"] .nb.on { background: linear-gradient(#3e4222, var(--p2)); border-radius: calc(var(--u) * 1.2) calc(var(--u) * 1.2) 0 0; box-shadow: inset 0 calc(var(--u) * .7) 0 var(--pr1); color: var(--i1); }
-#stage[data-theme="d"] .st.on { background: linear-gradient(#3e4222, var(--p2)); box-shadow: inset 0 calc(var(--u) * .7) 0 var(--pr1); color: var(--i1); }
-#stage[data-theme="d"] .chest, #stage[data-theme="d"] .card-pop { outline: calc(var(--u) * .3) dashed #e6cf7c59; outline-offset: calc(var(--u) * -1.3); }
-#stage[data-theme="d"] .card-pop { border-radius: calc(var(--u) * 1.4); }
-#stage[data-theme="d"] .jump { box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--pr1), 0 calc(var(--u) * .5) 0 var(--p3); color: var(--i1); }
-#stage[data-theme="d"] .tile { border-radius: calc(var(--u) * .9); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * 1) var(--c); }
+#stage[data-theme="a"] .dtab { background: var(--grain), var(--p3); border-radius: calc(var(--u) * 2.4); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .6) 0 #0006; }
+#stage[data-theme="a"] .dt { border-radius: calc(var(--u) * 1.8); }
+#stage[data-theme="a"] .dt.on { outline: calc(var(--u) * .25) dashed color-mix(in srgb, var(--prT) 55%, #0000); outline-offset: calc(var(--u) * -.8); }
+#stage[data-theme="a"] .ch-rec, #stage[data-theme="a"] .lockmsg { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.4); }
+#stage[data-theme="a"] .arrow { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.6); outline: calc(var(--u) * .25) dashed var(--dash); outline-offset: calc(var(--u) * -1); }
+#stage[data-theme="a"] .jump { background: var(--grain), linear-gradient(var(--p2), var(--p1)); border-radius: calc(var(--u) * 1.6); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); outline: calc(var(--u) * .25) dashed var(--ac); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a"] .cur, #stage[data-theme="a"] .tb-2 .set { background: var(--grain), var(--p3); }
+#stage[data-theme="a2"] { --rad: calc(var(--u) * 1.6); --pat: radial-gradient(130% 75% at 50% 40%, #0000 50%, #0000008c); --dash: color-mix(in srgb, var(--ac) 40%, #0000); }
+#stage[data-theme="a2"] .btn.gold, #stage[data-theme="a2"] .ribbon { outline: calc(var(--u) * .3) dashed color-mix(in srgb, var(--prT) 60%, #0000); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a2"] .ava { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .4) var(--ac); }
+#stage[data-theme="a2"] #nav { background: repeating-linear-gradient(90deg, var(--dash) 0 calc(var(--u) * 1.3), #0000 calc(var(--u) * 1.3) calc(var(--u) * 2.3)) 0 calc(var(--u) * 1.2) / 100% calc(var(--u) * .3) no-repeat, var(--grain), linear-gradient(var(--p2), var(--p1)); }
+#stage[data-theme="a2"] .nb.on { background: linear-gradient(var(--p2), var(--p4)); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a2"] .st.on { background: linear-gradient(var(--p4), var(--p2)); box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a2"] .chest, #stage[data-theme="a2"] .card-pop { outline: calc(var(--u) * .3) dashed var(--dash); outline-offset: calc(var(--u) * -1.3); }
+#stage[data-theme="a2"] .card-pop { border-radius: calc(var(--u) * 2.4); }
+#stage[data-theme="a2"] .tile { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * 1) var(--c); }
+#stage[data-theme="a2"] .dtab { background: var(--grain), var(--p3); border-radius: calc(var(--u) * 2.4); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .6) 0 #0006; }
+#stage[data-theme="a2"] .dt { border-radius: calc(var(--u) * 1.8); }
+#stage[data-theme="a2"] .dt.on { outline: calc(var(--u) * .25) dashed color-mix(in srgb, var(--prT) 55%, #0000); outline-offset: calc(var(--u) * -.8); }
+#stage[data-theme="a2"] .ch-rec, #stage[data-theme="a2"] .lockmsg { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.4); }
+#stage[data-theme="a2"] .arrow { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.6); outline: calc(var(--u) * .25) dashed var(--dash); outline-offset: calc(var(--u) * -1); }
+#stage[data-theme="a2"] .jump { background: var(--grain), linear-gradient(var(--p2), var(--p1)); border-radius: calc(var(--u) * 1.6); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); outline: calc(var(--u) * .25) dashed var(--ac); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a2"] .cur, #stage[data-theme="a2"] .tb-2 .set { background: var(--grain), var(--p3); }
+#stage[data-theme="a3"] { --rad: calc(var(--u) * 1.6); --pat: radial-gradient(130% 75% at 50% 40%, #0000 50%, #0000008c); --dash: color-mix(in srgb, var(--ac) 40%, #0000); }
+#stage[data-theme="a3"] .btn.gold, #stage[data-theme="a3"] .ribbon { outline: calc(var(--u) * .3) dashed color-mix(in srgb, var(--prT) 60%, #0000); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a3"] .ava { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .4) var(--ac); }
+#stage[data-theme="a3"] #nav { background: repeating-linear-gradient(90deg, var(--dash) 0 calc(var(--u) * 1.3), #0000 calc(var(--u) * 1.3) calc(var(--u) * 2.3)) 0 calc(var(--u) * 1.2) / 100% calc(var(--u) * .3) no-repeat, var(--grain), linear-gradient(var(--p2), var(--p1)); }
+#stage[data-theme="a3"] .nb.on { background: linear-gradient(var(--p2), var(--p4)); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a3"] .st.on { background: linear-gradient(var(--p4), var(--p2)); box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a3"] .chest, #stage[data-theme="a3"] .card-pop { outline: calc(var(--u) * .3) dashed var(--dash); outline-offset: calc(var(--u) * -1.3); }
+#stage[data-theme="a3"] .card-pop { border-radius: calc(var(--u) * 2.4); }
+#stage[data-theme="a3"] .tile { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * 1) var(--c); }
+#stage[data-theme="a3"] .dtab { background: var(--grain), var(--p3); border-radius: calc(var(--u) * 2.4); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .6) 0 #0006; }
+#stage[data-theme="a3"] .dt { border-radius: calc(var(--u) * 1.8); }
+#stage[data-theme="a3"] .dt.on { outline: calc(var(--u) * .25) dashed color-mix(in srgb, var(--prT) 55%, #0000); outline-offset: calc(var(--u) * -.8); }
+#stage[data-theme="a3"] .ch-rec, #stage[data-theme="a3"] .lockmsg { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.4); }
+#stage[data-theme="a3"] .arrow { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.6); outline: calc(var(--u) * .25) dashed var(--dash); outline-offset: calc(var(--u) * -1); }
+#stage[data-theme="a3"] .jump { background: var(--grain), linear-gradient(var(--p2), var(--p1)); border-radius: calc(var(--u) * 1.6); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); outline: calc(var(--u) * .25) dashed var(--ac); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a3"] .cur, #stage[data-theme="a3"] .tb-2 .set { background: var(--grain), var(--p3); }
+#stage[data-theme="a4"] { --rad: calc(var(--u) * 1.6); --pat: radial-gradient(130% 75% at 50% 40%, #0000 50%, #0000008c); --dash: color-mix(in srgb, var(--ac) 40%, #0000); }
+#stage[data-theme="a4"] .btn.gold, #stage[data-theme="a4"] .ribbon { outline: calc(var(--u) * .3) dashed color-mix(in srgb, var(--prT) 60%, #0000); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a4"] .ava { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .4) var(--ac); }
+#stage[data-theme="a4"] #nav { background: repeating-linear-gradient(90deg, var(--dash) 0 calc(var(--u) * 1.3), #0000 calc(var(--u) * 1.3) calc(var(--u) * 2.3)) 0 calc(var(--u) * 1.2) / 100% calc(var(--u) * .3) no-repeat, var(--grain), linear-gradient(var(--p2), var(--p1)); }
+#stage[data-theme="a4"] .nb.on { background: linear-gradient(var(--p2), var(--p4)); border-radius: calc(var(--u) * 2) calc(var(--u) * 2) 0 0; box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a4"] .st.on { background: linear-gradient(var(--p4), var(--p2)); box-shadow: inset 0 calc(var(--u) * .6) 0 var(--ac2); color: var(--i1); }
+#stage[data-theme="a4"] .chest, #stage[data-theme="a4"] .card-pop { outline: calc(var(--u) * .3) dashed var(--dash); outline-offset: calc(var(--u) * -1.3); }
+#stage[data-theme="a4"] .card-pop { border-radius: calc(var(--u) * 2.4); }
+#stage[data-theme="a4"] .tile { border-radius: calc(var(--u) * 1.6); box-shadow: 0 0 0 calc(var(--u) * .5) var(--p0), 0 0 0 calc(var(--u) * 1) var(--c); }
+#stage[data-theme="a4"] .dtab { background: var(--grain), var(--p3); border-radius: calc(var(--u) * 2.4); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .6) 0 #0006; }
+#stage[data-theme="a4"] .dt { border-radius: calc(var(--u) * 1.8); }
+#stage[data-theme="a4"] .dt.on { outline: calc(var(--u) * .25) dashed color-mix(in srgb, var(--prT) 55%, #0000); outline-offset: calc(var(--u) * -.8); }
+#stage[data-theme="a4"] .ch-rec, #stage[data-theme="a4"] .lockmsg { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.4); }
+#stage[data-theme="a4"] .arrow { background: var(--grain), var(--p1); border-radius: calc(var(--u) * 1.6); outline: calc(var(--u) * .25) dashed var(--dash); outline-offset: calc(var(--u) * -1); }
+#stage[data-theme="a4"] .jump { background: var(--grain), linear-gradient(var(--p2), var(--p1)); border-radius: calc(var(--u) * 1.6); box-shadow: inset 0 0 0 calc(var(--u) * .3) var(--ln), 0 calc(var(--u) * .5) 0 var(--p3); outline: calc(var(--u) * .25) dashed var(--ac); outline-offset: calc(var(--u) * -.9); }
+#stage[data-theme="a4"] .cur, #stage[data-theme="a4"] .tb-2 .set { background: var(--grain), var(--p3); }
+#stage[data-theme="a2"] .btn.gold .oL, #stage[data-theme="a2"] .btn.gold, #stage[data-theme="a2"] .ribbon, #stage[data-theme="a2"] .dt.on { text-shadow: 0 .08em 0 var(--prS), .06em 0 0 var(--prS), -.06em 0 0 var(--prS), 0 -.06em 0 var(--prS); }
