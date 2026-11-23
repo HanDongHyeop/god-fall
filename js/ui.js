@@ -97,19 +97,60 @@ const UI = {
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
     const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
+    // v45 섬 슬라이드: 같은 난이도의 섬 6개를 옆으로 늘어놓는다(가운데 = 보는 챕터, 좌우 2개까지만 보인다). 손가락으로 끌거나 화살표로 넘긴다
+    const base = hard ? N : 0, isles = BIOMES.map((B, i) => { const o = i - n; return `<div class="isl ${o ? '' : 'c'} ${Math.abs(o) > 2 ? 'far' : ''}" style="--o:${o}" data-i="${i}"><img class="isle ${Meta.chapterOpen(base + i) ? '' : 'lock'} ${hard ? 'deep' : ''}" src="assets/ui/isle${i + 1}.webp" alt=""></div>`; }).join('');
+    // 지금 깨야 하는 섬(이 난이도에서 아직 못 깬 첫 챕터)으로 바로 가는 단추: 그 섬이 오른쪽에 있으면 오른쪽 화살표 위, 왼쪽에 있으면 왼쪽 화살표 위
+    const tgt = BIOMES.findIndex((B, i) => !s.cleared[base + i]), jump = tgt >= 0 && tgt !== n ? `<button class="jump ${tgt > n ? 'r' : 'l'}" data-jump="${tgt}"><small>깰 차례</small><b>${tgt > n ? '' : '‹‹ '}${tgt + 1}${tgt > n ? ' ››' : ''}</b></button>` : '';
     setHTML(el, `${dtab}${typeof skinChapters === 'function' ? skinChapters(v) : ''}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
-      <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt=""><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
+      <div class="isle-wrap"><div class="isles">${isles}</div><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${jump}${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
       <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
-      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = (hard ? N : 0) + clamp(n + +a.dataset.d, 0, N - 1); this.r_battle(); return; }
+      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.slideTo(base + clamp(n + +a.dataset.d, 0, N - 1), 260); return; }
+      const jp = e.target.closest('.jump'); if (jp) { sfx.tap(); this.slideTo(base + +jp.dataset.jump, 420); return; }
       const dt = e.target.closest('.dt'); if (dt) { const h = +dt.dataset.h; if (h === +hard) return; sfx.tap();
         if (h && !hardOn) { this.toast(Meta.chapterLockMsg(N)); return; }
         if (h && !s.hardSeen) { s.hardSeen = true; Meta.save(); }
         this.chapterView = (h ? N : 0) + n; this.r_battle(); return; }
-      const cs = window.__skin && e.target.closest('.cs'); if (cs) { sfx.tap(); this.chapterView = +cs.dataset.ch; this.r_battle(); return; }   // UI 시안의 챕터 고르기 줄
+      const cs = window.__skin && e.target.closest('.cs'); if (cs) { sfx.tap(); this.slideTo(+cs.dataset.ch, 320); return; }   // UI 시안의 챕터 고르기 줄
       if (e.target.closest('#bStart')) this.start();
       if (e.target.closest('#bModes')) { sfx.tap(); this.openModes(); }
     };
+    this.bindIsles(el, n, N, base);
+    const sl = this._slide; this._slide = null; if (sl && sl.from) { this.isleAnim(el, n, sl.from, sl.dur); el.classList.remove('info-l', 'info-r'); void el.offsetWidth; el.classList.add(sl.from < 0 ? 'info-r' : 'info-l'); } else el.classList.remove('info-l', 'info-r');
+  },
+  /* ───── v45 섬 슬라이드 ─────
+     챕터는 곧바로 바뀌고(화면 내용도 새 챕터로 다시 그린다), 섬 줄만 '이전 자리'에서 새 자리로 미끄러져 온다. off = 가운데에서 벗어난 정도(섬 개수 단위) */
+  slideTo(c, dur) { const N = BIOMES.length, d = c - this.chapterView; if (!d) return; this.chapterView = c; this._slide = Math.abs(d) < N ? { from: -d, dur: dur || 260 } : null; this.r_battle(); },
+  isleStop() { if (this._isleRaf) cancelAnimationFrame(this._isleRaf); this._isleRaf = 0; },
+  isleLayout(el, n, off) {
+    const all = el.querySelectorAll('.isl'); if (all.length < 2) return 0;
+    const P = this._isleP || (this._isleP = (() => { const pr = document.createElement('i'); pr.style.cssText = 'position:absolute;width:var(--pitch);height:0'; el.querySelector('.isles').appendChild(pr); const w = pr.offsetWidth; pr.remove(); return w || el.querySelector('.isle-wrap').clientWidth * .62; })());   // 섬 사이 간격(--pitch)을 px로
+    for (const d of all) { const k = +d.dataset.i - n - off, a = Math.min(1, Math.abs(k)); d.style.display = Math.abs(k) > 2.6 ? 'none' : 'flex'; d.style.transform = `translate(-50%, -50%) translateX(${(k * P).toFixed(1)}px) scale(${(1 - .36 * a).toFixed(3)})`; d.style.opacity = (1 - .3 * a).toFixed(3); d.style.zIndex = a < .5 ? 1 : 0; }
+    return P;
+  },
+  isleReset(el) { for (const d of el.querySelectorAll('.isl')) d.style.display = d.style.transform = d.style.opacity = d.style.zIndex = ''; el.style.removeProperty('--dragk'); },
+  isleAnim(el, n, from, dur) {
+    this.isleStop(); const t0 = performance.now();
+    const tick = () => { const k = Math.min(1, (performance.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3); this.isleLayout(el, n, from * (1 - e)); el.style.setProperty('--dragk', Math.max(0, Math.min(1, Math.abs(from * (1 - e)) * 1.6))); if (k < 1 && el.isConnected) this._isleRaf = requestAnimationFrame(tick); else { this._isleRaf = 0; this.isleReset(el); } };
+    tick();
+  },
+  bindIsles(el, n, N, base) {
+    const wrap = el.querySelector('.isle-wrap'); if (!wrap) return; this._isleP = 0; let st = null;
+    wrap.onpointerdown = e => { if (e.target.closest('button') || (e.pointerType === 'mouse' && e.button)) return; st = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false, lx: e.clientX, lt: performance.now(), v: 0, off: 0 }; };
+    wrap.onpointermove = e => {
+      if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x;
+      if (!st.on) { if (Math.abs(dx) < 8) return; if (Math.abs(e.clientY - st.y) > Math.abs(dx)) { st = null; return; } st.on = true; this.isleStop(); try { wrap.setPointerCapture(st.id); } catch (_) {} }
+      const now = performance.now(), P = this.isleLayout(el, n, st.off) || 1; st.v = .6 * st.v + .4 * (e.clientX - st.lx) / Math.max(1, now - st.lt); st.lx = e.clientX; st.lt = now;
+      let off = -dx / P; const lo = -n, hi = N - 1 - n; if (off < lo) off = lo + (off - lo) * .3; if (off > hi) off = hi + (off - hi) * .3;   // 끝에서는 고무줄처럼 덜 끌린다
+      st.off = off; this.isleLayout(el, n, off); el.style.setProperty('--dragk', Math.min(1, Math.abs(off) * 1.6));
+    };
+    const end = e => {
+      if (!st || (e && e.pointerId !== st.id)) return; const s0 = st; st = null; if (!s0.on) return;
+      const P = this._isleP || 1, t = clamp(Math.round(s0.off + clamp(-s0.v * 160 / P, -.6, .6)), -n, N - 1 - n);   // 반 넘게 끌었거나 빠르게 튕기면 넘어간다
+      if (!t) { this.isleAnim(el, n, s0.off, 200); return; }
+      sfx.tap(); this.chapterView = base + n + t; this._slide = { from: s0.off - t || .001, dur: 240 }; this.r_battle();
+    };
+    wrap.onpointerup = end; wrap.onpointercancel = end;
   },
   start() {
     const s = Meta.s; Meta.tick(); sfx.init();

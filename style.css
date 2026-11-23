@@ -704,3 +704,23 @@ img { display: block; -webkit-user-drag: none; }
 .ch-no.hd { background: linear-gradient(#ff8a94, #c9243e); color: #fff; }
 .ch-hard { position: absolute; left: 50%; bottom: calc(var(--u) * 1); transform: translateX(-50%); display: flex; flex-direction: column; gap: calc(var(--u) * .3); padding: calc(var(--u) * 1.2) calc(var(--u) * 3); border-radius: calc(var(--u) * 2.4); background: #2a0612c7; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ff6a7c66; font-size: calc(var(--u) * 2.9); white-space: nowrap; text-align: left; }
 .ch-hard b { font-weight: 400; color: #ff9aa6; margin-right: calc(var(--u) * 1.2); }
+
+/* ───── v45 섬 슬라이드: 같은 난이도의 섬 6개가 옆으로 늘어서 있다(가운데 = 보는 챕터). js/ui.js bindIsles · isleLayout ───── */
+.isles { position: absolute; inset: 0; --pitch: calc(var(--u) * 58); }
+.isl { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 78); height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; transform: translate(-50%, -50%) translateX(calc(var(--o) * var(--pitch))) scale(.64); opacity: .7; }
+.isl.c { transform: translate(-50%, -50%) scale(1); opacity: 1; z-index: 1; }
+.isl.far { display: none; }
+.isl .isle { width: 100%; }
+.isle-wrap .arrow, .isle-wrap .lockmsg, .isle-wrap .ch-hard, .isle-wrap .jump { z-index: 2; }
+/* 끄는 동안 · 넘어가는 동안 챕터 글이 옅어졌다가, 새 챕터 글이 넘어온 쪽에서 들어온다 */
+.battle .ch-title, .battle .ch-sub, .battle .ch-best, .battle .ch-pips, .battle .ch-rec { opacity: calc(1 - var(--dragk, 0) * .8); }
+.battle.info-r .ch-title, .battle.info-r .ch-sub, .battle.info-r .ch-best, .battle.info-r .ch-pips, .battle.info-r .ch-rec { animation: infoR .3s ease-out; }
+.battle.info-l .ch-title, .battle.info-l .ch-sub, .battle.info-l .ch-best, .battle.info-l .ch-pips, .battle.info-l .ch-rec { animation: infoL .3s ease-out; }
+@keyframes infoR { from { opacity: 0; transform: translateX(calc(var(--u) * 7)); } }
+@keyframes infoL { from { opacity: 0; transform: translateX(calc(var(--u) * -7)); } }
+/* 지금 깨야 하는 섬으로 바로 가기: 화살표 바로 위 */
+.jump { position: absolute; bottom: calc(50% + var(--u) * 9); width: calc(var(--u) * 14); min-height: calc(var(--u) * 11); padding: calc(var(--u) * .6) 0; border-radius: calc(var(--u) * 2.4); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; background: linear-gradient(#ffe66e, #fcb72c); box-shadow: 0 calc(var(--u) * .7) 0 #99520e; color: #5a2c00; animation: jumpR 1.4s ease-in-out infinite; }
+.jump.l { left: calc(var(--u) * 1.5); animation-name: jumpL; } .jump.r { right: calc(var(--u) * 1.5); }
+.jump small { font-size: calc(var(--u) * 2.6); } .jump b { font-weight: 400; font-size: calc(var(--u) * 4.2); white-space: nowrap; }
+@keyframes jumpR { 50% { transform: translateX(calc(var(--u) * .9)); } }
+@keyframes jumpL { 50% { transform: translateX(calc(var(--u) * -.9)); } }
