@@ -294,7 +294,16 @@ const chapterOf = w => Math.floor((w - 1) / STAGES), stageOf = w => (w - 1) % ST
 /* v43 어려움 모드: 챕터 7~12(예전 '심층')는 같은 섬의 어려움 판이다. 저장 · 챕터 번호는 그대로(어려움 n = 챕터 번호 6 + n).
    open = 보통 챕터를 몇 개 더 깨야 열리나(어려움 1은 보통 3), heart = 하트가 나올 확률 배율, trap = 함정 샛길 확률,
    gemFirst = 첫 클리어 보석 배율, epic = 보스 장비 영웅 등급 확률 배율. 구역 규칙(ZONE_PLAN)과 능력 · 강화 개체(monskill.js)는 예전 심층 그대로 */
-const HARDM = { open: 2, heart: .5, trap: .25, gemFirst: 2, epic: 1.5 };
+/* v46 어려움 강화(2026-11-23 사용자 요청: 능력치만 센 것이 아니라 겉모습 · 몬스터 · 기믹 · 보상으로 구분되게)
+   lvFrom · lvK = 난이도 단계: 어려움 n의 시작 단계 = ch × (lvFrom + (n-1) × lvK). 어려움 1 ≈ 보통 4 시작 수준(예전에는 보통 6 뒤에서 이어졌다) — 대신 아래 것들로 어렵다
+   spacing = 적 사이 간격 배율(마릿수 약 +22%), rage = 분노 개체 비율(붉은 불길 · 이동 rageSpd배 · 피해 rageDmg배), shots = 능력 탄 추가 수, cd = 능력 쿨타임 배율
+   wallTrap = 벽 턱이 가시 함정 턱이 될 확률, spikeDelay = 밟고 나서 가시가 솟기까지(초), spikeUp = 솟아 있는 시간, spikeCool = 다시 밟을 수 있을 때까지
+   gold = 같은 섬 보통(줄이기 전) 골드의 배수, scroll · gem = 같은 섬 보통의 배수, epic · rare = 장비 등급 확률 배수 */
+const HARDM = { open: 2, heart: .5, trap: .25, gemFirst: 3, epic: 3, rare: 2, gold: 3, scroll: 3, gem: 3, lvFrom: 3.2, lvK: .9, spacing: .82, rage: .3, rageSpd: 1.25, rageDmg: 1.15, shots: 1, cd: .85, wallTrap: .4, spikeDelay: 1.2, spikeUp: 1.4, spikeCool: .9 };
+/* 심연석: 어려움에서만 나오는 재화. 전설 → 신화 · 신화 → S · S → SS 합성에 든다(need[지금 등급]).
+   쓰임새를 최고 등급 합성으로 정한 까닭: 보통만 돌아서는 끝까지 못 가게 해 어려움에 갈 이유를 만들고, 이미 있는 합성 사다리에 얹어 새 화면 없이 바로 쓰인다
+   얻기: 어려움 판을 넘을 때마다 wave개(버림), 보스 boss + 섬 번호, 첫 클리어 first → 완주 한 번에 어려움 1 = 6개 … 어려움 6 = 11개, 첫 클리어는 +10 */
+const ABYSS = { name: '심연석', wave: .5, boss: 3, first: 10, need: { 4: 10, 5: 25, 6: 50 } };
 const isHard = c => c >= BIOMES.length;
 const hardNeed = c => Math.min(BIOMES.length - 1, c - BIOMES.length + HARDM.open);   // 어려움 챕터 c가 열리려면 깨야 하는 보통 챕터 번호
 const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, no: c % BIOMES.length + 1, name: (deep ? '어려움 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
@@ -307,7 +316,7 @@ const DIFF_STEP = { ch: 3.4, deep: .6 };
 const MOVE_L_CAP = 16;
 const FIRST_BOSS = { hp: .75, tempo: .85 };   // 챕터 1 보스만
 const SHADE = { sight: 300, leash: 360, maxSpd: 140 };   // 그림자: 알아채는 거리, 자기 자리에서 따라오는 한계, 최고 속도(주인공 235)
-const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : DIFF_STEP.deep, base = c < 6 ? c * DIFF_STEP.ch : 6 * DIFF_STEP.ch + (c - 6) * DIFF_STEP.ch * k; return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };
+const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : HARDM.lvK, base = c < 6 ? c * DIFF_STEP.ch : DIFF_STEP.ch * (HARDM.lvFrom + (c - 6) * k); return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };   // v46 어려움은 보통 6 뒤가 아니라 보통 4쯤에서 다시 시작한다
 /* ───── 난이도 곡선: 단계 L이 오를수록 적과 보스가 강해진다. DIFF는 판 번호를 받아 단계로 바꿔 쓴다 ───── */
 const DIFF_L = {
   hp: L => (1 + .24 * (L - 1)) * Math.pow(1.045, L - 1),
@@ -328,6 +337,7 @@ const REWARD = {
   scrollPerWave: 1, scrollPerBoss: 3, scrollChapter: .25, scrollMax: 16,
   // 2026-11-06 econ_v21 시뮬레이션: 판마다 장비가 최대 5개라 합성으로 에픽이 쏟아졌다 → 궁전2처럼 판당 1~2개, 보스 처치 시 +1
   gearEveryWaves: 3, gearMax: 3, gearEpicBoss: .03, gearRare: .15, gearRareBoss: .08, gearFine: .85,   // v36 나머지는 고급 85% · 일반 15%(econ_v21: 예전 진행 속도 유지)
+  normalGold: .85,   // v46 보통 골드 15% 줄임(어려움 보상과 벌리기)
   gemPerBoss: 10, gemFirstClear: 50,    // 같은 보스를 되풀이해 보석을 모으지 못하게 한다. 챕터 첫 클리어에 몰아 준다
   startGold: 2000, startGem: 150,       // 시작 보석 900 → 150: 첫날 전 부위 에픽이 되는 것을 막는다
 };
@@ -366,5 +376,5 @@ const CARD_THEME = { chance: .2 };
    챕터 1을 깨기 전: 카드 창에 영웅 이상 약 95% · 전설 약 63% / 챕터 3을 깨기 전: 영웅 약 79% · 전설 약 42% / 그 뒤 = 기본(영웅 61% · 전설 26%) */
 const CARD_EARLY = [];   // v39 초반 후한 확률을 없앴다(예전 [[1, [.85, .70, .50]], [3, [.72, .56, .42]]]: 챕터 1을 깨기 전 카드 창의 63%에 전설 → 보스가 한 방). 이제 첫 판만 '첫 카드 창 전설 1장 확정 + 그 뒤 영웅까지'(cards.js firstRun), 두 번째 판부터 기본 확률
 /* v38 챕터별 권장 전투력: 성장 시뮬레이션(tools/test/econ_v38.py)에서 '이 전투력이면 60판쯤 해 본 실력으로 60% 깬다'로 뽑은 값. 전투 화면에 내 전투력과 견주어 보여 준다 */
-const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 3260, 3610, 4000, 4390, 4810, 5280];   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
+const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 2300, 2600, 3050, 3650, 4250, 4900];   // v46 어려움 6개: 새 난이도 단계를 보통 값에 견주어 잡고 몬스터 · 기믹 몫 12%를 얹었다(추정, 성장 시뮬은 다시 안 돌림)   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
 const CARD_PITY = { after: 3, hero: .15, legend: .1 };   // v40 고르는 횟수가 늘어 보정도 느슨하게(예전 after 2 · hero .25 · legend .2)

@@ -92,7 +92,7 @@ const UI = {
     // v43 [보통 | 어려움] 탭: 같은 섬 6개를 두 난이도로 본다. 화살표는 고른 난이도 안에서만 움직인다. 어려움 탭은 어려움 1이 열릴 때(보통 3 클리어) 풀린다
     const N = BIOMES.length, hard = CI.deep, n = v % N, hardOn = Meta.chapterOpen(N), hardNew = hardOn && !s.cleared[N] && !s.hardSeen;
     const dtab = `<div class="dtab"><button class="dt oL ${hard ? '' : 'on'}" data-h="0">보통</button><button class="dt hd oL ${hard ? 'on' : ''} ${hardOn ? '' : 'lock'}" data-h="1">${hardOn ? '' : `<img src="${uiIcon('ico_lock')}" alt="">`}어려움${hardNew && !hard ? '<i class="dot"></i>' : ''}</button></div>`;
-    const hardInfo = hard ? `<div class="ch-hard oL"><span><b>규칙</b> 구역 규칙 · 하트 절반 · 함정 증가</span><span><b>보상</b> 첫 클리어 보석 2배 · 영웅 장비 확률 증가</span></div>` : '';
+    const hardInfo = hard ? `<div class="ch-hard oL"><span><b>규칙</b> 분노한 괴물 · 가시 함정 턱 · 하트 절반</span><span><b>보상</b> 골드 · 두루마리 · 보석 3배 + <img src="${uiIcon('cur_abyss')}" alt="">${ABYSS.name}</span></div>` : '';
     el.className = 'screen on battle';
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
     const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
@@ -219,9 +219,9 @@ const UI = {
     const items = rw.drops.map(it => itemTile(it, 'mini', 'div')).join('');
     const sc = Object.keys(rw.scrolls).map(k => `<div class="cu"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" style="inset:auto;left:-6%;top:-6%;width:44%;height:44%" src="${uiIcon(k === 'weapon' ? 'w_' + Meta.s.god : k + '_a')}" alt=""><b class="oL">${rw.scrolls[k]}</b></div>`).join('');
     const el = $('mResult'); el.classList.add('on');
-    el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? `챕터 ${r.chapter + 1} 클리어!` : '심연에 떨어졌다'}</div>
+    el.innerHTML = `<div class="rs-t oL" style="color:${r.clear ? '#ffd24a' : '#ff6a78'}">${r.clear ? (isHard(r.chapter) ? `어려움 ${chapterInfo(r.chapter).no} 클리어!` : `챕터 ${r.chapter + 1} 클리어!`) : '심연에 떨어졌다'}</div>
       <div class="rs-g"><div><b class="oL">${Math.min(STAGES, rw.cleared)}/${STAGES}</b>통과한 판</div><div><b class="oL">${r.kills}</b>처치</div><div><b class="oL">${r.high || 0}번</b>신성 폭주</div></div>
-      <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${REWARD.gemFirstClear}</div>` : ''}${rw.newGod ? `<div class="rs-note first oL">새 신 ${GOD_BY[rw.newGod].name} 합류!</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
+      <div class="rs-r"><h4>획득 보상</h4>${rw.first ? `<div class="rs-note first oL">첫 클리어 보너스 · 보석 +${rw.firstGem || REWARD.gemFirstClear}</div>` : ''}${rw.newGod ? `<div class="rs-note first oL">새 신 ${GOD_BY[rw.newGod].name} 합류!</div>` : ''}<div class="rs-items">${rw.gold ? `<div class="cu"><img src="${uiIcon('cur_gold')}" alt=""><b class="oL">${fmt(rw.gold)}</b></div>` : '<div class="rs-note">받은 보상이 없습니다</div>'}${rw.gem ? `<div class="cu"><img src="${uiIcon('cur_gem')}" alt=""><b class="oL">${rw.gem}</b></div>` : ''}${rw.abyss ? `<div class="cu ab"><img src="${uiIcon('cur_abyss')}" alt=""><b class="oL">${rw.abyss}</b></div>` : ''}${items}${sc}</div>${!rw.cleared && !r.bosses ? '<div class="rs-note">웨이브를 통과해야 스크롤과 장비를 받습니다</div>' : ''}</div>
       <button class="btn gold" id="rsOk" style="width:calc(var(--u)*56)">확인</button>`;
     $('rsOk').onclick = () => { sfx.tap(); this.backToLobby(); };
     sfx.reward();
@@ -272,7 +272,7 @@ const UI = {
     list.sort(this.sort === 'grade' ? (a, b) => b.g - a.g || SLOTS.findIndex(x => x.id === GEAR[a.d].slot) - SLOTS.findIndex(x => x.id === GEAR[b.d].slot) : (a, b) => SLOTS.findIndex(x => x.id === GEAR[a.d].slot) - SLOTS.findIndex(x => x.id === GEAR[b.d].slot) || b.g - a.g);
     const sc = SLOTS.map(S => `<div class="sc"><img src="${uiIcon('cur_scroll')}" alt=""><img class="mini" src="${uiIcon(S.id === 'weapon' ? 'w_' + s.god : S.id + '_a')}" alt=""><b class="oL">${s.scrolls[S.id]}</b></div>`).join('');
     const nb = Meta.bestPlan().length;
-    return `<div class="toolbar"><button class="btn glass" id="bSort"><i class="ic-sort"></i>${this.sort === 'grade' ? '등급순' : '부위순'}</button><span class="tb-gap"></span><button class="btn ${nb ? 'green' : 'glass dimb'}" id="bBest">일괄 장착${nb ? `<b class="cnt">${nb}</b>` : ''}</button><button class="btn gold" id="bForge"><img src="${uiIcon('ico_forge')}" alt="">대장간</button></div><div class="scroll" id="gearScroll"><div class="sect top"><span>보유 장비</span><b>${list.length}</b></div><div class="grid">${list.map(i => itemTile(i)).join('') || '<div class="muted" style="grid-column:1/6;text-align:center;padding:calc(var(--u)*8)">가방이 비었습니다</div>'}</div><div class="sect"><span>강화 두루마리</span></div><div class="scgrid">${sc}</div></div>`;
+    return `<div class="toolbar"><button class="btn glass" id="bSort"><i class="ic-sort"></i>${this.sort === 'grade' ? '등급순' : '부위순'}</button><span class="tb-gap"></span><button class="btn ${nb ? 'green' : 'glass dimb'}" id="bBest">일괄 장착${nb ? `<b class="cnt">${nb}</b>` : ''}</button><button class="btn gold" id="bForge"><img src="${uiIcon('ico_forge')}" alt="">대장간</button></div><div class="scroll" id="gearScroll"><div class="sect top"><span>보유 장비</span><b>${list.length}</b></div><div class="grid">${list.map(i => itemTile(i)).join('') || '<div class="muted" style="grid-column:1/6;text-align:center;padding:calc(var(--u)*8)">가방이 비었습니다</div>'}</div><div class="sect"><span>강화 두루마리</span></div><div class="scgrid">${sc}</div>${s.abyss || s.cleared.slice(BIOMES.length).some(Boolean) || Meta.chapterOpen(BIOMES.length) ? `<div class="sect ab"><span><img src="${uiIcon('cur_abyss')}" alt="">${ABYSS.name}</span><b>${s.abyss || 0}</b><i>어려움에서 얻고, 전설 이상 합성에 듭니다</i></div>` : ''}</div>`;
   },
   /* 캐릭터 탭의 무대: 장비 칸 대신 오른쪽 패널(이름 · 고유 능력 Lv.1~4 · 해금/출전/레벨 업 버튼). 궁수의 전설 2 배치 */
   godPanelHTML() {
@@ -409,10 +409,12 @@ const UI = {
       const what = need.same ? `같은 장비 ${gradeName(need.matG)}` : w ? `${GOD_BY[tgt.god].name}의 무기 ${gradeName(need.matG)}` : `같은 부위 ${gradeName(need.matG)}`;
       list = cands;
       say = `${gradeName(tgt.g)} → <b style="color:${GRADES[tgt.g + 1].color}">${gradeName(tgt.g + 1)}</b><br>재료: ${what} ${need.n}개${tgt.g + 1 === GRADE_S ? '<br>S가 되면 무기 모양이 바뀌오!' : tgt.g + 1 >= 4 && !w ? '' : ''}`;
+      if (need.stone) say += `<br><span class="fg-ab ${(s.abyss || 0) >= need.stone ? '' : 'no'}"><img src="${uiIcon('cur_abyss')}" alt="">${ABYSS.name} ${s.abyss || 0} / ${need.stone}</span>`;
       if (cands.length < need.n) say = `재료가 부족하오.<br>${what} ${need.n - cands.length}개가 더 필요하오.`;
+      else if (need.stone && (s.abyss || 0) < need.stone) say = `${ABYSS.name}이 모자라오.<br><span class="fg-ab no"><img src="${uiIcon('cur_abyss')}" alt="">${s.abyss || 0} / ${need.stone}</span><br>어려움에서 구해 오시오.`;
     }
     list.sort((a, b) => b.g - a.g || SLOTS.findIndex(x => x.id === GEAR[a.d].slot) - SLOTS.findIndex(x => x.id === GEAR[b.d].slot));
-    const can = tgt && f.mats.length === nM;
+    const can = tgt && f.mats.length === nM && (!need.stone || (s.abyss || 0) >= need.stone);
     const res = tgt ? itemTile({ ...tgt, g: tgt.g + 1, isNew: false }, 'mini noown', 'div') : '';
     $('forge').innerHTML = `<div class="fg-top"><img class="fg-smith" src="assets/god/hephaestus/big_armed.webp" alt=""><div class="fg-slots"><div class="fbox ${this._fgFlash ? 'flash' : ''}" id="fgRes" data-cap="결과">${this._fgDone ? itemTile({ ...this._fgDone, isNew: false }, 'mini noown pop', 'div') : res}</div><div class="fg-arrow"></div><div class="fbox" id="fgT" data-cap="대상">${tgt ? itemTile(tgt, 'mini noown', 'div') : ''}</div><div class="fg-mats">${Array.from({ length: nM }, (_, i) => { const m = f.mats[i] ? Meta.item(f.mats[i]) : null; return `<div class="fbox m" data-m="${i}" data-cap="재료">${m ? itemTile(m, 'mini noown', 'div') : ''}</div>`; }).join('')}</div></div><div class="fg-say"><span>${this._fgDone ? `${gradeName(this._fgDone.g)} 완성이오!${this._fgDone.g === GRADE_S ? '<br>무기 모양이 바뀌었소!' : ''}` : say}</span></div></div>
       <div class="fg-title oL">${tgt ? '재료 장비' : '대상 장비'}</div>

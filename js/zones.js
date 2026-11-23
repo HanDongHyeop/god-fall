@@ -177,3 +177,57 @@ function drawZoneBanner() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${22 * s}px ${FONT}`; textOut(Z.title, W / 2, y - 8 * s, Z.col, 3.6); ctx.font = `${13 * s}px ${FONT}`; textOut(Z.rule, W / 2, y + 15 * s, '#fff', 2.8);
   ctx.globalAlpha = 1;
 }
+
+/* ───── v46 어려움: 가시 함정 턱(TRAP 타일) ─────
+   벽에서 튀어나온 턱 가운데 일부가 함정이다(윗면에 구멍 줄이 보인다). 밟으면 딸깍 소리와 함께 붉게 달아오르고, HARDM.spikeDelay초 뒤 가시가 솟아 spikeUp초 동안 가시 턱이 된다.
+   솟아 있는 동안은 타일을 SPIKE로 바꿔 두어 기존 가시 규칙(닿으면 피해 · 무적 시간에는 바닥처럼 밟음)을 그대로 쓴다. g.traps = Map(칸 번호 → { st: 'arm' | 'up' | 'cool', t }) */
+function trapTick(dt) {
+  const g = game, p = g.p; if (!g.traps || g.room || g.state !== 'play' || !p) return;
+  if (p.onGround) {   // 발밑 칸이 함정 턱이면 그 턱 전체(옆으로 이어진 함정 칸)를 건드린다
+    const r = Math.floor((p.y + p.h / 2 + 3) / TILE);
+    for (const c of new Set([Math.floor((p.x - p.w * .3) / TILE), Math.floor((p.x + p.w * .3) / TILE)])) {
+      if (lvl.at(c, r) !== TRAP || g.traps.has(r * COLS + c)) continue;
+      let c0 = c, c1 = c; while (lvl.at(c0 - 1, r) === TRAP) c0--; while (lvl.at(c1 + 1, r) === TRAP) c1++;
+      for (let k = c0; k <= c1; k++) if (!g.traps.has(r * COLS + k)) g.traps.set(r * COLS + k, { st: 'arm', t: HARDM.spikeDelay });
+      sfx.trapArm && sfx.trapArm();
+    }
+  }
+  for (const [i, tr] of g.traps) {
+    tr.t -= dt; if (tr.t > 0) continue;
+    const c = i % COLS, r = (i - c) / COLS;
+    if (tr.st === 'arm') { tr.st = 'up'; tr.t = HARDM.spikeUp; lvl.set(c, r, SPIKE); if (Math.abs((c + .5) * TILE - p.x) < 260 && Math.abs(r * TILE - p.y) < 420) sfx.trapUp && sfx.trapUp(); }
+    else if (tr.st === 'up') { tr.st = 'cool'; tr.t = HARDM.spikeCool; lvl.set(c, r, TRAP); }
+    else g.traps.delete(i);
+  }
+}
+/* 함정 턱 그리기(render.js 타일 그리기에서 부른다): 윗면 구멍 줄 → 밟히면 붉게 달아오르며 가시 끝이 조금씩 올라온다. 솟은 뒤는 SPIKE 타일이 그린다 */
+function drawTrapTile(c, r, x, y, w, h, Sp) {
+  const g = game, s = view.s, tr = g.traps && g.traps.get(r * COLS + c), arm = tr && tr.st === 'arm', k = arm ? 1 - tr.t / HARDM.spikeDelay : 0;
+  ctx.fillStyle = 'rgba(10,4,10,.78)'; for (let i = 0; i < 4; i++) ctx.fillRect(x + w * (.1 + i * .22), y + 2 * s, w * .14, 3.4 * s);   // 가시가 나올 구멍
+  ctx.fillStyle = tr && tr.st === 'cool' ? 'rgba(255,200,120,.5)' : 'rgba(255,70,70,.55)'; ctx.fillRect(x, y, w, 1.4 * s);
+  if (arm) {
+    const bl = .5 + .5 * Math.sin(g.t * (14 + k * 22));
+    ctx.fillStyle = `rgba(255,40,40,${(.18 + .34 * k) * (.6 + .4 * bl)})`; ctx.fillRect(x, y, w, h);
+    if (ok(Sp)) { const sh = Math.round(62 / PX * s), up = sh * (.1 + .28 * k * k); ctx.save(); ctx.beginPath(); ctx.rect(x, y - up, w, up); ctx.clip(); ctx.drawImage(Sp, x, y - up + Math.round(3 * s), w, sh); ctx.restore(); }
+    if (c === 1 || lvl.at(c - 1, r) !== TRAP) { ctx.font = `${13 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; let n = 1; while (lvl.at(c + n, r) === TRAP) n++; textOut('!', x + w * n / 2, y - 16 * s - bl * 2 * s, bl > .5 ? '#ff4a5a' : '#ffd24a', 3); }
+  }
+}
+/* 어려움 판 시작 경고: 붉은 깜박임 + 빗금 띠 + 가운데 '어려움'. 1.7초 */
+function drawHardWarn() {
+  const g = game; if (!g.hardWarnAt || !g.deep) return;
+  const t = (performance.now() - g.hardWarnAt) / 1000, life = 1.7; if (t > life) { g.hardWarnAt = 0; return; }
+  const s = view.s, W = view.W, H = view.H, a = clamp(t / .15, 0, 1) * clamp((life - t) / .35, 0, 1), blink = .5 + .5 * Math.sin(t * 17);
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * .22, W / 2, H / 2, H * .62); vg.addColorStop(0, 'rgba(255,30,40,0)'); vg.addColorStop(1, `rgba(255,30,40,${(.3 + .28 * blink) * a})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  const cy = H * .4, bh = 66 * s, sh = 13 * s;
+  ctx.globalAlpha = a; ctx.fillStyle = 'rgba(22,4,8,.92)'; ctx.fillRect(0, cy - bh / 2, W, bh);
+  for (const [y, dir] of [[cy - bh / 2 - sh, 1], [cy + bh / 2, -1]]) {
+    ctx.save(); ctx.beginPath(); ctx.rect(0, y, W, sh); ctx.clip(); ctx.fillStyle = '#ff3b4a'; ctx.fillRect(0, y, W, sh); ctx.fillStyle = '#1a0a0c';
+    const st = 26 * s, off = (t * 90 * s * dir) % st;
+    for (let x = -st * 2 + off; x < W + st; x += st) { ctx.beginPath(); ctx.moveTo(x, y + sh); ctx.lineTo(x + st * .5, y + sh); ctx.lineTo(x + st * .5 + sh, y); ctx.lineTo(x + sh, y); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const k = 1 + .05 * blink;
+  ctx.font = `${Math.round(34 * s * k)}px ${FONT}`; textOut('어려움', W / 2, cy - 8 * s, blink > .5 ? '#ff3b4a' : '#ffd24a', 4.2);
+  ctx.font = `${12.5 * s}px ${FONT}`; textOut('분노한 괴물 · 가시 함정 턱 · 하트 절반', W / 2, cy + 20 * s, '#fff', 2.8);
+  ctx.globalAlpha = 1;
+}

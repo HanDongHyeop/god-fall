@@ -107,6 +107,10 @@ const sfx = {
   bossHit() { this.tone('square', 180, 90, .07, .22); },
   roar() { this.tone('sawtooth', 110, 46, .8, .46); this.tone('square', 74, 40, .9, .3); this.noise(.7, .22, 700); },
   rumble() { this.tone('sine', 56, 34, .8, .56); this.noise(.8, .16, 300); },
+  // v46 어려움: 시작 경고(낮게 세 번 울리는 경보) · 함정 턱이 딸깍 · 가시가 솟는 쇳소리
+  alarm() { for (let i = 0; i < 3; i++) { this.tone('sine', 392, 262, .34, .34, i * .42); this.tone('triangle', 196, 131, .34, .2, i * .42); } this.noise(1.2, .1, 420); },
+  trapArm() { this.noise(.05, .22, 3200); this.tone('triangle', 520, 380, .08, .16); this.tone('triangle', 520, 380, .08, .14, .3); this.tone('triangle', 620, 420, .08, .16, .6); },
+  trapUp() { this.noise(.12, .3, 6500); this.tone('triangle', 1400, 2400, .09, .18); },
   spit() { if (this.limit('sp', 70)) { this.tone('sine', 240, 520, .08, .2); this.noise(.05, .1, 2000); } },
   zap() { if (this.limit('z', 50)) { this.noise(.08, .2, 8000); this.tone('sawtooth', 1200, 200, .08, .12); } },
   door() { this.tone('sine', 300, 900, .18, .2); this.tone('triangle', 600, 1500, .2, .1, .04); },
@@ -334,9 +338,9 @@ addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) input.keys[k] 
 function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
 /* ───── 지형: 칸 격자 ───── */
-const EMPTY = 0, HARD = 1, BREAK = 2, ONEWAY = 3, SPIKE = 4;
+const EMPTY = 0, HARD = 1, BREAK = 2, ONEWAY = 3, SPIKE = 4, TRAP = 5;   // TRAP = v46 가시 함정 턱(밟으면 잠시 뒤 가시가 솟는다, zones.js)
 const lvl = { rows: 0, grid: null, hp: null, at(c, r) { if (c < 0 || c >= COLS) return HARD; if (r < 0 || r >= this.rows) return EMPTY; return this.grid[r * COLS + c]; }, set(c, r, v) { if (c >= 0 && c < COLS && r >= 0 && r < this.rows) this.grid[r * COLS + c] = v; } };
-const isSolid = t => t === HARD || t === BREAK || t === SPIKE;
+const isSolid = t => t === HARD || t === BREAK || t === SPIKE || t === TRAP;
 
 /* ───── 상태 ───── */
 const game = {

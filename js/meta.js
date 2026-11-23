@@ -20,7 +20,7 @@ const Meta = {
       chapter: 0, cleared: Array(CHAPTERS).fill(false), best: Array(CHAPTERS).fill(0),
       chest: { god: { freeAt: 0, pity: 0 }, silver: { freeAt: 0, pity: 0 }, obsidian: { freeAt: 0, pity: 0 }, prism: { pity: 0 } },
       quest: { day: '', runs: 0, kills: 0, bosses: 0, combo: 0, high: 0, claimed: {} }, total: { kills: 0, bosses: 0, runs: 0, bestWave: 0, bestCombo: 0, bestHigh: 0, highN: 0, claimed: {} },
-      opt: { mute: false, bgm: true }, seenTip: false,
+      opt: { mute: false, bgm: true }, seenTip: false, abyss: 0,   // abyss = v46 심연석(어려움 전용 재화). 예전 저장에는 없으므로 0으로 채워진다
     };
   },
   load() {
@@ -176,8 +176,8 @@ const Meta = {
     if (!it || it.g >= this.topGrade(it)) return null;
     if (it.g <= 2) return { n: 2, same: true, matG: it.g };
     if (it.g === 3) return { n: 2, same: false, matG: 3 };
-    if (it.g === 4) return { n: 1, same: false, matG: 4 };
-    return { n: it.g === GRADE_S ? 2 : 1, same: false, matG: MYTH };
+    if (it.g === 4) return { n: 1, same: false, matG: 4, stone: ABYSS.need[4] };   // v46 전설부터는 심연석도 든다
+    return { n: it.g === GRADE_S ? 2 : 1, same: false, matG: MYTH, stone: ABYSS.need[it.g] };
   },
   mergeMats(it) {
     const need = this.mergeNeed(it); if (!need) return [];
@@ -188,6 +188,7 @@ const Meta = {
     const it = this.item(uid), need = this.mergeNeed(it); if (!need) return null;
     const mats = matUids.map(u => this.item(u)).filter(Boolean);
     if (mats.length !== need.n || mats.some(m => !this.mergeMats(it).includes(m))) return null;
+    if (need.stone) { if ((this.s.abyss || 0) < need.stone) return null; this.s.abyss -= need.stone; }
     this.s.inv = this.s.inv.filter(o => !matUids.includes(o.uid));
     it.g++; it.isNew = true; this.save(); return it;
   },
@@ -316,24 +317,29 @@ const Meta = {
   /* 정산 없이 보상 크기만 계산한다. 무작위 없음. startWave가 없으면 그 챕터의 첫 웨이브로 본다 */
   runReward(r) {
     const c = r.chapter || 0, start = r.startWave !== undefined ? r.startWave : 1 + c * STAGES, cleared = Math.max(0, r.wave - start), R_ = REWARD;
+    // v46 어려움 보상 = 같은 섬 보통(골드는 줄이기 전 값)의 HARDM 배수. 그래서 판 번호를 보통 섬의 것으로 바꿔 계산한다
+    const hard = isHard(c), n = c % BIOMES.length, back = hard ? BIOMES.length * STAGES : 0, mul = hard ? HARDM.gold : R_.normalGold;
     let gold = r.kills * R_.killGold, left = r.bosses;
-    for (let w = start; w < r.wave; w++) gold += R_.waveGold(w);
-    for (let w = start; left > 0; w++) if (isBossWave(w)) { gold += R_.bossGold(w); left--; }
-    const nScroll = Math.min(R_.scrollMax, Math.round((cleared * R_.scrollPerWave + r.bosses * R_.scrollPerBoss) * (1 + R_.scrollChapter * c)));
+    for (let w = start; w < r.wave; w++) gold += R_.waveGold(w - back);
+    for (let w = start; left > 0; w++) if (isBossWave(w)) { gold += R_.bossGold(w - back); left--; }
+    gold *= mul;
+    const nScroll = Math.min(R_.scrollMax * (hard ? HARDM.scroll : 1), Math.round((cleared * R_.scrollPerWave + r.bosses * R_.scrollPerBoss) * (1 + R_.scrollChapter * n) * (hard ? HARDM.scroll : 1)));
     const nGear = Math.min(R_.gearMax, Math.floor(cleared / R_.gearEveryWaves) + r.bosses);
-    return { cleared, gold, nScroll, nGear, gem: r.bosses * R_.gemPerBoss };
+    const abyss = hard ? Math.floor(cleared * ABYSS.wave) + r.bosses * (ABYSS.boss + n) : 0;   // 심연석: 어려움에서만
+    return { cleared, gold, nScroll, nGear, gem: r.bosses * R_.gemPerBoss * (hard ? HARDM.gem : 1), abyss };
   },
   settle(r) {
     const s = this.s, st = this.stats(), q = s.quest, t = s.total, R = this.runReward(r), done = R.cleared > 0 || r.bosses > 0;
     const first = r.bosses > 0 && !s.cleared[r.chapter];
     const gold = Math.round(R.gold * (1 + st.goldPct));
     const hard = isHard(r.chapter), gem = R.gem + (first ? REWARD.gemFirstClear * (hard ? HARDM.gemFirst : 1) : 0), scrolls = {}, drops = [];
+    const abyss = R.abyss + (first && hard ? ABYSS.first : 0); s.abyss = (s.abyss || 0) + abyss;
     s.gold += gold; s.gem += gem;
     const nScroll = R.nScroll;
     for (let i = 0; i < nScroll; i++) { const sl = SLOTS[Math.floor(Math.random() * 6)].id; scrolls[sl] = (scrolls[sl] || 0) + 1; s.scrolls[sl]++; }
     // 웨이브마다 장비를 조금씩 떨어뜨린다. 보스를 잡으면 더 좋은 등급
     const keys = Object.keys(GEAR), nGear = R.nGear;
-    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses * (hard ? HARDM.epic : 1) ? 3 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 2 : Math.random() < REWARD.gearFine ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
+    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses * (hard ? HARDM.epic : 1) ? 3 : Math.random() < (REWARD.gearRare + REWARD.gearRareBoss * r.bosses) * (hard ? HARDM.rare : 1) ? 2 : Math.random() < REWARD.gearFine ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
     if (r.bosses) s.energy += ENERGY.clearBack;
     // 시작하자마자 포기한 판은 임무·기록에 넣지 않는다
     if (done) q.runs++;
@@ -345,7 +351,7 @@ const Meta = {
     // v38 챕터 첫 클리어 보상으로 주는 신(GOD_GET.chapter)
     let newGod = null; if (first) for (const id in GOD_GET) if (GOD_GET[id].chapter === r.chapter + 1 && this.giveGod(id)) newGod = id;
     this.save();
-    return { gold, gem, scrolls, drops, cleared: R.cleared, first, newGod };
+    return { gold, gem, scrolls, drops, cleared: R.cleared, first, newGod, abyss, firstGem: first ? REWARD.gemFirstClear * (hard ? HARDM.gemFirst : 1) : 0 };
   },
   clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
   // v43 보통은 앞 챕터를 깨면 열린다. 어려움 n은 보통 n+2(마지막은 보통 6)를 깨고, 앞 어려움도 깨야 열린다(예전 '차례로 12개'보다 일찍 열릴 뿐 닫히는 것은 없다)

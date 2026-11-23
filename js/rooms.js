@@ -258,13 +258,13 @@ function miniWin() {
   g.boss = null; g.minis = null; g.ebul = []; g.fx = g.fx.filter(f => !f.wave); for (const e of g.enemies) if (e.alive) killEnemy(e, false);
   // 섬광이 걷힌 뒤 회복한다. 회복 전에는 문이 잠겨 있어 놓칠 일이 없다
   r.winT = .35; p.inv = 1.5; r.title = ['함정을 부쉈다!', '체력이 모두 회복되었습니다'];
-  sfx.bgmFor && sfx.bgmFor('wave', g.biome.id);
+  waveBgm();
 }
 function tickFade(dt) { const g = game; g.fade = clamp(g.fade + g.fadeOut * dt * 3.4, 0, 1); if (g.fade === 0 || g.fade === 1) g.fadeOut = 0; }
 function exitRoom() {
   const g = game, p = g.p, s = g.saved, d = s.door; sfx.door(); g.floorRow = s.floorRow;
   lvl.grid = s.grid; lvl.hp = s.hp; lvl.rows = s.rows; g.enemies = s.enemies; g.jars = s.jars; g.shards = g.shards.length ? s.shards.concat(g.shards.map(q => (q.y = s.py - 30, q.x = s.px, q))) : s.shards; g.decor = s.decor; g.portal = s.portal; g.levelH = s.levelH; g.doors = s.doors; g.ebul = s.ebul; g.decals = s.decals; g.haz = s.haz || []; g.later = []; g.arenaTop = s.arenaTop; g.isBossWave = s.isBossWave;
-  if (g.room.kind === 'mini') { g.boss = null; g.minis = null; sfx.bgmFor && sfx.bgmFor('wave', g.biome.id); }
+  if (g.room.kind === 'mini') { g.boss = null; g.minis = null; waveBgm(); }
   g.room = null; g.saved = null; g.bullets = [];
   p.x = s.px; p.y = s.py; p.x = d.side ? WORLD_W - TILE - 34 : TILE + 34; p.vx = 0; p.vy = 0; p.inv = 1.2; g.cam = s.cam;
   // 다운웰처럼 입구 근처의 적은 사라진다

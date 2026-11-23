@@ -8,6 +8,7 @@ function decorateWave(R) {
   const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = [0, 1, 1, 2, 2, 2][stageOf(g.wave) - 1], easy = chapterOf(g.wave) === 0 ? 0 : 1;
   const rate = Math.min(.95, MON_SKILL_RATE[wi] * easy * (g.deep ? 1.25 : 1)), er = ELITE.rate[wi] * easy * (g.deep ? 1.8 : 1);
   for (const e of g.enemies) {
+    if (g.deep && !e.still && R() < HARDM.rage) { e.rage = true; e.dmg = Math.round(e.dmg * HARDM.rageDmg); if (e.spd) e.spd *= HARDM.rageSpd; }   // v46 어려움: 분노 개체(붉은 불길, 더 빠르고 아프다)
     const sk = tbl[e.kind]; if (!sk || e.still) continue;   // 가시 장벽(멈춘 성게)은 그대로 둔다
     if (R() >= rate) continue;
     e.sk = sk; e.skT = 1.2 + R() * 1.8;
@@ -47,11 +48,11 @@ function monSkillTick(e, dt) {
   if (sk === 'laser') { e.beamY = e.y; g.fx.push({ type: 'warn', x0: TILE, x1: WORLD_W - TILE, y0: e.y - 7, y1: e.y + 7, x: 0, y: 0, t: 0, life: e.tele }); }
 }
 function monFire(e) {
-  const g = game, p = g.p, sk = e.sk, v = shotV(), aim = Math.atan2(p.y - e.y, p.x - e.x), el = e.elite;
-  e.skT = (SKILL_DEF[sk].cd || 3) * (el ? .8 : 1); e.pop = 1;
-  if (sk === 'shot') { if (el) for (const o of [-.28, 0, .28]) monShot(e, aim + o, v); else monShot(e, aim, v); }
-  else if (sk === 'fan') { const n = el ? 5 : 3; for (let i = 0; i < n; i++) monShot(e, aim + (i - (n - 1) / 2) * .3, v * .95); }
-  else if (sk === 'spike') { const n = el ? 8 : 4, off = (e.rot = !e.rot) ? Math.PI / 4 : 0; for (let i = 0; i < n; i++) monShot(e, off + i / n * Math.PI * 2, v * .85, { r: 5 }); }
+  const g = game, p = g.p, sk = e.sk, v = shotV(), aim = Math.atan2(p.y - e.y, p.x - e.x), el = e.elite, hx = g.deep ? HARDM.shots : 0;   // v46 어려움: 능력 탄이 hx개 더 나가고 쿨타임이 짧다
+  e.skT = (SKILL_DEF[sk].cd || 3) * (el ? .8 : 1) * (g.deep ? HARDM.cd : 1); e.pop = 1;
+  if (sk === 'shot') { const n = (el ? 3 : 1) + hx; for (let i = 0; i < n; i++) monShot(e, aim + (i - (n - 1) / 2) * .28, v); }
+  else if (sk === 'fan') { const n = (el ? 5 : 3) + hx; for (let i = 0; i < n; i++) monShot(e, aim + (i - (n - 1) / 2) * .3, v * .95); }
+  else if (sk === 'spike') { const n = (el ? 8 : 4) + hx * 2, off = (e.rot = !e.rot) ? Math.PI / 4 : 0; for (let i = 0; i < n; i++) monShot(e, off + i / n * Math.PI * 2, v * .85, { r: 5 }); }
   else if (sk === 'drip') { const dir = -(e.wall || 1); for (let i = 0; i < (el ? 2 : 1); i++) monShot(e, dir > 0 ? -.35 - i * .3 : Math.PI + .35 + i * .3, 190, { g: 260, r: 6 }); }
   else if (sk === 'lob') {
     for (let i = 0; i < (el ? 2 : 1); i++) {
@@ -137,6 +138,11 @@ function drawHaz() {
 /* 몬스터 위·아래 장식: 강화 개체의 붉은 기운(아래), 예고 고리(위) */
 function drawMonAura(e, x, y) {
   const s = view.s, g = game;
+  if (e.rage) {   // v46 분노 개체: 검붉은 불길이 몸 둘레에서 위로 피어오른다
+    const r = (e.r * 1.7 + Math.sin(g.t * 9 + e.x) * 1.6) * s, gl = ctx.createRadialGradient(x, y, r * .25, x, y, r);
+    gl.addColorStop(0, 'rgba(255,90,20,.5)'); gl.addColorStop(.6, 'rgba(200,20,40,.28)'); gl.addColorStop(1, 'rgba(120,0,30,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    for (let i = 0; i < 4; i++) { const k = (g.t * 1.3 + i * .25 + e.x * .01) % 1, fx = x + Math.sin(i * 2.4 + e.x) * e.r * .8 * s, fy = y - k * e.r * 2.2 * s, fr = (1 - k) * 2.6 * s; ctx.fillStyle = `rgba(255,${120 + Math.round(80 * (1 - k))},40,${.75 * (1 - k)})`; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 7); ctx.fill(); }
+  }
   if (e.elite) {
     const r = (e.r * 1.9 + Math.sin(g.t * 5 + e.x) * 2) * s, gl = ctx.createRadialGradient(x, y, r * .3, x, y, r);
     gl.addColorStop(0, 'rgba(255,40,70,.42)'); gl.addColorStop(1, 'rgba(255,40,70,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();

@@ -144,6 +144,7 @@ function buildWave() {
       if (len >= 2) landings.push([side ? COLS - 1 - len : 1, side ? COLS - 2 : len, r]);
       if (R() < (restKind === 'gold' ? .85 : rest ? .4 : .16)) g.jars.push({ x: (c + .5) * TILE, y: r * TILE - 14, r: 13, alive: true });
       if (!rest && R() < DIFF.spike(w)) { const k = side ? COLS - 2 : 1; for (let q = 0; q < len && q < 2; q++) { const cc = side ? k - q : k + q; if (lvl.at(cc, r) === HARD) lvl.set(cc, r, SPIKE); } }
+      else if (g.deep && !rest && !boss && R() < HARDM.wallTrap) for (let i = 0; i < len; i++) { const cc = side ? COLS - 2 - i : 1 + i; if (lvl.at(cc, r) === HARD) lvl.set(cc, r, TRAP); }   // v46 어려움: 벽 턱이 가시 함정 턱(밟으면 잠시 뒤 가시가 솟는다)
     } else if (roll < .58) { // 부서지는 블록 뭉치
       const c0 = 1 + Math.floor(R() * (COLS - 4)), ww = 1 + Math.floor(R() * 3), hh = 1 + Math.floor(R() * 2);
       for (let i = 0; i < ww; i++) for (let t = 0; t < hh; t++) put(c0 + i, r + t, BREAK);
@@ -180,7 +181,7 @@ function buildWave() {
       const nc = c + dc, nr = rr + dr;
       if (nc < 1 || nc >= COLS - 1 || nr < 0 || nr >= rows) continue;
       const t = lvl.at(nc, nr), i = nr * COLS + nc;
-      if (seen[i] || t === HARD || t === SPIKE) continue;
+      if (seen[i] || t === HARD || t === SPIKE || t === TRAP) continue;
       seen[i] = 1; q.push([nc, nr]);
     }
   }
@@ -193,7 +194,7 @@ function buildWave() {
   // 황금 낙하: 발판마다 항아리, 공중에는 파편 덩어리(통과 발판 위)
   if (restKind === 'gold') for (const [c0, c1, rr] of landings) for (let c = c0; c <= c1; c += 2) if (!lvl.at(c, rr - 1)) g.jars.push({ x: (c + .5) * TILE, y: rr * TILE - 14, r: 13, alive: true });
   // 공중 적: 다운웰처럼 촘촘하게
-  const spacing = DIFF.spacing(w) * (g.zone === 'spike' ? ZONE.spike.spacing : 1), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
+  const spacing = DIFF.spacing(w) * (g.zone === 'spike' ? ZONE.spike.spacing : 1) * (g.deep ? HARDM.spacing : 1), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
   const free = (x, y) => lvl.at(Math.floor(x / TILE), Math.floor(y / TILE)) === EMPTY;
   for (let y = 380 + sh * TILE; y < endY; y += spacing * (.55 + R() * .9)) {
     const roll = R();
@@ -251,9 +252,13 @@ function buildWave() {
   g.cam = 0; g.dust = [];
   for (let i = 0; i < 28; i++) g.dust.push({ x: R() * WORLD_W, y: R() * view.worldH, z: .35 + R() * .6, r: .8 + R() * 1.6 });
   const ci = chapterInfo(chapterOf(w)), st = stageOf(w);
-  g.banner = { t: 0, life: 1.9, a: `챕터 ${chapterOf(w) + 1} · ${ci.name}`, b: boss ? `${st} / ${STAGES} · 보스` : rest ? `${st} / ${STAGES} · 휴식 · ${REST_TITLE[restKind]}` : `${st} / ${STAGES} 판` };
-  sfx.bgmFor && sfx.bgmFor(boss ? 'wave' : 'wave', g.biome.id);
+  g.banner = { t: 0, life: 1.9, hard: g.deep, a: g.deep ? `어려움 ${ci.no} · ${ci.B.name}` : `챕터 ${chapterOf(w) + 1} · ${ci.name}`, b: boss ? `${st} / ${STAGES} · 보스` : rest ? `${st} / ${STAGES} · 휴식 · ${REST_TITLE[restKind]}` : `${st} / ${STAGES} 판` };
+  waveBgm();
+  g.traps = new Map();   // v46 가시 함정 턱 상태(zones.js)
+  if (g.deep && w === g.startWave && !g.mode) { g.hardWarnAt = performance.now(); sfx.alarm && sfx.alarm(); }   // v46 어려움 판 시작 경고
 }
+/* v46 판 배경음: 보통은 느린 곡(b1~b6), 어려움은 빠른 곡(h1~h6) */
+function waveBgm() { const g = game; if (sfx.bgmFor && g.biome) sfx.bgmFor('wave', (g.deep ? 'h' : 'b') + g.biome.id.slice(1)); }
 function healBy(n, overflow = false) {
   const p = game.p; n *= 1 + (game.st.healPct || 0); p.hp += n;
   if (p.hp > p.maxHp) { if (overflow) p.maxHp = Math.round(p.hp); p.hp = Math.min(p.hp, p.maxHp); }
@@ -661,7 +666,7 @@ function tick(dt) {
     if (d < 22 || (s.t > SHARD.auto && d < 30)) { s.dead = true; gainShard(s); }
   }
   g.shards = g.shards.filter(s => !s.dead);
-  heartTick(dt); zoneTick(dt);
+  heartTick(dt); zoneTick(dt); trapTick(dt);
   // v40 레벨업: 경험치가 차면 잠깐 뒤 카드 창(처치 연출을 먼저 보여 준다). 방 · 보스전 · 연습 중에는 미룬다
   if (g.xpNeed > 0 && g.xp >= g.xpNeed && g.runLv < XP.cap && g.state === 'play' && !g.room && !(g.boss && g.camLock) && !g.tut && !g.mode) { g.lvPend += dt; if (g.lvPend > .28) levelUp(); } else g.lvPend = 0;
   // 카메라
@@ -675,9 +680,10 @@ function tick(dt) {
   if (g.mode) modeTick(dt);   // v42 도전 모드(장어 · 봉인전 시계, 카메라)
 }
 function updateEnemies(dt, jumpHeld) {
-  const g = game, p = g.p, top = g.cam - 160, bot = g.cam + view.worldH + 200, spd = DIFF.speed(g.wave);
+  const g = game, p = g.p, top = g.cam - 160, bot = g.cam + view.worldH + 200, spd0 = DIFF.speed(g.wave);
   for (const e of g.enemies) {
     if (!e.alive || e.y < top || e.y > bot) continue;
+    const spd = spd0 * (e.rage ? HARDM.rageSpd : 1);   // v46 분노 개체는 더 빠르다
     e.flash = Math.max(0, e.flash - dt); e.pop = Math.max(0, e.pop - dt * 9); e.hbT = Math.max(0, e.hbT - dt); if (e.buttT > 0) e.buttT -= dt;
     if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .2)), false, e.x, e.y); if (!e.alive) continue; }
     if (e.frz > 0) { e.frz -= dt; continue; }   // 원소 구슬(얼음): 잠깐 얼어 움직이지도 닿지도 않는다

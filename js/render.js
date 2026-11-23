@@ -52,7 +52,7 @@ function drawTiles() {
       else ctx.drawImage(!l ? L : !rt ? Rr : Mm, x, y, w, th);
       continue;
     }
-    if (t === HARD || t === SPIKE) {
+    if (t === HARD || t === SPIKE || t === TRAP) {
       const isWall = c === 0 || c === COLS - 1;
       if (isWall && t === HARD) {
         put(r % 9 === 4 ? 't_wall_band' : 't_wall', x, y, w, h);
@@ -60,6 +60,7 @@ function drawTiles() {
         ctx.fillStyle = 'rgba(4,4,14,.45)'; ctx.fillRect(ix, y, iw, h);
       } else put('t_hard', x, y, w, h);
       if (t === SPIKE && ok(Sp)) { const sh = Math.round(62 / PX * s); ctx.drawImage(Sp, x, y - sh + Math.round(3 * s), w, sh); }
+      if (t === TRAP) drawTrapTile(c, r, x, y, w, h, Sp);   // v46 가시 함정 턱(zones.js)
     } else if (t === BREAK) {
       put(lvl.hp[r * COLS + c] <= Math.round(20 * DIFF.hp(g.wave)) * .5 ? 't_break2' : 't_break', x, y, w, h);
     }
@@ -476,8 +477,8 @@ function drawBanner() {
   const g = game, b = g.banner; if (!b || (g.state !== 'play' && g.state !== 'descend')) return;
   const s = view.s, W = view.W, y = view.H * .26, k = b.t, inA = clamp(k / .22, 0, 1), outA = clamp((b.life - k) / .25, 0, 1), ease = 1 - Math.pow(1 - inA, 3), h = 58 * s;
   ctx.globalAlpha = outA;
-  ctx.fillStyle = b.gold ? 'rgba(70,40,0,.86)' : 'rgba(8,6,18,.78)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
-  ctx.fillStyle = '#ffd24a'; ctx.fillRect(W * (1 - ease), y - h / 2, W, 2 * s); ctx.fillRect(W * (ease - 1), y + h / 2 - 2 * s, W, 2 * s);
+  ctx.fillStyle = b.gold ? 'rgba(70,40,0,.86)' : b.hard ? 'rgba(64,6,16,.88)' : 'rgba(8,6,18,.78)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
+  ctx.fillStyle = b.hard ? '#ff5a6a' : '#ffd24a'; ctx.fillRect(W * (1 - ease), y - h / 2, W, 2 * s); ctx.fillRect(W * (ease - 1), y + h / 2 - 2 * s, W, 2 * s);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`; textOut(b.a, W / 2 + (1 - ease) * 80 * s, y - 13 * s, '#ffe9b0', 2.6);
   ctx.font = `${22 * s}px ${FONT}`; textOut(b.b, W / 2 - (1 - ease) * 80 * s, y + 10 * s, '#fff', 3.4);
   ctx.globalAlpha = 1;
@@ -496,7 +497,7 @@ function render(dt) {
   if (!g.p || !['play', 'descend', 'intro', 'bossdead', 'dying', 'continue', 'card', 'pause', 'result', 'guide'].includes(g.state)) return;   // guide = v38 안내 중(멈춤)
   drawSky();
   // 심층 챕터(7~12): 배경만 더 어둡고 붉게 가라앉힌다(몬스터·지형은 그대로 밝아 구분된다)
-  if (g.deep && !g.room) { ctx.fillStyle = 'rgba(14,2,10,.38)'; ctx.fillRect(0, 0, view.W, view.H); const q = ctx.createRadialGradient(view.W / 2, view.H * .45, view.H * .2, view.W / 2, view.H * .45, view.H * .75); q.addColorStop(0, 'rgba(120,0,30,0)'); q.addColorStop(1, 'rgba(90,0,24,.35)'); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
+  if (g.deep && !g.room) { ctx.fillStyle = 'rgba(14,2,10,.38)'; ctx.fillRect(0, 0, view.W, view.H); const q = ctx.createRadialGradient(view.W / 2, view.H * .45, view.H * .2, view.W / 2, view.H * .45, view.H * .75); q.addColorStop(0, 'rgba(120,0,30,0)'); q.addColorStop(1, `rgba(110,0,24,${(.36 + .12 * Math.sin(g.t * 2.2)).toFixed(3)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }
   ctx.save();
   if (g.shake > .05) ctx.translate((Math.random() - .5) * g.shake * view.s * .7, (Math.random() - .5) * g.shake * view.s * .7);
   ctx.translate(0, g.kick * view.s);
@@ -524,6 +525,7 @@ function render(dt) {
   drawDoorPrompt(); drawRestPrompt();
   ctx.restore();
   if (g.room) drawTrapWarn();   // v40 함정 경고(화면 전체)
+  drawHardWarn();   // v46 어려움 판 시작 경고
   drawZoneScreen(); drawZoneBanner();   // v41 어둠 · 물빛 · 구역 알림
   // 전체 화면 효과. 어둠(첫 번째 어둠의 2단계): 주인공 둘레만 보인다
   if (g.dark > 0 && g.p) { const px = wx(g.p.x), py = wy(g.p.y), q = ctx.createRadialGradient(px, py, 70 * view.s, px, py, 170 * view.s); q.addColorStop(0, 'rgba(6,2,16,0)'); q.addColorStop(1, `rgba(6,2,16,${.9 * Math.min(1, g.dark)})`); ctx.fillStyle = q; ctx.fillRect(0, 0, view.W, view.H); }

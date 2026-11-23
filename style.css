@@ -724,3 +724,9 @@ img { display: block; -webkit-user-drag: none; }
 .jump small { font-size: calc(var(--u) * 2.6); } .jump b { font-weight: 400; font-size: calc(var(--u) * 4.2); white-space: nowrap; }
 @keyframes jumpR { 50% { transform: translateX(calc(var(--u) * .9)); } }
 @keyframes jumpL { 50% { transform: translateX(calc(var(--u) * -.9)); } }
+
+/* ───── v46 심연석(어려움 전용 재화) 표시 ───── */
+.ch-hard img { display: inline-block; width: 1.25em; height: 1.25em; object-fit: contain; vertical-align: -.25em; margin-right: .15em; }
+.fg-ab { display: inline-flex; align-items: center; gap: .25em; color: #7a2ad0; } .fg-ab.no { color: #c22a36; } .fg-ab img { width: 1.3em; height: 1.3em; object-fit: contain; }
+.sect.ab { display: flex; align-items: center; gap: calc(var(--u) * 1.6); padding-bottom: calc(var(--u) * 6); } .sect.ab span { display: inline-flex; align-items: center; gap: calc(var(--u) * 1); color: #e9d9ff; } .sect.ab img { width: calc(var(--u) * 5); height: calc(var(--u) * 5); object-fit: contain; }
+.sect.ab b { font-weight: 400; color: #ff9ad0; font-size: calc(var(--u) * 3.8); } .sect.ab i { font-style: normal; font-size: calc(var(--u) * 2.7); color: #a9a6d6; margin-left: auto; }
