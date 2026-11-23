@@ -366,6 +366,19 @@ const UI = {
     if (t.closest('#gBuy')) { const id = this.godView, p0 = Meta.power(); if (Meta.buyGod(id)) { sfx.reward(); loadGod(id); this.toast(GOD_BY[id].name + ' 합류!'); this.heroDrop(GOD_BY[id].shot); this.render(); powerPill(p0, Meta.power()); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
     if (t.closest('#gUp')) { const id = this.godView || Meta.s.god, p0 = Meta.power(); if (Meta.godUp(id)) { setTimeout(() => powerPill(p0, Meta.power()), 0); sfx.reward(); this.toast(Meta.godLv(id) > 1 ? `Lv.${Meta.godLv(id)}이 되었습니다` : '해금했습니다'); this._swap = true; this.render(); } return; }
   },
+  /* v58 장비 장착 이동(Y06): 상세 창의 장비 그림이 장착 칸까지 0.28초 날아가 끼워지고, 도착하면 칸이 튀며 불꽃(예전에는 창이 닫히자마자 칸에 들어가 있었다).
+     장착 자체는 누른 순간 끝나 있다. 보이는 것만 늦춘다. 시험에서는 window.__noTopFx로 끈다 */
+  flyGrab(el) { return el ? { node: el.cloneNode(true), r: el.getBoundingClientRect() } : null; },
+  equipFly(src, sl, done) {
+    const lob = $('lobby'), it = sl.querySelector('.it');
+    if (!src || !src.r.width || !it || !lob.animate || window.__noTopFx) { done(); return; }
+    const L = lob.getBoundingClientRect(), a = src.r, b = it.getBoundingClientRect(), g = src.node, k = b.width / a.width, dx = b.left - a.left, dy = b.top - a.top;
+    g.classList.add('eq-fly'); g.style.left = (a.left - L.left) + 'px'; g.style.top = (a.top - L.top) + 'px'; g.style.width = a.width + 'px'; g.style.height = a.height + 'px';
+    lob.appendChild(g); it.style.visibility = 'hidden';
+    const an = g.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: `translate(${dx * .5}px,${dy * .5 - L.height * .04}px) scale(${(1 + k) / 2 * 1.1})`, offset: .5 }, { transform: `translate(${dx}px,${dy}px) scale(${k})` }], { duration: 280, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+    let fin = false; const end = () => { if (fin) return; fin = true; g.remove(); if (it.isConnected) it.style.visibility = ''; done(); };
+    an.onfinish = end; an.oncancel = end; setTimeout(end, 520);
+  },
   /* v54 캐릭터 등장(Y06): 다음에 그릴 때 캐릭터가 위에서 떨어져 착지한다(0.55초). 착지 순간 발 소리, 출전 · 합류면 그 신의 발사음 한 번 */
   heroDrop(shot) { this._swap = 'drop'; const k = this._dropK = (this._dropK || 0) + 1; setTimeout(() => { if (this._dropK !== k || !$('lobby').classList.contains('on')) return; sfx.land(); if (shot) setTimeout(() => { if (this._dropK === k && $('lobby').classList.contains('on')) sfx.shotOf(shot); }, 160); }, 300); },
   /* v53 화면 전환 덮개(Y03): 화면이 바뀐 직후 어두운 안개가 0.42초에 걸쳐 걷힌다. 화면을 바꾸는 일 자체는 늦추지 않는다(조작 · 시험 흐름 그대로) */
@@ -389,7 +402,7 @@ const UI = {
     const usable = own, label = !own ? '장착 불가' : other ? `${GOD_BY[owner].name}에게 장착` : cur ? '교체' : '장착';
     const sg = Meta.canSalvage(it) && Meta.salvageGain(it);
     this.popup(`<div class="card-pop" style="${gradeVars(it.g)}"><div class="hd">${b.name}</div><button class="x" data-close>✕</button>${b.html}${note}<div class="ip-acts">${sg ? '<button class="btn red" id="ipSalv">분해</button>' : ''}<button class="btn blue" id="ipForge" ${Meta.mergeNeed(it) ? '' : 'disabled'}>합성</button><button class="btn green" id="ipEq" ${usable ? '' : 'disabled'}>${label}</button></div></div>`);
-    $('ipEq').onclick = () => { const p0 = Meta.power(); if (!Meta.equip(uid)) return; sfx.equip(); if (w) this._swap = true; this.closePop(); this.render(); powerPill(p0, Meta.power()); const sl = document.querySelector(`.slot[data-slot="${slot}"]`); if (sl) { sl.classList.add('upg'); sparkBurst(sl, GRADES[it.g].glow, 12, 1); } };
+    $('ipEq').onclick = () => { const p0 = Meta.power(), src = this.flyGrab($('pop').querySelector('.ip-big .it')); if (!Meta.equip(uid)) return; sfx.equip(); if (w) this._swap = true; this.closePop(); this.render(); powerPill(p0, Meta.power()); const sl = document.querySelector(`.slot[data-slot="${slot}"]`); if (sl) this.equipFly(src, sl, () => { sl.classList.add('upg'); sparkBurst(sl, GRADES[it.g].glow, 12, 1); }); };
     $('ipForge').onclick = () => { this.closePop(); this.openForge(uid); };
     if (sg) $('ipSalv').onclick = e => {
       const bt = e.currentTarget;
@@ -552,7 +565,7 @@ const UI = {
       const lay = n === 1 ? 'n1' : n <= 3 ? 'n3' : n <= 6 ? 'n6' : 'n10';
       const cells = order.map((r, i) => {
         const d = `animation-delay:${120 + i * (n > 6 ? 55 : 110)}ms`, k = rankOf(r);
-        const tag = k >= 2 ? `<i class="ga-tag oL" style="--c:${r.type === 'item' ? GRADES[r.item.g].color : GOD_BY[r.god].rankCol}">${r.type === 'item' ? GRADES[r.item.g].name : GOD_BY[r.god].rank}</i>` : '';
+        const tag = k >= 2 || (n <= 3 && r.type === 'item') ? `<i class="ga-tag oL" style="--c:${r.type === 'item' ? GRADES[r.item.g].color : GOD_BY[r.god].rankCol}">${r.type === 'item' ? GRADES[r.item.g].name : GOD_BY[r.god].rank}</i>` : '';
         const fx = k >= 2 ? `<i class="ga-sun"></i>` : '';
         if (r.type === 'item') { const it = r.item; return `<div class="ga-it g${k}" style="--g:${GRADES[it.g].glow};${d}">${fx}${itemTile({ ...it, isNew: false }, 'mini', 'div')}${tag}<span class="ga-nm">${GEAR[it.d].slot === 'weapon' ? GOD_BY[it.god].weapon : GEAR[it.d].name}</span></div>`; }
         if (r.type === 'shard') return `<div class="ga-it ${k >= 2 ? 'g2' : ''}" style="--g:${GOD_BY[r.god].rankCol};${d}">${fx}<div class="sc" style="background:${GOD_BY[r.god].rankCol};overflow:hidden"><img style="inset:0;width:100%;height:auto" src="assets/god/${r.god}/big_bare.webp" alt=""><b class="oL">${r.n}</b></div>${tag}<span class="ga-nm">${GOD_BY[r.god].name} 조각</span></div>`;

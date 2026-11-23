@@ -75,6 +75,8 @@ img { display: block; -webkit-user-drag: none; }
 /* v52 재화 연출(Y02): 날아오는 재화 그림 · 칸 튐 · -값. 자리 · 크기는 그대로 */
 .cur-fly { position: absolute; left: 0; top: 0; width: calc(var(--u) * 6.4); height: calc(var(--u) * 6.4); margin: calc(var(--u) * -3.2) 0 0 calc(var(--u) * -3.2); object-fit: contain; pointer-events: none; z-index: 60; will-change: transform; filter: drop-shadow(0 calc(var(--u) * .4) calc(var(--u) * .4) #0008); }
 .cur.bump { animation: curBump .34s cubic-bezier(.2, 1.8, .4, 1); }
+/* v58 장비가 장착 칸으로 날아갈 때의 그림(Y06) */
+.eq-fly { position: absolute; margin: 0; z-index: 60; pointer-events: none; transform-origin: 0 0; will-change: transform; filter: drop-shadow(0 calc(var(--u) * .8) calc(var(--u) * .8) #0009); }
 @keyframes curBump { 35% { transform: scale(1.16); filter: brightness(1.5); } }
 .cur-d { position: absolute; right: calc(var(--u) * .6); top: 100%; font-style: normal; font-size: calc(var(--u) * 3); color: #ff9aa5; pointer-events: none; white-space: nowrap; animation: curD .8s ease-out both; z-index: 5; }
 @keyframes curD { from { transform: translateY(calc(var(--u) * -2)); opacity: 0; } 20% { opacity: 1; } 70% { opacity: 1; } to { transform: translateY(calc(var(--u) * 3.2)); opacity: 0; } }
