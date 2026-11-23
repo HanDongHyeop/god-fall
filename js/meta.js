@@ -294,8 +294,8 @@ const Meta = {
       { id: 'a_w3', name: '챕터 1 클리어', cur: this.clearedN(), need: 1, gem: 100, gold: 500 },
       { id: 'a_w6', name: '챕터 3 클리어', cur: this.clearedN(), need: 3, gem: 200, gold: 1000 },
       { id: 'a_w9', name: '챕터 6 클리어', cur: this.clearedN(), need: 6, gem: 300, gold: 2000 },
-      { id: 'a_w15', name: '심층 챕터 9 클리어', cur: this.clearedN(), need: 9, gem: 600, gold: 4000 },
-      { id: 'a_w36', name: '심층 챕터 12 클리어', cur: this.clearedN(), need: 12, gem: 1000, gold: 8000 },
+      { id: 'a_w15', name: '어려움 3 클리어', cur: this.clearedN(), need: 9, gem: 600, gold: 4000 },
+      { id: 'a_w36', name: '어려움 6 클리어', cur: this.clearedN(), need: 12, gem: 1000, gold: 8000 },
       { id: 'a_k1000', name: '누적 1000마리 처치', cur: t.kills, need: 1000, gem: 200, gold: 1500 },
       { id: 'a_h3', name: '도전 한 번에 신성 폭주 3번', cur: t.bestHigh || 0, need: 3, gem: 150, gold: 1000 },
       { id: 'a_h6', name: '도전 한 번에 신성 폭주 6번', cur: t.bestHigh || 0, need: 6, gem: 300, gold: 2500 },
@@ -327,13 +327,13 @@ const Meta = {
     const s = this.s, st = this.stats(), q = s.quest, t = s.total, R = this.runReward(r), done = R.cleared > 0 || r.bosses > 0;
     const first = r.bosses > 0 && !s.cleared[r.chapter];
     const gold = Math.round(R.gold * (1 + st.goldPct));
-    const gem = R.gem + (first ? REWARD.gemFirstClear : 0), scrolls = {}, drops = [];
+    const hard = isHard(r.chapter), gem = R.gem + (first ? REWARD.gemFirstClear * (hard ? HARDM.gemFirst : 1) : 0), scrolls = {}, drops = [];
     s.gold += gold; s.gem += gem;
     const nScroll = R.nScroll;
     for (let i = 0; i < nScroll; i++) { const sl = SLOTS[Math.floor(Math.random() * 6)].id; scrolls[sl] = (scrolls[sl] || 0) + 1; s.scrolls[sl]++; }
     // 웨이브마다 장비를 조금씩 떨어뜨린다. 보스를 잡으면 더 좋은 등급
     const keys = Object.keys(GEAR), nGear = R.nGear;
-    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses ? 3 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 2 : Math.random() < REWARD.gearFine ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
+    for (let i = 0; i < nGear; i++) { const g = Math.random() < REWARD.gearEpicBoss * r.bosses * (hard ? HARDM.epic : 1) ? 3 : Math.random() < REWARD.gearRare + REWARD.gearRareBoss * r.bosses ? 2 : Math.random() < REWARD.gearFine ? 1 : 0; const d = keys[Math.floor(Math.random() * keys.length)]; drops.push(this.addItem(d, g, GEAR[d].slot === 'weapon' ? this.rollWeaponGod() : null)); }
     if (r.bosses) s.energy += ENERGY.clearBack;
     // 시작하자마자 포기한 판은 임무·기록에 넣지 않는다
     if (done) q.runs++;
@@ -348,6 +348,8 @@ const Meta = {
     return { gold, gem, scrolls, drops, cleared: R.cleared, first, newGod };
   },
   clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
-  chapterOpen(i) { return i === 0 || (i < CHAPTERS && !!this.s.cleared[i - 1]); },
+  // v43 보통은 앞 챕터를 깨면 열린다. 어려움 n은 보통 n+2(마지막은 보통 6)를 깨고, 앞 어려움도 깨야 열린다(예전 '차례로 12개'보다 일찍 열릴 뿐 닫히는 것은 없다)
+  chapterOpen(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return i === 0 || !!c[i - 1]; return i < CHAPTERS && !!c[hardNeed(i)] && (i === N || !!c[i - 1]); },
+  chapterLockMsg(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return `${chapterInfo(i - 1).name} 보스를 처치하면 열립니다`; return !c[hardNeed(i)] ? `보통 ${hardNeed(i) + 1} · ${chapterInfo(hardNeed(i)).name} 보스를 처치하면 열립니다` : `어려움 ${i - N} 보스를 처치하면 열립니다`; },
 };
 Meta.load();

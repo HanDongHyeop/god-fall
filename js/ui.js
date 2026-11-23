@@ -89,15 +89,23 @@ const UI = {
   /* ───── 전투 ───── */
   r_battle() {
     const v = this.chapterView, CI = chapterInfo(v), open = Meta.chapterOpen(v), s = Meta.s, el = $('s_battle'), best = s.cleared[v] ? STAGES : s.best[v] || 0;
+    // v43 [보통 | 어려움] 탭: 같은 섬 6개를 두 난이도로 본다. 화살표는 고른 난이도 안에서만 움직인다. 어려움 탭은 어려움 1이 열릴 때(보통 3 클리어) 풀린다
+    const N = BIOMES.length, hard = CI.deep, n = v % N, hardOn = Meta.chapterOpen(N), hardNew = hardOn && !s.cleared[N] && !s.hardSeen;
+    const dtab = `<div class="dtab"><button class="dt oL ${hard ? '' : 'on'}" data-h="0">보통</button><button class="dt hd oL ${hard ? 'on' : ''} ${hardOn ? '' : 'lock'}" data-h="1">${hardOn ? '' : `<img src="${uiIcon('ico_lock')}" alt="">`}어려움${hardNew && !hard ? '<i class="dot"></i>' : ''}</button></div>`;
+    const hardInfo = hard ? `<div class="ch-hard oL"><span><b>규칙</b> 구역 규칙 · 하트 절반 · 함정 증가</span><span><b>보상</b> 첫 클리어 보석 2배 · 영웅 장비 확률 증가</span></div>` : '';
     el.className = 'screen on battle';
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
     const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
-    setHTML(el, `<div class="ch-title oL"><span class="ch-no">${v + 1}</span>${CI.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
-      <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt="">${CI.deep ? '<div class="deepmark oL">심층</div>' : ''}<button class="arrow l oL" data-d="-1" ${v === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${v === CHAPTERS - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${chapterInfo(v - 1).name} 보스를 처치하면 열립니다</div>`}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
+    setHTML(el, `${dtab}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
+      <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt=""><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
-      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = clamp(v + +a.dataset.d, 0, CHAPTERS - 1); this.r_battle(); return; }
+      const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.chapterView = (hard ? N : 0) + clamp(n + +a.dataset.d, 0, N - 1); this.r_battle(); return; }
+      const dt = e.target.closest('.dt'); if (dt) { const h = +dt.dataset.h; if (h === +hard) return; sfx.tap();
+        if (h && !hardOn) { this.toast(Meta.chapterLockMsg(N)); return; }
+        if (h && !s.hardSeen) { s.hardSeen = true; Meta.save(); }
+        this.chapterView = (h ? N : 0) + n; this.r_battle(); return; }
       if (e.target.closest('#bStart')) this.start();
       if (e.target.closest('#bModes')) { sfx.tap(); this.openModes(); }
     };
@@ -180,7 +188,7 @@ const UI = {
   /* v42 도전 모드: 목록 창과 결과 창 */
   openModes() {
     const card = id => { const M = MODES[id], open = modeOpen(id), m = modeState(id), left = modeLeft(id);
-      return `<div class="md ${open ? '' : 'lock'}"><div class="md-t">${M.name}</div><div class="md-s">${M.sub}</div><div class="md-i">${open ? `최고 기록 <b>${m.best || 0}%</b> · 오늘 남은 횟수 <b>${left}/${M.tries}</b>` : `챕터 ${M.open}을 깨면 열립니다`}</div><button class="btn ${id === 'eel' ? 'red' : 'gold'}" data-mode="${id}" ${open && left > 0 ? '' : 'disabled'}>${open ? (left > 0 ? '도전하기' : '내일 다시') : '잠김'}</button></div>`; };
+      return `<div class="md ${open ? '' : 'lock'}"><div class="md-t">${M.name}</div><div class="md-s">${M.sub}</div><div class="md-i">${open ? `최고 기록 <b>${m.best || 0}%</b> · ${modeDbg(id) ? '<b>디버그로 열림</b> · 횟수 제한 없음' : `오늘 남은 횟수 <b>${left}/${M.tries}</b>`}` : `챕터 ${M.open}을 깨면 열립니다`}</div><button class="btn ${id === 'eel' ? 'red' : 'gold'}" data-mode="${id}" ${open && left > 0 ? '' : 'disabled'}>${open ? (left > 0 ? '도전하기' : '내일 다시') : '잠김'}</button></div>`; };
     this.popup(`<div class="card-pop modes" style="--c:#a64af0;--d:#4e1a8c"><div class="hd">도전</div><button class="x" data-close>✕</button>${card('seal')}${card('eel')}<div class="note">도전은 에너지를 쓰지 않습니다. 하루 횟수는 날이 바뀌면 다시 찹니다.</div></div>`);
     $('pop').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { if (!Meta.s.equip.weapon) { this.toast('무기를 장착해야 출발할 수 있습니다'); return; } this.closePop(); $('lobby').classList.remove('on'); if (!startMode(b.dataset.mode)) { $('lobby').classList.add('on'); this.toast('지금은 도전할 수 없습니다'); } });
   },

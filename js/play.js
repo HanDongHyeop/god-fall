@@ -168,7 +168,7 @@ function buildWave() {
     lvl.set(c1, rowD, HARD); lvl.set(c2, rowD, HARD);
     // 함정 문: 말풍선은 다른 방으로 보인다
     // 판의 첫 웨이브에는 파편이 아직 없다: 돈이 안 드는 방만, 함정 없이
-    const firstWave = w === g.startWave, guaranteed = has('member') && i === 0, pick = pickRoom(R), room = guaranteed ? 'shop' : firstWave && pick === 'shop' ? 'treasure' : pick, trap = !guaranteed && !firstWave && R() < DOOR.mini;
+    const firstWave = w === g.startWave, guaranteed = has('member') && i === 0, pick = pickRoom(R), room = guaranteed ? 'shop' : firstWave && pick === 'shop' ? 'treasure' : pick, trap = !guaranteed && !firstWave && R() < (g.deep ? HARDM.trap : DOOR.mini);
     g.doors.push({ x: side ? WORLD_W - TILE : TILE, y: rowD * TILE - 40, side, kind: trap ? 'mini' : room, fake: trap ? room : null, used: false, row: rowD });
     g.jars = g.jars.filter(j => Math.abs(j.y - rowD * TILE) > 90);
   }
@@ -296,7 +296,7 @@ function killEnemy(e, byStomp) {
   if (!g.tut) spawnShards(e.x, e.y, Math.round(e.gem * (godMode() ? 2 : 1) * p.gemMul));   // v31 연습 방: 재화 없음
   if (!g.tut && !g.noXp) {   // v40 경험치 · 하트
     if (!g.room) g.xp += xpOf(e);
-    if (Math.random() < (e.elite ? HEART.elite : e.child || e.kind === 'bat' ? HEART.small : HEART.chance)) g.hearts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90, vy: -170, t: 0 });
+    if (Math.random() < (e.elite ? HEART.elite : e.child || e.kind === 'bat' ? HEART.small : HEART.chance) * (g.deep ? HARDM.heart : 1)) g.hearts.push({ x: e.x, y: e.y, vx: (Math.random() - .5) * 90, vy: -170, t: 0 });
   }
   // 처치: 하얗게 커졌다가 터진다
   g.fx.push({ type: 'corpse', name: E.frames[0], x: e.x, y: e.y, h: E.h, flip: e.face, t: 0, life: .07 });

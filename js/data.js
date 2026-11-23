@@ -291,7 +291,13 @@ const REST = {
 };
 const DEEP_SUB = ['무너진 신전 아래, 더 깊은 곳', '강바닥 아래의 강', '사슬이 끊어진 감옥', '눈물마저 얼어 버린 밑바닥', '썩은 뿌리가 엉킨 땅속', '어둠보다 오래된 어둠'];
 const chapterOf = w => Math.floor((w - 1) / STAGES), stageOf = w => (w - 1) % STAGES + 1;
-const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, name: (deep ? '심층 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
+/* v43 어려움 모드: 챕터 7~12(예전 '심층')는 같은 섬의 어려움 판이다. 저장 · 챕터 번호는 그대로(어려움 n = 챕터 번호 6 + n).
+   open = 보통 챕터를 몇 개 더 깨야 열리나(어려움 1은 보통 3), heart = 하트가 나올 확률 배율, trap = 함정 샛길 확률,
+   gemFirst = 첫 클리어 보석 배율, epic = 보스 장비 영웅 등급 확률 배율. 구역 규칙(ZONE_PLAN)과 능력 · 강화 개체(monskill.js)는 예전 심층 그대로 */
+const HARDM = { open: 2, heart: .5, trap: .25, gemFirst: 2, epic: 1.5 };
+const isHard = c => c >= BIOMES.length;
+const hardNeed = c => Math.min(BIOMES.length - 1, c - BIOMES.length + HARDM.open);   // 어려움 챕터 c가 열리려면 깨야 하는 보통 챕터 번호
+const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, no: c % BIOMES.length + 1, name: (deep ? '어려움 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
 /* 난이도 단계: 챕터 1~6은 예전 3판 구성과 같은 값(챕터 c의 첫 판 = 3c+1, 보스 = 3c+3)을 6판에 고르게 나눈다.
    심층(챕터 7~12)은 단계마다 DEEP_STEP씩 더 가파르다(tools/test/econ_v21.py 성장 시뮬레이션으로 정함) */
 /* ch = 챕터 하나에 오르는 단계, deep = 심층에서 그 배율. econ_v21.py로 정했다(2026-11-06, 봇으로 잰 '깊을수록 자주 맞는 정도' 반영):

@@ -16,13 +16,15 @@ const EEL = {
 for (const k of ['eel_open', 'eel_bite']) loadImg(k, `assets/mon/${k}.webp`);
 const modeToday = () => new Date().toISOString().slice(0, 10);
 function modeState(id) { const s = Meta.s; s.modes = s.modes || {}; const m = s.modes[id] || (s.modes[id] = { day: '', n: 0, best: 0 }); if (m.day !== modeToday()) { m.day = modeToday(); m.n = 0; } return m; }
-const modeOpen = id => Meta.clearedN() >= MODES[id].open || !!window.__modesOpen;
-const modeLeft = id => Math.max(0, MODES[id].tries - modeState(id).n);
+/* v43 디버그 패널의 '뱀장어 모드 열기'(window.__dbgMode.eel): 조건 없이 열리고 하루 횟수도 쓰지 않는다. 저장(깬 챕터 · 오늘 횟수)은 건드리지 않아 잠그면 원래 조건 그대로다 */
+const modeDbg = id => !!(window.__dbgMode && window.__dbgMode[id]);
+const modeOpen = id => Meta.clearedN() >= MODES[id].open || !!window.__modesOpen || modeDbg(id);
+const modeLeft = id => modeDbg(id) ? MODES[id].tries : Math.max(0, MODES[id].tries - modeState(id).n);
 const modeChapter = () => clamp(Meta.clearedN() - 1, 0, CHAPTERS - 1);   // 가장 최근에 깬 챕터의 세기로 한다
 function startMode(id) {
   if (!modeOpen(id)) return false;
   if (modeLeft(id) <= 0 && !window.__modesOpen) return false;
-  const c = modeChapter(); modeState(id).n++; Meta.save(); sfx.init(); sfx.start();
+  const c = modeChapter(); if (!modeDbg(id)) modeState(id).n++; Meta.save(); sfx.init(); sfx.start();
   if (id === 'seal') startRun({ chapter: c, wave: c * STAGES + STAGES, mode: 'seal', noIntro: true });   // 가장 최근에 깬 챕터의 보스(첫 실행에서 주마다 바뀌는 보스는 내 공격력에 비해 너무 약했다)
   else startRun({ chapter: c, wave: c * STAGES + 1, mode: 'eel', noIntro: true });
   return true;

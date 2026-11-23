@@ -3,9 +3,12 @@
 'use strict';
 (() => {
   const KEY = 'gf_debug', stage = document.getElementById('stage');
-  let god = false, again = 0;
-  try { god = !!JSON.parse(localStorage.getItem(KEY) || '{}').god; } catch (e) {}
-  const setGod = v => { god = v; game.god = v; try { localStorage.setItem(KEY, JSON.stringify({ god: v })); } catch (e) {} btn.classList.toggle('god', v); btn.textContent = v ? '무적 ON' : '디버그'; };
+  let god = false, again = 0, eel = false;
+  try { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); god = !!d.god; eel = !!d.eel; } catch (e) {}
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ god, eel })); } catch (e) {} };
+  const setGod = v => { god = v; game.god = v; keep(); btn.classList.toggle('god', v); btn.textContent = v ? '무적 ON' : '디버그'; };
+  /* v43 뱀장어(심연의 장어) 모드 열기 · 잠그기: 조건(챕터 3 클리어) 없이 [도전]에서 바로 해 볼 수 있게. 저장은 건드리지 않고 이 기기의 디버그 기억에만 둔다 → 잠그면 원래 조건대로 */
+  const setEel = v => { eel = v; window.__dbgMode = { eel: v }; keep(); };
 
   const btn = document.createElement('button'); btn.id = 'dbgBtn'; btn.setAttribute('aria-label', '디버그');
   const panel = document.createElement('div'); panel.id = 'dbg';
@@ -59,6 +62,7 @@
       <h5>맵 바로 시작 (에너지 안 씀)</h5>
       ${Array.from({ length: CHAPTERS }, (_, c) => `<div class="dr"><span>챕터 ${c + 1} · ${chapterInfo(c).name}</span>${b(`go:${c}:${1 + c * STAGES}`, '1판')}${b(`go:${c}:${3 + c * STAGES}`, '휴식')}${b(`go:${c}:${5 + c * STAGES}`, '5판')}${b(`go:${c}:${6 + c * STAGES}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
       <div class="dr">${b('chOpen', '챕터 전부 열기')}${b('chLock', '챕터 잠그기')}</div>
+      <h5>도전 모드</h5><div class="dr"><span>뱀장어(심연의 장어) · ${eel ? '디버그로 열림(횟수 제한 없음)' : Meta.clearedN() >= MODES.eel.open ? '원래 조건으로 열려 있음' : `잠김(챕터 ${MODES.eel.open} 클리어 필요)`}</span>${eel ? b('eel:0', '뱀장어 모드 잠그기', 'no') : b('eel:1', '뱀장어 모드 열기', 'on')}</div>
       <h5>재화</h5><div class="dr">${b('gold+', '골드 +10만')}${b('gem+', '보석 +1만')}${b('en', '에너지 채우기')}${b('sc+', '스크롤 전부 +100')}${b('cur0', '재화 전부 0', 'no')}</div>
       <h5>캐릭터</h5>${gods}
       <h5>장비 레벨 (칸마다)</h5>${slots}<div class="dr">${b('slAll', '전부 Lv.1로', 'no')}</div>
@@ -76,10 +80,11 @@
     if (k === 'tutLobby') { s.ftue = { stage: 1, high: 0, tips: {} }; Meta.save(); close(); if (inRun()) UI.backToLobby(); else UI.ftueLobby(); return; }
     if (k === 'tutOff') { delete s.ftue; Guide.stop(); }
     if (k === 'god') setGod(!god);
+    else if (k === 'eel') { setEel(x === '1'); say(eel ? '뱀장어 모드를 열었습니다: 전투 탭의 [도전]에서 시작' : '뱀장어 모드를 원래 조건으로 되돌렸습니다'); }
     else if (k === 'next') { if (game.isBossWave && game.boss) game.boss = null; game.room = null; game.saved = null; game.minis = null; document.getElementById('mPause').classList.remove('on'); resume = null; panel.classList.remove('on'); nextWave(); return; }
     else if (k === 'kill') { setGod(false); panel.classList.remove('on'); resume = null; game.state = 'play'; game.hitStop = 0; game.p.hp = 0; gameOver(); return; }
-    else if (k === 'chOpen') s.cleared = BIOMES.map(() => true);
-    else if (k === 'chLock') { s.cleared = BIOMES.map(() => false); s.chapter = 0; UI.chapterView = 0; }
+    else if (k === 'chOpen') s.cleared = Array(CHAPTERS).fill(true);   // v43 어려움 6개까지
+    else if (k === 'chLock') { s.cleared = Array(CHAPTERS).fill(false); s.chapter = 0; UI.chapterView = 0; }
     else if (k === 'gold+') s.gold += 100000;
     else if (k === 'gem+') s.gem += 10000;
     else if (k === 'en') { s.energy = 30; s.energyAt = Date.now(); }
@@ -104,6 +109,6 @@
   }
   btn.onclick = () => { sfx.tap(); open(); };
   panel.onclick = e => { const t = e.target.closest('[data-a]'); if (t && !t.disabled) { sfx.tap(); act(t.dataset.a); } };
-  setGod(god);
-  window.GF.debug = { open, close, act, setGod };
+  setGod(god); setEel(eel);
+  window.GF.debug = { open, close, act, setGod, setEel };
 })();

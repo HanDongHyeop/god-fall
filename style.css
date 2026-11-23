@@ -691,3 +691,16 @@ img { display: block; -webkit-user-drag: none; }
 .card-pop.modes .md-i { grid-column: 1; font-size: calc(var(--u) * 3); color: #7a6648; } .card-pop.modes .md-i b { color: #b9770a; font-weight: 400; }
 .card-pop.modes .md .btn { grid-column: 2; grid-row: 1 / span 3; min-width: calc(var(--u) * 22); font-size: calc(var(--u) * 3.8); padding: 0 calc(var(--u) * 2); }
 .card-pop.modes .md .btn:disabled { filter: grayscale(.8) brightness(.85); }
+
+/* v43 [보통 | 어려움] 탭 · 어려움 안내 */
+.dtab { margin-top: calc(var(--u) * 2.4); display: inline-flex; padding: calc(var(--u) * .7); gap: calc(var(--u) * .7); border-radius: 99px; background: #0b1030b8; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ffffff26, 0 calc(var(--u) * .8) calc(var(--u) * 2) #0006; }
+.dtab + .ch-title { margin-top: calc(var(--u) * 1.6); }
+.dt { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: calc(var(--u) * 1); min-width: calc(var(--u) * 26); min-height: calc(var(--u) * 9.6); padding: 0 calc(var(--u) * 3); border-radius: 99px; font-size: calc(var(--u) * 3.8); color: #c9cdea; }
+.dt img { width: calc(var(--u) * 3.6); height: calc(var(--u) * 3.6); object-fit: contain; }
+.dt.on { color: #5a2c00; background: linear-gradient(#ffe66e, #fcb72c 62%, #e8941c); box-shadow: inset 0 calc(var(--u) * .35) 0 #fff3a0, 0 calc(var(--u) * .6) 0 #99520e; text-shadow: none; -webkit-text-stroke: 0; }
+.dt.hd.on { color: #fff; background: linear-gradient(#ff7a86, #d92c48 62%, #a3142e); box-shadow: inset 0 calc(var(--u) * .35) 0 #ffb9c0, 0 calc(var(--u) * .6) 0 #5e0a1a; }
+.dt.lock { color: #8f93b4; }
+.dt .dot { position: absolute; right: calc(var(--u) * .6); top: calc(var(--u) * -.4); width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); border-radius: 50%; background: #ff4a5e; box-shadow: 0 0 0 calc(var(--u) * .4) #fff; }
+.ch-no.hd { background: linear-gradient(#ff8a94, #c9243e); color: #fff; }
+.ch-hard { position: absolute; left: 50%; bottom: calc(var(--u) * 1); transform: translateX(-50%); display: flex; flex-direction: column; gap: calc(var(--u) * .3); padding: calc(var(--u) * 1.2) calc(var(--u) * 3); border-radius: calc(var(--u) * 2.4); background: #2a0612c7; box-shadow: inset 0 0 0 calc(var(--u) * .3) #ff6a7c66; font-size: calc(var(--u) * 2.9); white-space: nowrap; text-align: left; }
+.ch-hard b { font-weight: 400; color: #ff9aa6; margin-right: calc(var(--u) * 1.2); }
