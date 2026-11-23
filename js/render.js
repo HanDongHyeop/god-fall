@@ -416,19 +416,20 @@ function drawFx2() {
 
 /* ───── HUD: 궁수의 전설 2처럼 위쪽 띠에 모은다 ───── */
 function textOut(t, x, y, col = '#fff', lw = 3) { const s = view.s; ctx.lineWidth = lw * s; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,8,20,.92)'; ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y); }
+/* HUD 색: 기본값. UI 풍 시안(디버그 전용, js/theme.js)을 켜면 HUD_THEME의 값으로 바뀐다(자리 · 크기는 그대로) */
+const HUD_BASE = { bg: 'rgba(10,8,20,.85)', hp1: '#ff6a78', hp2: '#d42a44', xp1: '#3a86f0', xp2: '#7ff0ff', xpTx: '#bfefff', gold: '#ffd24a', idle: '#3c3650' };
 function drawHUD() {
   const g = game, p = g.p; if (!p) return;
-  if (window.__skin && typeof drawHudSkin === 'function') return drawHudSkin();   // UI 시안(디버그 전용, js/skin.js): 켰을 때만 HUD 자리를 바꾼다
-  const s = view.s, top = view.safeT + 8 * s, W = view.W;
+  const s = view.s, top = view.safeT + 8 * s, W = view.W, TH = (window.__theme && typeof HUD_THEME !== 'undefined' && HUD_THEME[window.__theme]) || HUD_BASE;
   // 카드를 고르는 동안에는 체력 막대 움직임도 멈춘다
   const hudLive = g.state !== 'card';
   if (hudLive) g.hudHp = approachSnap(g.hudHp === undefined ? p.hp : g.hudHp, p.hp, 5, 1 / 60, .3);
   // 체력
   const left = 46 * s, bw = 118 * s, bh = 18 * s, flash = g.hpFlash || 0, rise = flash > 0 ? 1 - Math.pow(flash, 3) : 1, hpShown = flash > 0 ? Math.round(g.hpFrom + (p.hp - g.hpFrom) * rise) : p.hp, f = clamp(hpShown / p.maxHp, 0, 1), f2 = clamp(g.hudHp / p.maxHp, 0, 1);
   if (flash > 0 && hudLive) g.hpFlash = Math.max(0, flash - 1 / 60 / 1.1);
-  ctx.fillStyle = 'rgba(10,8,20,.85)'; rr(left, top, bw, bh, 6 * s); ctx.fill();
+  ctx.fillStyle = TH.bg; rr(left, top, bw, bh, 6 * s); ctx.fill();
   ctx.fillStyle = '#ffe9c0'; if (f2 > f && !flash) ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f2, bh - 4 * s);
-  const low = f < .3, hg = ctx.createLinearGradient(0, top, 0, top + bh); hg.addColorStop(0, low ? '#ff7a8a' : '#ff6a78'); hg.addColorStop(1, low ? '#c21c36' : '#d42a44');
+  const low = f < .3, hg = ctx.createLinearGradient(0, top, 0, top + bh); hg.addColorStop(0, low ? '#ff7a8a' : TH.hp1); hg.addColorStop(1, low ? '#c21c36' : TH.hp2);
   ctx.fillStyle = hg; ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f, bh - 4 * s);
   if (flash > 0) { ctx.globalAlpha = flash * .55; ctx.fillStyle = '#7dffa8'; ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f, bh - 4 * s); ctx.globalAlpha = flash; ctx.strokeStyle = '#8dffb0'; ctx.lineWidth = 2.6 * s; rr(left - 1 * s, top - 1 * s, bw + 2 * s, bh + 2 * s, 7 * s); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -437,9 +438,9 @@ function drawHUD() {
   if (!g.tut && g.xpNeed > 0 && !(g.boss && g.boss.barK > 0)) {
     const xy = top + bh + 2 * s, xh = 6 * s, max = g.runLv >= XP.cap, k = max ? 1 : clamp(g.xp / g.xpNeed, 0, 1);
     g.hudXp = hudLive ? approachSnap(g.hudXp === undefined ? k : g.hudXp, k, 8, 1 / 60, .002) : (g.hudXp || 0);
-    ctx.fillStyle = 'rgba(10,8,20,.85)'; rr(left, xy, bw, xh, 2.2 * s); ctx.fill();
-    const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, '#3a86f0'); xg.addColorStop(1, '#7ff0ff'); ctx.fillStyle = max ? '#ffd24a' : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
-    ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut(max ? 'MAX' : `Lv.${g.runLv + 1}`, left + bw + 4 * s, xy + xh / 2, max ? '#ffd24a' : '#bfefff', 2.4); ctx.textAlign = 'center';
+    ctx.fillStyle = TH.bg; rr(left, xy, bw, xh, 2.2 * s); ctx.fill();
+    const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, TH.xp1); xg.addColorStop(1, TH.xp2); ctx.fillStyle = max ? TH.gold : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
+    ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut(max ? 'MAX' : `Lv.${g.runLv + 1}`, left + bw + 4 * s, xy + xh / 2, max ? TH.gold : TH.xpTx, 2.4); ctx.textAlign = 'center';
   }
   drawZoneHud(left, top + bh + 10.5 * s, bw);   // v41 수중: 산소 막대
   drawModeHud();   // v42 도전 모드: 남은 시간 · 장어 체력
@@ -447,14 +448,14 @@ function drawHUD() {
   const wv = stageOf(g.wave) - 1, pipX = W * .635, pipY = top + 8 * s, gap = 14.5 * s, pr = 6.6 * s;
   for (let i = 0; i < (g.mode ? 0 : STAGES); i++) {   // v42 도전 모드에서는 판 표시를 감춘다
     const x = pipX + (i - (STAGES - 1) / 2) * gap, done = i < wv, cur = i === wv, kind = STAGE_PLAN[i];
-    ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill();
+    ctx.fillStyle = TH.bg; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill();
     if (kind === 'boss') { const sk = IMG.ui_skull; if (ok(sk)) ctx.drawImage(sk, x - pr * .85, pipY - pr * .85, pr * 1.7, pr * 1.7); if (!cur) { ctx.fillStyle = 'rgba(10,8,20,.45)'; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.fill(); } }
     else if (kind === 'rest') { ctx.fillStyle = done ? '#7dffa8' : cur ? '#c8ffd8' : '#2f5040'; ctx.beginPath(); ctx.ellipse(x, pipY, pr * .42, pr * .62, .6, 0, 7); ctx.fill(); }
-    else { ctx.fillStyle = done ? '#ffd24a' : cur ? '#fff' : '#3c3650'; ctx.beginPath(); ctx.arc(x, pipY, pr * .55, 0, 7); ctx.fill(); }
-    if (cur) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1.8 * s; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.stroke(); }
+    else { ctx.fillStyle = done ? TH.gold : cur ? '#fff' : TH.idle; ctx.beginPath(); ctx.arc(x, pipY, pr * .55, 0, 7); ctx.fill(); }
+    if (cur) { ctx.strokeStyle = TH.gold; ctx.lineWidth = 1.8 * s; ctx.beginPath(); ctx.arc(x, pipY, pr, 0, 7); ctx.stroke(); }
   }
   const pw = 80 * s, prog = g.room ? 1 : clamp(p.y / Math.max(1, (g.isBossWave ? g.arenaTop * TILE : g.floorRow * TILE)), 0, 1);
-  if (!g.boss && !g.mode) { ctx.fillStyle = 'rgba(10,8,20,.85)'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw, 4 * s); ctx.fillStyle = '#ffd24a'; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw * prog, 4 * s); }
+  if (!g.boss && !g.mode) { ctx.fillStyle = TH.bg; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw, 4 * s); ctx.fillStyle = TH.gold; ctx.fillRect(pipX - pw / 2, pipY + 11 * s, pw * prog, 4 * s); }
   // 파편
   const gx = W - 28 * s; ctx.font = `${15 * s}px ${FONT}`; ctx.textAlign = 'right';
   textOut(p.shards, gx, top + 9 * s, '#fff');

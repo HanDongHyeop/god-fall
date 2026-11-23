@@ -75,7 +75,7 @@ const UI = {
     GODS.forEach(g => { urls.add(new URL(`assets/god/${g.id}/big_bare.webp`, location.href).href); urls.add(new URL(`assets/god/${g.id}/big_armed.webp`, location.href).href); });
     this._warm = [...urls].map(u => { const im = new Image(); im.decoding = 'async'; im.src = u; if (im.decode) im.decode().catch(() => {}); return im; });   // 붙잡아 두어야 풀린 그림이 버려지지 않는다
   },
-  go(tab) { this.tab = tab; $('lobby').dataset.tab = tab; [...$('nav').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); for (const s of $('screens').children) s.classList.toggle('on', s.id === 's_' + tab); this.render(); },
+  go(tab) { this.tab = tab; [...$('nav').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); for (const s of $('screens').children) s.classList.toggle('on', s.id === 's_' + tab); this.render(); },
   render() { this['r_' + this.tab](); this.refreshTop(); },
   refreshTop() {
     const s = Meta.s, st = Meta.stats();
@@ -101,7 +101,7 @@ const UI = {
     const base = hard ? N : 0, isles = BIOMES.map((B, i) => { const o = i - n; return `<div class="isl ${o ? '' : 'c'} ${Math.abs(o) > 2 ? 'far' : ''}" style="--o:${o}" data-i="${i}"><img class="isle ${Meta.chapterOpen(base + i) ? '' : 'lock'} ${hard ? 'deep' : ''}" src="assets/ui/isle${i + 1}.webp" alt=""></div>`; }).join('');
     // 지금 깨야 하는 섬(이 난이도에서 아직 못 깬 첫 챕터)으로 바로 가는 단추: 그 섬이 오른쪽에 있으면 오른쪽 화살표 위, 왼쪽에 있으면 왼쪽 화살표 위
     const tgt = BIOMES.findIndex((B, i) => !s.cleared[base + i]), jump = tgt >= 0 && tgt !== n ? `<button class="jump ${tgt > n ? 'r' : 'l'}" data-jump="${tgt}"><small>깰 차례</small><b>${tgt > n ? '' : '‹‹ '}${tgt + 1}${tgt > n ? ' ››' : ''}</b></button>` : '';
-    setHTML(el, `${dtab}${typeof skinChapters === 'function' ? skinChapters(v) : ''}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
+    setHTML(el, `${dtab}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
       <div class="isle-wrap"><div class="isles">${isles}</div><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${jump}${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
       <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
@@ -111,7 +111,6 @@ const UI = {
         if (h && !hardOn) { this.toast(Meta.chapterLockMsg(N)); return; }
         if (h && !s.hardSeen) { s.hardSeen = true; Meta.save(); }
         this.chapterView = (h ? N : 0) + n; this.r_battle(); return; }
-      const cs = window.__skin && e.target.closest('.cs'); if (cs) { sfx.tap(); this.slideTo(+cs.dataset.ch, 320); return; }   // UI 시안의 챕터 고르기 줄
       if (e.target.closest('#bStart')) this.start();
       if (e.target.closest('#bModes')) { sfx.tap(); this.openModes(); }
     };

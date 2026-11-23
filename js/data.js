@@ -299,13 +299,14 @@ const chapterOf = w => Math.floor((w - 1) / STAGES), stageOf = w => (w - 1) % ST
    spacing = 적 사이 간격 배율(마릿수 약 +22%), rage = 분노 개체 비율(붉은 불길 · 이동 rageSpd배 · 피해 rageDmg배), shots = 능력 탄 추가 수, cd = 능력 쿨타임 배율
    wallTrap = 벽 턱이 가시 함정 턱이 될 확률, spikeDelay = 밟고 나서 가시가 솟기까지(초), spikeUp = 솟아 있는 시간, spikeCool = 다시 밟을 수 있을 때까지
    gold = 같은 섬 보통(줄이기 전) 골드의 배수, scroll · gem = 같은 섬 보통의 배수, epic · rare = 장비 등급 확률 배수 */
-const HARDM = { open: 2, heart: .5, trap: .25, gemFirst: 3, epic: 3, rare: 2, gold: 3, scroll: 3, gem: 3, lvFrom: 3.2, lvK: .9, spacing: .82, rage: .3, rageSpd: 1.25, rageDmg: 1.15, shots: 1, cd: .85, wallTrap: .4, spikeDelay: 1.2, spikeUp: 1.4, spikeCool: .9 };
+/* v49(사용자 요청): 어려움 n은 보통 n의 보스를 깨면 바로 열린다(예전: 보통 n+2 + 앞 어려움). 그래서 난이도 단계도 '같은 섬 보통 + 2챕터 수준'으로 다시 놓았다(lvFrom 2 · lvK 1: 어려움 1 = 보통 3 시작 수준 … 어려움 6 = 보통 6보다 2챕터 위) */
+const HARDM = { open: 0, heart: .5, trap: .25, gemFirst: 3, epic: 3, rare: 2, gold: 3, scroll: 3, gem: 3, lvFrom: 2, lvK: 1, spacing: .82, rage: .3, rageSpd: 1.25, rageDmg: 1.15, shots: 1, cd: .85, wallTrap: .4, spikeDelay: 1.2, spikeUp: 1.4, spikeCool: .9 };
 /* 심연석: 어려움에서만 나오는 재화. 전설 → 신화 · 신화 → S · S → SS 합성에 든다(need[지금 등급]).
    쓰임새를 최고 등급 합성으로 정한 까닭: 보통만 돌아서는 끝까지 못 가게 해 어려움에 갈 이유를 만들고, 이미 있는 합성 사다리에 얹어 새 화면 없이 바로 쓰인다
    얻기: 어려움 판을 넘을 때마다 wave개(버림), 보스 boss + 섬 번호, 첫 클리어 first → 완주 한 번에 어려움 1 = 6개 … 어려움 6 = 11개, 첫 클리어는 +10 */
 const ABYSS = { name: '심연석', wave: .5, boss: 3, first: 10, need: { 4: 10, 5: 25, 6: 50 } };
 const isHard = c => c >= BIOMES.length;
-const hardNeed = c => Math.min(BIOMES.length - 1, c - BIOMES.length + HARDM.open);   // 어려움 챕터 c가 열리려면 깨야 하는 보통 챕터 번호
+const hardNeed = c => Math.min(BIOMES.length - 1, c - BIOMES.length + HARDM.open);   // v49: open 0 → 같은 섬의 보통   // 어려움 챕터 c가 열리려면 깨야 하는 보통 챕터 번호
 const chapterInfo = c => { const B = BIOMES[c % BIOMES.length], deep = c >= BIOMES.length; return { B, deep, no: c % BIOMES.length + 1, name: (deep ? '어려움 · ' : '') + B.name, sub: deep ? DEEP_SUB[c % BIOMES.length] : B.sub }; };
 /* 난이도 단계: 챕터 1~6은 예전 3판 구성과 같은 값(챕터 c의 첫 판 = 3c+1, 보스 = 3c+3)을 6판에 고르게 나눈다.
    심층(챕터 7~12)은 단계마다 DEEP_STEP씩 더 가파르다(tools/test/econ_v21.py 성장 시뮬레이션으로 정함) */
@@ -324,7 +325,7 @@ const DIFF_L = {
   dmg: L => (L < 6 ? .6 + .08 * (L - 1) : 1) * (1 + .11 * (L - 1)),
   speed: L => 1 + Math.min(.6, .05 * (L - 1)),
   spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6 + Math.max(0, 3 - L) * 30),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게). v38: 챕터 1 앞쪽(단계 3 전)은 더 듬성듬성(괴물 수 약 -25%)
-  rows: L => Math.round(Math.min(150, 80 + L * 5)),                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게
+  rows: L => Math.round(Math.min(225, 120 + L * 7.5)),   // v49 판 길이 1.5배(예전 min(150, 80 + 5L)): 챕터 하나가 너무 빨리 끝난다는 의견. 판 수(6)는 그대로                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게
   bossHp: L => 900 * DIFF_L.hp(L) * (L <= 3 ? .7 : L <= 6 ? .85 : 1),
   spike: L => L < 6 ? .08 + L * .05 : Math.min(.5, .18 + L * .04),
 };
@@ -379,5 +380,5 @@ const CARD_THEME = { chance: .2 };
    챕터 1을 깨기 전: 카드 창에 영웅 이상 약 95% · 전설 약 63% / 챕터 3을 깨기 전: 영웅 약 79% · 전설 약 42% / 그 뒤 = 기본(영웅 61% · 전설 26%) */
 const CARD_EARLY = [];   // v39 초반 후한 확률을 없앴다(예전 [[1, [.85, .70, .50]], [3, [.72, .56, .42]]]: 챕터 1을 깨기 전 카드 창의 63%에 전설 → 보스가 한 방). 이제 첫 판만 '첫 카드 창 전설 1장 확정 + 그 뒤 영웅까지'(cards.js firstRun), 두 번째 판부터 기본 확률
 /* v38 챕터별 권장 전투력: 성장 시뮬레이션(tools/test/econ_v38.py)에서 '이 전투력이면 60판쯤 해 본 실력으로 60% 깬다'로 뽑은 값. 전투 화면에 내 전투력과 견주어 보여 준다 */
-const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 2300, 2600, 3050, 3650, 4250, 4900];   // v46 어려움 6개: 새 난이도 단계를 보통 값에 견주어 잡고 몬스터 · 기믹 몫 12%를 얹었다(추정, 성장 시뮬은 다시 안 돌림)   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
+const REC_POWER = [440, 990, 1600, 2020, 2260, 2730, 1800, 2250, 2550, 3050, 3750, 4400];   // v46 어려움 6개: 새 난이도 단계를 보통 값에 견주어 잡고 몬스터 · 기믹 몫 12%를 얹었다(추정, 성장 시뮬은 다시 안 돌림)   // econ_v38 무과금 하루 10판 프로필, 클리어율 60% 지점
 const CARD_PITY = { after: 4, hero: .12, legend: .05 };   // v40 고르는 횟수가 늘어 보정도 느슨하게(예전 after 2 · hero .25 · legend .2)

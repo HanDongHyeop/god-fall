@@ -355,7 +355,7 @@ const Meta = {
   },
   clearedN() { let n = 0; while (n < CHAPTERS && this.s.cleared[n]) n++; return n; },
   // v43 보통은 앞 챕터를 깨면 열린다. 어려움 n은 보통 n+2(마지막은 보통 6)를 깨고, 앞 어려움도 깨야 열린다(예전 '차례로 12개'보다 일찍 열릴 뿐 닫히는 것은 없다)
-  chapterOpen(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return i === 0 || !!c[i - 1]; return i < CHAPTERS && !!c[hardNeed(i)] && (i === N || !!c[i - 1]); },
-  chapterLockMsg(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return `${chapterInfo(i - 1).name} 보스를 처치하면 열립니다`; return !c[hardNeed(i)] ? `보통 ${hardNeed(i) + 1} · ${chapterInfo(hardNeed(i)).name} 보스를 처치하면 열립니다` : `어려움 ${i - N} 보스를 처치하면 열립니다`; },
+  chapterOpen(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return i === 0 || !!c[i - 1]; return i < CHAPTERS && !!c[hardNeed(i)]; },   // v49 어려움 n = 보통 n의 보스를 깨면 열린다(앞 어려움을 깰 필요 없음)
+  chapterLockMsg(i) { const c = this.s.cleared, N = BIOMES.length; if (i < N) return `${chapterInfo(i - 1).name} 보스를 처치하면 열립니다`; return `보통 ${hardNeed(i) + 1} · ${chapterInfo(hardNeed(i)).name} 보스를 처치하면 열립니다`; },
 };
 Meta.load();
