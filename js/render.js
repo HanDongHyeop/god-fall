@@ -417,6 +417,7 @@ function drawFx2() {
 function textOut(t, x, y, col = '#fff', lw = 3) { const s = view.s; ctx.lineWidth = lw * s; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,8,20,.92)'; ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y); }
 function drawHUD() {
   const g = game, p = g.p; if (!p) return;
+  if (window.__skin && typeof drawHudSkin === 'function') return drawHudSkin();   // UI 시안(디버그 전용, js/skin.js): 켰을 때만 HUD 자리를 바꾼다
   const s = view.s, top = view.safeT + 8 * s, W = view.W;
   // 카드를 고르는 동안에는 체력 막대 움직임도 멈춘다
   const hudLive = g.state !== 'card';

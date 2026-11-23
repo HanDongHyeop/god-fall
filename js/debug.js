@@ -3,12 +3,14 @@
 'use strict';
 (() => {
   const KEY = 'gf_debug', stage = document.getElementById('stage');
-  let god = false, again = 0, eel = false;
-  try { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); god = !!d.god; eel = !!d.eel; } catch (e) {}
-  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ god, eel })); } catch (e) {} };
+  let god = false, again = 0, eel = false, skin = '';
+  try { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); god = !!d.god; eel = !!d.eel; skin = d.skin || ''; } catch (e) {}
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ god, eel, skin })); } catch (e) {} };
   const setGod = v => { god = v; game.god = v; keep(); btn.classList.toggle('god', v); btn.textContent = v ? '무적 ON' : '디버그'; };
   /* v43 뱀장어(심연의 장어) 모드 열기 · 잠그기: 조건(챕터 3 클리어) 없이 [도전]에서 바로 해 볼 수 있게. 저장은 건드리지 않고 이 기기의 디버그 기억에만 둔다 → 잠그면 원래 조건대로 */
   const setEel = v => { eel = v; window.__dbgMode = { eel: v }; keep(); };
+  // UI 시안(js/skin.js · skins.css): 고른 시안은 이 기기의 디버그 기억에만 남는다. '현재'로 돌리면 기본 UI
+  const setSkin = v => { if (typeof Skin === 'undefined') return; Skin.set(v); skin = Skin.id; keep(); };
 
   const btn = document.createElement('button'); btn.id = 'dbgBtn'; btn.setAttribute('aria-label', '디버그');
   const panel = document.createElement('div'); panel.id = 'dbg';
@@ -62,6 +64,7 @@
       <h5>맵 바로 시작 (에너지 안 씀)</h5>
       ${Array.from({ length: CHAPTERS }, (_, c) => `<div class="dr"><span>챕터 ${c + 1} · ${chapterInfo(c).name}</span>${b(`go:${c}:${1 + c * STAGES}`, '1판')}${b(`go:${c}:${3 + c * STAGES}`, '휴식')}${b(`go:${c}:${5 + c * STAGES}`, '5판')}${b(`go:${c}:${6 + c * STAGES}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
       <div class="dr">${b('chOpen', '챕터 전부 열기')}${b('chLock', '챕터 잠그기')}</div>
+      ${typeof Skin !== 'undefined' ? `<h5>UI 시안 (지금: ${skin ? skin.toUpperCase() + ' ' + SKINS[skin] : '현재 UI'})</h5><div class="dr">${b('skin:', '현재', skin ? '' : 'on')}${Object.keys(SKINS).map(k => b('skin:' + k, k.toUpperCase() + ' ' + SKINS[k], skin === k ? 'on' : '')).join('')}</div>` : ''}
       <h5>도전 모드</h5><div class="dr"><span>뱀장어(심연의 장어) · ${eel ? '디버그로 열림(횟수 제한 없음)' : Meta.clearedN() >= MODES.eel.open ? '원래 조건으로 열려 있음' : `잠김(챕터 ${MODES.eel.open} 클리어 필요)`}</span>${eel ? b('eel:0', '뱀장어 모드 잠그기', 'no') : b('eel:1', '뱀장어 모드 열기', 'on')}</div>
       <h5>재화</h5><div class="dr">${b('gold+', '골드 +10만')}${b('gem+', '보석 +1만')}${b('en', '에너지 채우기')}${b('sc+', '스크롤 전부 +100')}${b('cur0', '재화 전부 0', 'no')}</div>
       <h5>캐릭터</h5>${gods}
@@ -80,6 +83,7 @@
     if (k === 'tutLobby') { s.ftue = { stage: 1, high: 0, tips: {} }; Meta.save(); close(); if (inRun()) UI.backToLobby(); else UI.ftueLobby(); return; }
     if (k === 'tutOff') { delete s.ftue; Guide.stop(); }
     if (k === 'god') setGod(!god);
+    else if (k === 'skin') { setSkin(x || ''); say(skin ? `UI 시안 ${skin.toUpperCase()} · ${SKINS[skin]}` : '현재 UI로 돌아왔습니다'); }
     else if (k === 'eel') { setEel(x === '1'); say(eel ? '뱀장어 모드를 열었습니다: 전투 탭의 [도전]에서 시작' : '뱀장어 모드를 원래 조건으로 되돌렸습니다'); }
     else if (k === 'next') { if (game.isBossWave && game.boss) game.boss = null; game.room = null; game.saved = null; game.minis = null; document.getElementById('mPause').classList.remove('on'); resume = null; panel.classList.remove('on'); nextWave(); return; }
     else if (k === 'kill') { setGod(false); panel.classList.remove('on'); resume = null; game.state = 'play'; game.hitStop = 0; game.p.hp = 0; gameOver(); return; }
@@ -109,6 +113,6 @@
   }
   btn.onclick = () => { sfx.tap(); open(); };
   panel.onclick = e => { const t = e.target.closest('[data-a]'); if (t && !t.disabled) { sfx.tap(); act(t.dataset.a); } };
-  setGod(god); setEel(eel);
-  window.GF.debug = { open, close, act, setGod, setEel };
+  setGod(god); setEel(eel); if (skin) setSkin(skin);
+  window.GF.debug = { open, close, act, setGod, setEel, setSkin };
 })();

@@ -75,7 +75,7 @@ const UI = {
     GODS.forEach(g => { urls.add(new URL(`assets/god/${g.id}/big_bare.webp`, location.href).href); urls.add(new URL(`assets/god/${g.id}/big_armed.webp`, location.href).href); });
     this._warm = [...urls].map(u => { const im = new Image(); im.decoding = 'async'; im.src = u; if (im.decode) im.decode().catch(() => {}); return im; });   // 붙잡아 두어야 풀린 그림이 버려지지 않는다
   },
-  go(tab) { this.tab = tab; [...$('nav').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); for (const s of $('screens').children) s.classList.toggle('on', s.id === 's_' + tab); this.render(); },
+  go(tab) { this.tab = tab; $('lobby').dataset.tab = tab; [...$('nav').children].forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); for (const s of $('screens').children) s.classList.toggle('on', s.id === 's_' + tab); this.render(); },
   render() { this['r_' + this.tab](); this.refreshTop(); },
   refreshTop() {
     const s = Meta.s, st = Meta.stats();
@@ -97,7 +97,7 @@ const UI = {
     // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
     const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
-    setHTML(el, `${dtab}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
+    setHTML(el, `${dtab}${typeof skinChapters === 'function' ? skinChapters(v) : ''}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
       <div class="isle-wrap"><img class="isle ${open ? '' : 'lock'} ${CI.deep ? 'deep' : ''}" src="assets/ui/isle${v % BIOMES.length + 1}.webp" alt=""><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
       <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
@@ -106,6 +106,7 @@ const UI = {
         if (h && !hardOn) { this.toast(Meta.chapterLockMsg(N)); return; }
         if (h && !s.hardSeen) { s.hardSeen = true; Meta.save(); }
         this.chapterView = (h ? N : 0) + n; this.r_battle(); return; }
+      const cs = window.__skin && e.target.closest('.cs'); if (cs) { sfx.tap(); this.chapterView = +cs.dataset.ch; this.r_battle(); return; }   // UI 시안의 챕터 고르기 줄
       if (e.target.closest('#bStart')) this.start();
       if (e.target.closest('#bModes')) { sfx.tap(); this.openModes(); }
     };
