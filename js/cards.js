@@ -11,7 +11,7 @@
    암브로시아 = 최대 체력 +20%(지금 체력 그대로), 헤베의 잔 = 최대 체력의 30% 회복(선택지 +1 삭제), 자석 신상 = 범위 2배만. 메아리 탄은 갈래 탄까지 통째로 한 번 더 */
 const CARDS = [
   // ── 일반: 숫자가 오르는 기본기 ──
-  { id: 'might', name: '힘의 팔찌', tier: '일반', desc: '공격력 +15%.', repeat: true, apply: p => { p.atk = Math.round(p.atk * 1.15); } },
+  { id: 'might', name: '힘의 팔찌', tier: '일반', desc: '공격력 +10%.', repeat: true, apply: p => { p.atk = Math.round(p.atk * 1.1); } },
   { id: 'rapid1', name: '날랜 손', tier: '일반', fam: 'rate', lv: 1, desc: '발사 간격 -12%, 탄창 +1.', apply: p => { p.maxAmmo += 1; p.ammo = p.maxAmmo; } },   // 공중 자동 공격에서는 탄이 금방 떨어져 연사만으로는 이득이 작다(측정) → 탄창을 같이 준다
   { id: 'seek1', name: '바람 길잡이', tier: '일반', fam: 'seek', lv: 1, w: 1.2, desc: '탄이 가까운 적 쪽으로 살짝 휘어 갑니다.' },
   { id: 'apollo', name: '헬리오스의 시야', tier: '일반', desc: '탄이 1.6배 멀리 날아가고 30% 커집니다.' },
@@ -22,7 +22,7 @@ const CARDS = [
   { id: 'magnet', name: '자석 신상', tier: '일반', desc: '가까이 있는 하트를 끌어당깁니다.', noMini: true },   // v40 파편이 저절로 날아오게 되어 하트를 끄는 카드로 바꿨다
   { id: 'overload', name: '신성 과부하', tier: '일반', desc: '신성 폭주 시간이 80% 늘어납니다.', noMini: true },
   // v39 기본기 5장(조금씩 세지는 카드를 늘린다: "좋은 것만 나와 너무 금방 세진다"는 의견) + 동료 신수(pets.js) 일반 3장
-  { id: 'keen', name: '날 선 촉', tier: '일반', desc: '치명타 확률 +8%.', repeat: true, apply: () => { game.st.crit += .08; } },
+  { id: 'keen', name: '날 선 촉', tier: '일반', desc: '치명타 확률 +6%.', repeat: true, apply: () => { game.st.crit += .06; } },
   { id: 'hide', name: '두꺼운 가죽', tier: '일반', desc: '받는 피해 -8%.', repeat: true, apply: () => { game.st.dmgCut = Math.min(.6, (game.st.dmgCut || 0) + .08); } },
   { id: 'swift', name: '가벼운 샌들', tier: '일반', desc: '이동 속도 +12%.', apply: () => { game.st.runPct = (game.st.runPct || 0) + .12; } },
   { id: 'purse', name: '파편 주머니', tier: '일반', desc: '얻는 파편 +20%.', noMini: true, apply: p => { p.gemMul = (p.gemMul || 1) * 1.2; } },
@@ -35,15 +35,15 @@ const CARDS = [
   { id: 'z_lamp', name: '횃불지기의 등불', tier: '일반', zone: 'dark', noMini: true, desc: '어둠 속 시야가 40% 넓어집니다.' },
   { id: 'z_cloak', name: '깃털 망토', tier: '일반', zone: 'spike', noMini: true, desc: '떨어지는 속도가 15% 느려집니다.' },
   // ── 희귀: 탄·몸에 새 모양이 붙는다 ──
-  { id: 'twin', name: '두 갈래 탄', tier: '희귀', fam: 'shot', lv: 1, desc: '탄이 나란히 2발씩 나갑니다. 1발 피해는 75%.' },
+  { id: 'twin', name: '두 갈래 탄', tier: '희귀', fam: 'shot', lv: 1, desc: '탄이 나란히 2발씩 나갑니다. 1발 피해는 62%.' },
   { id: 'seek2', name: '사냥꾼의 눈', tier: '희귀', fam: 'seek', lv: 2, w: 1.2, desc: '탄이 조금 떨어진 적에게도 휘어 갑니다.' },
-  { id: 'orbit', name: '수호 구슬', tier: '희귀', fam: 'orb', lv: 1, desc: '구슬 2개가 몸 주위를 돌며 적을 때립니다(공격력 40%).' },
+  { id: 'orbit', name: '수호 구슬', tier: '희귀', fam: 'orb', lv: 1, desc: '구슬 2개가 몸 주위를 돌며 적을 때립니다(공격력 30%).' },
   { id: 'rapid', name: '연사', tier: '희귀', fam: 'rate', lv: 2, desc: '발사 간격 -25%, 탄창 +2.', apply: p => { const add = game.cards.has('rapid1') ? 1 : 2; /* 날랜 손(+1)을 이미 가졌으면 합쳐서 +2 */ p.maxAmmo += add; p.ammo = p.maxAmmo; } },
   { id: 'pierce', name: '관통의 창끝', tier: '희귀', desc: '공격이 적을 2번 뚫고 지나갑니다.' },
-  { id: 'bounce', name: '벽 튕김', tier: '희귀', desc: '쏠 때마다 벽에서 3번 튕기는 탄이 1발 더 나갑니다(피해 80%).' },
-  { id: 'burn', name: '불꽃 탄', tier: '희귀', desc: '맞은 적이 3초 동안 타며 공격력의 180%를 더 입습니다.', noMini: true, note: '보스와 중간 보스에게는 불이 붙지 않습니다' },
+  { id: 'bounce', name: '벽 튕김', tier: '희귀', desc: '쏠 때마다 벽에서 3번 튕기는 탄이 1발 더 나갑니다(피해 60%).' },
+  { id: 'burn', name: '불꽃 탄', tier: '희귀', desc: '맞은 적이 3초 동안 타며 공격력의 90%를 더 입습니다.', noMini: true, note: '보스와 중간 보스에게는 불이 붙지 않습니다' },
   { id: 'corpse', name: '망자의 폭죽', tier: '희귀', desc: '쓰러뜨린 적이 터져 주변 적에게 공격력 70% 피해를 줍니다.', noMini: true, note: '보스와 중간 보스는 폭발하지 않습니다' },
-  { id: 'owl', name: '아테나의 올빼미', tier: '희귀', desc: '올빼미가 따라다니며 내가 쏠 때 적을 쫓는 탄을 같이 쏩니다(피해 70%).' },
+  { id: 'owl', name: '아테나의 올빼미', tier: '희귀', desc: '올빼미가 따라다니며 내가 쏠 때 적을 쫓는 탄을 같이 쏩니다(피해 40%).' },
   { id: 'titan', name: '타이탄 밟기', tier: '희귀', fam: 'titan', lv: 1, desc: '적을 밟으면 큰 충격파로 주변 적에게 공격력 150% 피해.', noMini: true, note: '밟을 수 없는 몬스터는 데미지를 줄 수 없습니다' },
   { id: 'feast', name: '포식의 제단', tier: '희귀', desc: '적을 8마리 쓰러뜨릴 때마다 체력 8% 회복.', noMini: true },
   { id: 'olive', name: '올리브 관', tier: '희귀', desc: '웨이브마다 피해를 한 번 막아 줍니다.', noMini: true, note: '고른 다음 웨이브부터 적용됩니다' },
@@ -58,16 +58,16 @@ const CARDS = [
   // ── 영웅: 강한 동작. 꼬리·막기처럼 눈에 띄는 연출이 붙는다 ──
   { id: 'pet_laser', name: '아르고스의 눈', tier: '영웅', pet: true, desc: '떠다니는 눈이 가까운 적 쪽으로 광선을 쏩니다. 지나는 길의 적 모두에게 3번(1번 피해 90%).' },
   { id: 'pet_rage', name: '신수 광폭', tier: '영웅', need: () => hasPet(), desc: '따라다니는 동료의 피해 +50%, 공격 간격 -30%.' },
-  { id: 'triple', name: '세 갈래 공격', tier: '영웅', fam: 'shot', lv: 2, desc: '공격이 세 갈래로 퍼집니다. 양옆 탄 피해는 85%.' },
+  { id: 'triple', name: '세 갈래 공격', tier: '영웅', fam: 'shot', lv: 2, desc: '공격이 세 갈래로 퍼집니다. 양옆 탄 피해는 40%.' },
   { id: 'hawk', name: '사냥매의 눈', tier: '영웅', fam: 'seek', lv: 3, w: 1.2, desc: '탄이 먼 적에게도 빠르게 휘어 가며 푸른 꼬리를 남깁니다.' },
   // v31 들이받기 묶음(butt): 아래에서 위로 몸이 닿아도 적을 잡는다(밟기와 같은 피해, 다치지 않음). 전설은 흡혈까지
   { id: 'horn', name: '미노타우로스의 뿔', tier: '영웅', fam: 'butt', lv: 2, desc: '아래에서 들이받아 적을 잡고 부서지는 돌도 부숩니다(밟기와 같은 피해).' },
-  { id: 'orbit2', name: '별자리 구슬', tier: '영웅', fam: 'orb', lv: 2, desc: '구슬 3개가 돌며 적을 때리고(60%) 닿은 적의 탄을 지웁니다.' },
+  { id: 'orbit2', name: '별자리 구슬', tier: '영웅', fam: 'orb', lv: 2, desc: '구슬 3개가 돌며 적을 때리고(40%) 닿은 적의 탄을 지웁니다.' },
   { id: 'chain', name: '번개 탄', tier: '영웅', desc: '맞은 적 근처 2마리에게 번개가 옮겨 갑니다.' },
-  { id: 'strike', name: '낙뢰', tier: '영웅', desc: '4번 공격할 때마다 가까운 적에게 벼락(공격력 150%).' },
-  { id: 'echo', name: '메아리 탄', tier: '영웅', desc: '2번 공격할 때마다 같은 공격이 한 번 더 나갑니다.' },
-  { id: 'heavy', name: '무거운 일격', tier: '영웅', desc: '공격력 +70%, 탄이 1.4배 커집니다. 발사 간격은 20% 길어집니다.' },
-  { id: 'ares', name: '아레스의 창끝', tier: '영웅', desc: '치명타 확률 +25%, 치명타 피해 +60%.', apply: () => { game.st.crit += .25; game.st.critDmg += .6; } },
+  { id: 'strike', name: '낙뢰', tier: '영웅', desc: '5번 공격할 때마다 가까운 적에게 벼락(공격력 120%).' },
+  { id: 'echo', name: '메아리 탄', tier: '영웅', desc: '3번 공격할 때마다 같은 공격이 한 번 더 나갑니다.' },
+  { id: 'heavy', name: '무거운 일격', tier: '영웅', desc: '공격력 +30%, 탄이 1.4배 커집니다. 발사 간격은 20% 길어집니다.' },
+  { id: 'ares', name: '아레스의 창끝', tier: '영웅', desc: '치명타 확률 +15%, 치명타 피해 +40%.', apply: () => { game.st.crit += .15; game.st.critDmg += .4; } },
   { id: 'wings', name: '날개 신발', tier: '영웅', desc: '탄을 다 쓰면 공중에서 한 번 더 뛸 수 있습니다.' },
   { id: 'cell', name: '신성 회로', tier: '영웅', desc: '파편을 먹을 때마다 탄이 1 찹니다.', noMini: true },
   { id: 'nike', name: '니케의 월계관', tier: '영웅', desc: '지금 체력 30% 회복. 웨이브를 시작할 때마다 체력 15% 회복.', noMini: true, apply: p => { healBy(p.maxHp * .3); game.st.waveHeal = (game.st.waveHeal || 0) + .15; } },
@@ -75,13 +75,13 @@ const CARDS = [
   { id: 'titan2', name: '히페리온의 발구름', tier: '영웅', fam: 'titan', lv: 2, desc: '가시 달린 적·그림자처럼 못 밟던 적도 밟아서 잡고, 밟으면 큰 충격파(공격력 150%)가 터집니다.', noMini: true },
   { id: 'giant', name: '거인의 피', tier: '영웅', desc: '최대 체력 +40%. 체력이 모두 찹니다.', apply: p => { p.maxHp = Math.round(p.maxHp * 1.4); p.hp = p.maxHp; } },
   // ── 전설: 고른 순간 몸과 화면에서 바로 보이는 상시 효과 ──
-  { id: 'fan5', name: '헬리오스의 부채', tier: '전설', fam: 'shot', lv: 3, desc: '탄이 금빛 5갈래 부채꼴로 퍼집니다. 1발 피해는 90%.' },
+  { id: 'fan5', name: '헬리오스의 부채', tier: '전설', fam: 'shot', lv: 3, desc: '탄이 금빛 5갈래 부채꼴로 퍼집니다. 1발 피해는 44%.' },
   { id: 'seek3', name: '사냥 여신의 표식', tier: '전설', fam: 'seek', lv: 4, desc: '탄이 멀리 있는 적도 끝까지 쫓아가 맞히고, 노린 적에 표식이 뜹니다.' },
   { id: 'bull', name: '크레타의 황소', tier: '전설', fam: 'butt', lv: 3, desc: '아래에서 들이받아 적을 치고(밟기 피해 ×1.5) 부서지는 돌도 부숩니다. 준 피해의 20%를 흡혈합니다.' },
-  { id: 'orbit3', name: '원소 구슬', tier: '전설', fam: 'orb', lv: 3, desc: '불·얼음·번개·바람 구슬 4개가 돌며 적을 때리고(140%) 적 탄을 지웁니다. 태우기·얼리기·감전·밀치기.', note: '보스에게는 감전만 듭니다' },
-  { id: 'storm', name: '천둥 폭풍', tier: '전설', desc: '0.8초마다 화면 안 적에게 벼락(공격력 160%), 옆 2마리로 번집니다.' },
-  { id: 'avatar', name: '신의 현현', tier: '전설', desc: '판 내내 신성 폭주 상태가 됩니다(공격력 ×1.6, 탄 1.5배, 파편 2배). 공격력도 50% 더 오릅니다.', apply: p => { p.atk = Math.round(p.atk * 1.5); } },
-  { id: 'hydra', name: '히드라의 독니', tier: '전설', desc: '공격이 맞으면 적을 쫓는 독니 3발로 갈라집니다. 1발 피해는 80%.' },
+  { id: 'orbit3', name: '원소 구슬', tier: '전설', fam: 'orb', lv: 3, desc: '불·얼음·번개·바람 구슬 4개가 돌며 적을 때리고(70%) 적 탄을 지웁니다. 태우기·얼리기·감전·밀치기.', note: '보스에게는 감전만 듭니다' },
+  { id: 'storm', name: '천둥 폭풍', tier: '전설', desc: '1.5초마다 화면 안 적에게 벼락(공격력 110%), 옆 2마리로 번집니다.' },
+  { id: 'avatar', name: '신의 현현', tier: '전설', desc: '판 내내 신성 폭주 상태가 됩니다(공격력 ×1.6, 탄 1.5배, 파편 2배).' },
+  { id: 'hydra', name: '히드라의 독니', tier: '전설', desc: '공격이 맞으면 적을 쫓는 독니 3발로 갈라집니다. 1발 피해는 25%.' },
   { id: 'thanatos', name: '타나토스의 유예', tier: '전설', desc: '판마다 한 번, 죽는 순간 체력을 모두 채워 되살아나며 주변 적을 쓸어 버립니다.' },
   { id: 'atlas', name: '아틀라스의 짐', tier: '전설', desc: '탄창 +4. 공중에서 0.3초마다 탄이 1발씩 저절로 찹니다.', apply: p => { p.maxAmmo += 4; p.ammo = p.maxAmmo; } },
   { id: 'titan3', name: '티폰의 굶주린 발', tier: '전설', fam: 'titan', lv: 3, desc: '못 밟던 적까지 밟아 큰 충격파(공격력 150%)를 내고, 밟기·충격파로 준 피해의 20%만큼 체력을 흡혈합니다.', noMini: true },
@@ -136,7 +136,8 @@ function pickCards(boost, filter) {
   let pool = filter ? cardPool().filter(filter) : cardPool();
   // v39 첫 판: 첫 카드 창에 전설 1장을 확정으로 보여 주고(가운데), 그 뒤로 이 판에서는 전설을 빼고 뽑는다. 사용자: "튜토리얼에서 전설이 너무 많이 나와 보스가 한 방"
   let gift = null;
-  if (g.firstRun) { if (!g.firstLegend) { const L = pool.filter(c => c.tier === '전설'); if (L.length) { gift = L[Math.floor(Math.random() * L.length)]; g.firstLegend = true; } } pool = pool.filter(c => c.tier !== '전설'); }
+  // v48: 전설 대신 '고르면 바로 눈에 보이는 영웅 카드'(FIRST_SHOW) 1장을 확정으로 낸다(사용자: 첫 선택의 피드백은 바로 오되 지금처럼 세지는 않게). 이 판에서는 전설이 나오지 않는다
+  if (g.firstRun) { if (!g.firstLegend) { const L = pool.filter(c => FIRST_SHOW.includes(c.id)); if (L.length) { gift = L[Math.floor(Math.random() * L.length)]; g.firstLegend = true; pool = pool.filter(c => c !== gift); } } pool = pool.filter(c => c.tier !== '전설'); }
   while (out.length < n - (gift ? 1 : 0) && pool.length) { const c = takeOfTier(pool, rollTier(boost, 0, pity)); if (!c) break; out.push(c); }
   if (gift) out.splice(Math.min(1, out.length), 0, gift);
   // v40 묶음 창: CARD_THEME.chance 확률로 한 계열에서만 3장(연속 두 번은 없다, 첫 판의 전설 확정 창 · 조건이 걸린 창은 빼고)

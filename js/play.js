@@ -39,7 +39,7 @@ function runStats() {
 }
 function atkNow() {
   const g = game, p = g.p; let a = p.atk;
-  if (has('heavy')) a *= 1.7;
+  if (has('heavy')) a *= 1.3;
   if (godMode()) a *= 1.6;
   return a;
 }
@@ -482,7 +482,7 @@ function onBulletHit(b, e) {
   if (e && has('burn') && !isBig(e)) e.burn = Math.max(e.burn || 0, 3);
   // 히드라의 독니: 맞은 자리에서 작은 탄 2발이 양옆 아래로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
   // 히드라의 독니(전설): 맞은 자리에서 적을 쫓는 독니 3발로 갈라진다(갈라진 탄은 다시 갈라지지 않는다)
-  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .8, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; if (!isBig(e)) nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
+  if (e && has('hydra') && !b.child) { for (const s of [-1, 0, 1]) { fireBullet(b.x, b.y + 4, s * 640, s ? 820 : 1000, false, 0, { mul: .25, seekR: 180, seekTurn: 16 }); const nb = game.bullets[game.bullets.length - 1]; nb.child = true; nb.hydra = true; if (!isBig(e)) nb.hits.push(e); nb.r *= .85; } sparks(b.x, b.y, 6, '#7dffb0', 180, .25); }
   if (b.kind === 'letter' && Math.random() < .5) paperBits(b.x, b.y, 1);
   godHit(b, e);   // v36 새 신의 맞았을 때 효과(skills.js)
 }
@@ -577,10 +577,10 @@ function tick(dt) {
     const buff = (st.every8 && p.shots % 8 === 0) || (st.lastShot && wasLast);
     const mul = (g.st.unarmed ? .7 : 1) * (buff ? 2.4 : 1);
     fireVolley(p.x, by, hand, mul, buff);
-    if (has('echo') && p.shots % 2 === 0) fireVolley(p.x, by - 18, hand, mul, buff);   // v33: 갈래 탄도 통째로 한 번 더
-    if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .8, bounce: 3 });
-    if (has('owl')) fireBullet(p.x + p.face * -24, by - 26, 0, 1150, false, 0, { mul: mul * .7 * petMul(), seekR: 60, seekTurn: 10 });   // 올빼미 탄도 공격력·치명·관통·번개·불꽃·독니·유도가 그대로 붙는다
-    if (has('strike') && p.shots % 4 === 0) smite();
+    if (has('echo') && p.shots % 3 === 0) fireVolley(p.x, by - 18, hand, mul, buff);   // v33: 갈래 탄도 통째로 한 번 더
+    if (has('bounce')) fireBullet(p.x, by, (p.shotN % 2 ? 1 : -1) * 640, 960, false, hand, { mul: mul * .6, bounce: 3 });
+    if (has('owl')) { const [ox, oy] = petPos(0); fireBullet(ox, oy, 0, 1150, false, 0, { mul: mul * .4 * petMul(), seekR: 60, seekTurn: 10 }); if (game.petS && game.petS.pos && game.petS.pos[0]) petKick(0, ox, oy + 200, 'rgba(255,240,190,.9)'); }   // v48 올빼미가 있는 자리에서 나가고, 쏠 때 움찔한다   // 올빼미 탄도 공격력·치명·관통·번개·불꽃·독니·유도가 그대로 붙는다
+    if (has('strike') && p.shots % 5 === 0) smite();
     g.fx.push({ type: 'gustHand', x: p.x + hand, y: by - 3, t: 0, life: .09 });
     if (p.shotN % 3 === 0) feathers(p.x + (Math.random() - .5) * 20, p.y - 26, 1, 40);
     sfx.shotOf(g.god_.shot);
@@ -685,7 +685,7 @@ function updateEnemies(dt, jumpHeld) {
     if (!e.alive || e.y < top || e.y > bot) continue;
     const spd = spd0 * (e.rage ? HARDM.rageSpd : 1);   // v46 분노 개체는 더 빠르다
     e.flash = Math.max(0, e.flash - dt); e.pop = Math.max(0, e.pop - dt * 9); e.hbT = Math.max(0, e.hbT - dt); if (e.buttT > 0) e.buttT -= dt;
-    if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .2)), false, e.x, e.y); if (!e.alive) continue; }
+    if (e.burn > 0) { e.burn -= dt; if (Math.floor(e.burn * 3) !== Math.floor((e.burn + dt) * 3)) hitEnemy(e, Math.max(1, Math.round(p.atk * .1)), false, e.x, e.y); if (!e.alive) continue; }
     if (e.frz > 0) { e.frz -= dt; continue; }   // 원소 구슬(얼음): 잠깐 얼어 움직이지도 닿지도 않는다
     const tt = g.t + (e.ph || 0), k = e.kind, ox0 = e.x, oy0 = e.y;
     if (k === 'mound' || k === 'tick' || k === 'spit') {

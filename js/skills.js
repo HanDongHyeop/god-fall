@@ -8,9 +8,9 @@ const famLv = fam => { let n = 0; for (const id of game.cards) { const c = CARD_
 const SEEK = [null, { r: 40, turn: 4, col: '#9ff5d0' }, { r: 80, turn: 6, col: '#7fc4ff' }, { r: 150, turn: 8, col: '#5ee8ff' }, { r: 240, turn: 10, col: '#e6a8ff' }];
 /* 궤도 구슬: n개, 반지름 R, 크기 size, 공격력 배율 dmg, 적 탄 막기 block. 전설은 불·얼음·번개·바람 4원소 */
 const ORB = [null,
-  { n: 2, R: 40, size: 5.5, dmg: .4, spd: 3.6, block: false },
-  { n: 3, R: 46, size: 7, dmg: .6, spd: 4, block: true },
-  { n: 4, R: 56, size: 9.5, dmg: 1.4, spd: 4.4, block: true, el: ['fire', 'ice', 'bolt', 'wind'] }];
+  { n: 2, R: 40, size: 5.5, dmg: .3, spd: 3.6, block: false },
+  { n: 3, R: 46, size: 7, dmg: .4, spd: 4, block: true },
+  { n: 4, R: 56, size: 9.5, dmg: .7, spd: 4.4, block: true, el: ['fire', 'ice', 'bolt', 'wind'] }];
 const ORB_COL = { fire: ['#ff8a3a', '#ffe2a0'], ice: ['#7fd8ff', '#e8fbff'], bolt: ['#ffe14a', '#fffbd0'], wind: ['#e8f4ff', '#ffffff'], blue: ['#4aa8ff', '#e0f4ff'] };
 const godMode = () => { const p = game.p; return !!(p && (p.high || has('avatar'))); };   // 신성 폭주 상태(신의 현현은 판 내내)
 
@@ -20,9 +20,9 @@ function fireVolley(x, y, hand, mul, big) {
   // v36 아폴론: 다섯 번째 음은 태양 음표(크고 피해 1.5 + sun5배)
   if (g.st.sun5) { g.p.noteN = (g.p.noteN || 0) + 1; g.p.sunNote = g.p.noteN % 5 === 0; if (g.p.sunNote) { mul *= 1.5 + g.st.sun5; big = true; } }
   if (lv === 0) { godShot(x, y, 0, 1150, hand, { mul, big }); return; }
-  if (lv === 1) { for (const d of [-7, 7]) godShot(x + d, y, 0, 1150, hand, { mul: mul * .75, big }); return; }
-  if (lv === 2) { godShot(x, y, 0, 1150, hand, { mul, big }); for (const s of [-1, 1]) godShot(x, y, s * 330, 1100, hand, { mul: mul * .85, big }); return; }
-  for (const vx of [-600, -300, 0, 300, 600]) godShot(x, y, vx, 1100 - Math.abs(vx) * .12, hand, { mul: mul * .9, big, fan: true });
+  if (lv === 1) { for (const d of [-7, 7]) godShot(x + d, y, 0, 1150, hand, { mul: mul * .62, big }); return; }
+  if (lv === 2) { godShot(x, y, 0, 1150, hand, { mul, big }); for (const s of [-1, 1]) godShot(x, y, s * 330, 1100, hand, { mul: mul * .4, big }); return; }
+  for (const vx of [-600, -300, 0, 300, 600]) godShot(x, y, vx, 1100 - Math.abs(vx) * .12, hand, { mul: mul * .44, big, fan: true });
 }
 /* v36 신마다 한 번 쏠 때 나가는 모양: 헤라는 깃털 2개(양옆으로 갈라짐), 아프로디테는 꽃잎 3장(부채꼴), 나머지는 1발 */
 const GOD_SPREAD = { feather: [[-150, 0], [150, 0]], rose: [[-95, -6], [0, 0], [95, -6]] };   // v36 밸런스: 꽃잎은 가까이서 3장이 모두 맞는 산탄
@@ -107,17 +107,17 @@ function orbTick(dt) {
 /* 천둥 폭풍(전설): 0.8초마다 화면 안의 몬스터나 보스(v33) 하나에 하늘에서 벼락, 옆 2마리로 번진다. 땅에 서 있어도 내린다 */
 function stormTick(dt) {
   if (!has('storm')) return;
-  const g = game, p = g.p; p.stormT = (p.stormT || 0) + dt; if (p.stormT < .8) return;
+  const g = game, p = g.p; p.stormT = (p.stormT || 0) + dt; if (p.stormT < 1.5) return;
   const top = g.cam + 10, bot = g.cam + view.worldH - 10, list = g.enemies.filter(e => e.alive && !e.hidden && e.y > top && e.y < bot);
   for (const o of bigFoes()) { const P = foePt(o); if (P.y > top && P.y < bot) list.push(o); }
-  if (!list.length) { p.stormT = .8; return; }
+  if (!list.length) { p.stormT = 1.5; return; }
   p.stormT = 0;
   const e = list[Math.floor(Math.random() * list.length)], P = foePt(e);
   g.fx.push({ type: 'bolt', x: P.x, y: P.y, t: 0, life: .22, seed: Math.random() * 100 });
   g.fx.push({ type: 'ring', x: P.x, y: P.y, r: 46, col: 'rgba(255,240,140,.95)', t: 0, life: .25 });
   sparks(P.x, P.y, 10, '#fff6a8', 260, .3); g.shake = Math.max(g.shake, 4); g.whiteout = Math.max(g.whiteout, .06); sfx.zap(); sfx.boom();
-  hitFoe(e, Math.round(atkNow() * 1.6), false, P.x, P.y);
-  chainFrom(e, 2, Math.round(atkNow() * 1.6));
+  hitFoe(e, Math.round(atkNow() * 1.1), false, P.x, P.y);
+  chainFrom(e, 2, Math.round(atkNow() * 1.1));
 }
 /* ───── 그림 ───── */
 /* 유도탄 꼬리: 일반 = 옅은 민트 실, 희귀 = 파란 줄, 영웅 = 빛나는 하늘색 띠, 전설 = 보라·금 소용돌이. 전설은 노린 적에 표식 */
