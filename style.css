@@ -55,6 +55,12 @@ img { display: block; -webkit-user-drag: none; }
 .tb-r { display: flex; flex-direction: column; gap: calc(var(--u) * .8); min-width: 0; }
 .tb-1 { display: flex; gap: calc(var(--u) * 1.1); justify-content: flex-end; }
 .cur { display: flex; align-items: center; height: calc(var(--u) * 5.8); padding: 0 calc(var(--u) * 1.5) 0 calc(var(--u) * 5.2); border-radius: calc(var(--u) * 1.6); background: #000a; position: relative; font-size: calc(var(--u) * 3.3); min-width: calc(var(--u) * 19); justify-content: flex-end; }
+/* v52 재화 연출(Y02): 날아오는 재화 그림 · 칸 튐 · -값. 자리 · 크기는 그대로 */
+.cur-fly { position: absolute; left: 0; top: 0; width: calc(var(--u) * 6.4); height: calc(var(--u) * 6.4); margin: calc(var(--u) * -3.2) 0 0 calc(var(--u) * -3.2); object-fit: contain; pointer-events: none; z-index: 60; will-change: transform; filter: drop-shadow(0 calc(var(--u) * .4) calc(var(--u) * .4) #0008); }
+.cur.bump { animation: curBump .34s cubic-bezier(.2, 1.8, .4, 1); }
+@keyframes curBump { 35% { transform: scale(1.16); filter: brightness(1.5); } }
+.cur-d { position: absolute; right: calc(var(--u) * .6); top: 100%; font-style: normal; font-size: calc(var(--u) * 3); color: #ff9aa5; pointer-events: none; white-space: nowrap; animation: curD .8s ease-out both; z-index: 5; }
+@keyframes curD { from { transform: translateY(calc(var(--u) * -2)); opacity: 0; } 20% { opacity: 1; } 70% { opacity: 1; } to { transform: translateY(calc(var(--u) * 3.2)); opacity: 0; } }
 .cur img { position: absolute; left: calc(var(--u) * -.5); top: 50%; transform: translateY(-50%); width: calc(var(--u) * 6.2); height: calc(var(--u) * 6.2); object-fit: contain; }
 .tb-2 { display: flex; align-items: center; gap: calc(var(--u) * 2); font-size: calc(var(--u) * 3.2); }
 .tb-2 .pw { display: inline-flex; align-items: center; gap: .25em; color: var(--gold); font-size: calc(var(--u) * 3.8); } .tb-2 .pw img { width: 1.2em; height: 1.2em; }

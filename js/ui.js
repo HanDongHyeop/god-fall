@@ -84,6 +84,41 @@ const UI = {
     const qb = document.querySelector('.nb[data-tab=quest]'), gb = document.querySelector('.nb[data-tab=gear]');
     const setB = (el, on) => { if (!el) return; let d = el.querySelector('.badge'); if (on && !d) { d = document.createElement('i'); d.className = 'badge'; d.textContent = '!'; el.appendChild(d); d.style.right = '12%'; d.style.top = '6%'; } else if (!on && d) d.remove(); };
     setB(qb, Meta.questBadge()); setB(gb, Meta.anyUpgrade() || Meta.godReady() || s.inv.some(i => i.isNew));
+    this.topFx(s);
+  },
+  /* v52 재화 연출(Y02): 위쪽 칸의 에너지 · 골드 · 보석이 바뀌면 —
+     늘었을 때: 방금 누른 자리에서 재화 그림이 칸으로 날아와 꽂히고(0.5초) 숫자가 올라가며 칸이 한 번 튄다.
+     줄었을 때: 숫자가 빠르게 내려가고 칸 아래에 -값이 떠오른다.
+     저장 값은 이미 바뀐 뒤다. 보이는 것만 늦춘다(그사이 화면을 다시 그리면 끝 값이 바로 보인다). 시험에서는 window.__noTopFx로 끈다 */
+  topFx(s) {
+    const now = { energy: s.energy, gold: s.gold, gem: s.gem }, old = this._top; this._top = now;
+    if (!this._tapOn) { this._tapOn = true; document.addEventListener('pointerdown', e => { this._tapPt = { x: e.clientX, y: e.clientY, t: performance.now() }; }, true); }
+    const lob = $('lobby'); if (!old || !lob.classList.contains('on') || window.__noTopFx) return;
+    const chips = $('topbar').querySelectorAll('.cur'), keys = ['energy', 'gold', 'gem'], show = (k, v) => k === 'energy' ? v + '/30' : fmt(v), L = lob.getBoundingClientRect();
+    const tp = this._tapPt && performance.now() - this._tapPt.t < 2500 ? this._tapPt : null; let nSnd = 0;
+    keys.forEach((k, i) => {
+      const d = now[k] - old[k], chip = chips[i]; if (!d || !chip) return;
+      const txt = [...chip.childNodes].find(n => n.nodeType === 3); if (!txt) return;
+      const count = (from, to, wait, dur) => { const t0 = performance.now() + wait; txt.textContent = show(k, from); const f = () => { if (!txt.isConnected) return; const q = Math.max(0, Math.min(1, (performance.now() - t0) / dur)); txt.textContent = show(k, Math.round(from + (to - from) * (1 - Math.pow(1 - q, 3)))); if (q < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); };
+      if (d < 0) {
+        count(old[k], now[k], 0, 260);
+        const m = document.createElement('i'); m.className = 'cur-d oL'; m.textContent = '-' + fmt(-d); chip.appendChild(m); setTimeout(() => m.remove(), 800);
+        return;
+      }
+      const C = chip.getBoundingClientRect(), img = chip.querySelector('img'), ex = C.left + C.height * .5 - L.left, ey = C.top + C.height * .5 - L.top, fly = !!(tp && img && lob.animate);
+      if (fly) {
+        const n = Math.max(3, Math.min(8, Math.round(Math.log10(d + 1) * 2.2))), sx = tp.x - L.left, sy = tp.y - L.top;
+        for (let j = 0; j < n; j++) {
+          const c = document.createElement('img'); c.className = 'cur-fly'; c.src = img.src; c.alt = ''; lob.appendChild(c);
+          const a = Math.random() * Math.PI * 2, r = L.width * (.05 + Math.random() * .07), mx = sx + Math.cos(a) * r, my = sy + Math.sin(a) * r;
+          const an = c.animate([{ transform: `translate(${sx}px,${sy}px) scale(.3)`, opacity: 0 }, { transform: `translate(${mx}px,${my}px) scale(1)`, opacity: 1, offset: .28 }, { transform: `translate(${ex}px,${ey}px) scale(.6)`, opacity: 1 }], { duration: 520, delay: j * 45, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
+          an.onfinish = an.oncancel = () => c.remove(); setTimeout(() => c.remove(), 1500);
+        }
+        if (nSnd < 3) { for (let j = 0; j < 3; j++) setTimeout(() => { if (lob.classList.contains('on')) sfx.gem(j * 8); }, 480 + j * 70); nSnd = 3; }
+      }
+      count(old[k], now[k], fly ? 470 : 0, 380);
+      setTimeout(() => { if (chip.isConnected) { chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); } }, fly ? 470 : 0);
+    });
   },
 
   /* ───── 전투 ───── */
