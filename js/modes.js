@@ -7,11 +7,14 @@ const MODES = {
   seal: { name: '보스 봉인전', sub: '2분 동안 보스에게 준 피해가 점수', open: 2, tries: 2, time: 120, cardEvery: .8, cards: 6, tier: [100, 250, 500, 900] },   // tier = 보상 단계(보스 체력 대비 %)
   eel: { name: '심연의 장어', sub: '올라오는 장어를 피해 위로 뛰며 쏘아 쓰러뜨리기', open: 3, tries: 2, cardEvery: .14, cards: 6 },
 };
+/* v47(2026-11-23 사용자 요청): 장어가 올라오는 속도 = 화면이 올라가는 속도. 주인공이 아무리 올라가도 장어는 늘 화면 아래쪽에 보인다(view = 평소 입 끝이 놓이는 화면 높이 비율).
+   공격: 통째로 솟기(느리게 높이 slow · 빠르게 낮게 fast) + 얇게 치고 올라오기(stab: 폭 w px ≈ 화면의 1/3, 높이 = 화면의 h배) + 뱉기 · 기둥 광선 · 졸개.
+   gapT = 단계별 공격 사이 쉬는 시간, extend = 맨 위에서 이 칸 수 안으로 들어오면 맵을 위로 이어 붙인다 */
 const EEL = {
-  rows: 420, hpK: 2.8,                      // 판 높이(칸) · 체력 = 그 챕터 보스 체력 × hpK
-  rise: [34, 46, 60], lunge: [7, 5.4, 4.2],  // 단계별 올라오는 속도(px/초) · 튀어오르는 간격(초)
-  fast: { h: 170, warn: .75, up: .16 }, slow: { h: 270, warn: 1.3, up: .6 }, hold: .28, down: .7,
-  near: 120, far: 380, bite: 30, spit: 3.6, laser: 5.2, summon: 6.5, imgW: 1.3,
+  rows: 420, hpK: 2.8, rise: [62, 78, 96], view: .8, gapT: [3.2, 2.6, 2],
+  slow: { h: 290, warn: .95, up: .4 }, fast: { h: 190, warn: .55, up: .13 }, hold: .22, down: .5,
+  stab: { w: 100, h: .64, warn: .6, up: .12, hold: .26, down: .32 },
+  bite: 30, spit: 3.2, laser: 4.6, summon: 6, imgW: 1.3, extend: 110, shift: 200,
 };
 for (const k of ['eel_open', 'eel_bite']) loadImg(k, `assets/mon/${k}.webp`);
 const modeToday = () => new Date().toISOString().slice(0, 10);
@@ -42,20 +45,33 @@ function modeBuild() {
     g.isBossWave = false; g.boss = null; g.rest = null; g.portal = null; g.arenaTop = 0; g.decor = [];
     for (let r = 0; r < rows; r++) { lvl.set(0, r, HARD); lvl.set(COLS - 1, r, HARD); }
     for (let c = 1; c < COLS - 1; c++) lvl.set(c, F, HARD);
-    // 통과 발판: 3칸 위마다 하나, 옆으로는 2칸 안쪽으로만 옮겨 가서 늘 뛰어 닿는다. 12칸마다 넓은 쉼터
-    let c0 = 3, r = F - 3, n = 0;
-    while (r > 8) {
-      const wide = n % 4 === 3, w = wide ? 4 : 2 + (Math.random() < .5 ? 1 : 0);
-      c0 = clamp(c0 + Math.floor(Math.random() * 5) - 2, 1, COLS - 1 - w);
-      for (let i = 0; i < w; i++) lvl.set(c0 + i, r, ONEWAY);
-      if (!wide && Math.random() < .5) { const c2 = clamp(c0 + (c0 < 4 ? 3 + Math.floor(Math.random() * 2) : -3 - Math.floor(Math.random() * 2)), 1, COLS - 3); for (let i = 0; i < 2; i++) if (!lvl.at(c2 + i, r)) lvl.set(c2 + i, r - 1, ONEWAY); }
-      r -= 3; n++;
-    }
+    g.eelTop = { c0: 3, r: F - 3, n: 0 }; eelPlats();
     p.x = WORLD_W / 2; p.y = F * TILE - p.h / 2 - 1; p.vx = p.vy = 0; p.onGround = true;
     const base = BOSSES[g.biome.boss], hp = Math.round(DIFF.bossHp(chapterOf(g.wave) * STAGES + STAGES) * base.hpMul * EEL.hpK);
-    g.eel = { y: F * TILE + 330, hp, maxHp: hp, phase: 0, t: 0, lungeT: 4.5, warn: null, lunge: null, off: 0, spitT: 2, laserT: 3, sumT: 4, cards: 0, flash: 0, biteT: 0, dead: 0, first: false, cols: null, lz: null };
+    g.eel = { y: F * TILE + 140, hp, maxHp: hp, phase: 0, t: 0, lungeT: 3, warn: null, lunge: null, off: 0, stabs: [], spitT: 2, laserT: 3, sumT: 4, cards: 0, flash: 0, biteT: 0, chompT: 1, dead: 0, first: false, cols: null, lz: null, last: '' };
     g.cam = Math.max(0, g.levelH + TILE - view.worldH);
   }
+}
+/* 통과 발판 놓기(g.eelTop에서 위로 이어서): 3칸 위마다 하나, 옆으로는 2칸 안쪽으로만 옮겨 가서 늘 뛰어 닿는다. 12칸마다 넓은 쉼터 */
+function eelPlats() {
+  const T = game.eelTop;
+  while (T.r > 8) {
+    const wide = T.n % 4 === 3, w = wide ? 4 : 2 + (Math.random() < .5 ? 1 : 0);
+    T.c0 = clamp(T.c0 + Math.floor(Math.random() * 5) - 2, 1, COLS - 1 - w);
+    for (let i = 0; i < w; i++) lvl.set(T.c0 + i, T.r, ONEWAY);
+    if (!wide && Math.random() < .5) { const c2 = clamp(T.c0 + (T.c0 < 4 ? 3 + Math.floor(Math.random() * 2) : -3 - Math.floor(Math.random() * 2)), 1, COLS - 3); for (let i = 0; i < 2; i++) if (!lvl.at(c2 + i, T.r)) lvl.set(c2 + i, T.r - 1, ONEWAY); }
+    T.r -= 3; T.n++;
+  }
+}
+/* 맵 이어 붙이기: 장어가 맨 위에 가까워지면 판 전체를 EEL.shift칸 아래로 옮기고(지나온 아래쪽은 버린다) 위쪽에 새 발판을 놓는다. 화면에 보이는 것은 그대로다 */
+function eelExtend() {
+  const g = game, E = g.eel, S = EEL.shift, rows = lvl.rows, old = lvl.grid, ng = new Uint8Array(rows * COLS), dy = S * TILE;
+  for (let r = rows - 1; r >= S; r--) for (let c = 0; c < COLS; c++) ng[r * COLS + c] = old[(r - S) * COLS + c];
+  lvl.grid = ng; for (let r = 0; r < S; r++) { lvl.set(0, r, HARD); lvl.set(COLS - 1, r, HARD); }
+  g.eelTop.r += S; eelPlats();
+  g.p.y += dy; E.y += dy; g.cam += dy;
+  for (const k of ['bullets', 'ebul', 'enemies', 'fx', 'popups', 'shards', 'hearts', 'cfx', 'haz', 'decals']) for (const o of g[k] || []) { if (typeof o.y === 'number') o.y += dy; if (typeof o.baseY === 'number') o.baseY += dy; if (typeof o.y0 === 'number') o.y0 += dy; if (typeof o.y1 === 'number') o.y1 += dy; }
+  g.eelExt = (g.eelExt || 0) + 1;
 }
 const eelLine = () => { const E = game.eel; return E.y - E.off; };   // 지금 입 끝(물리는 선)의 높이
 function eelPhase() { const E = game.eel, k = E.hp / E.maxHp; return k > .66 ? 0 : k > .33 ? 1 : 2; }
@@ -77,32 +93,55 @@ function modeTick(dt) {
   const E = g.eel; E.t += dt; E.flash = Math.max(0, E.flash - dt * 5); E.biteT = Math.max(0, E.biteT - dt);
   if (!E.first) { E.first = true; modeCard('심연의 장어', '능력 하나를 고르고 위로 달아나세요'); return; }
   if (E.dead > 0) { E.dead += dt; E.y += 260 * dt; g.shake = Math.max(g.shake, 6 * Math.max(0, 1 - E.dead)); if (E.dead > 1.8) { g.clear = true; finishRun(false); } g.cam = approachSnap(g.cam, clamp(p.y - view.worldH * .58, 0, g.levelH + TILE - view.worldH), 8, dt, .05); return; }
-  const ph = E.phase = eelPhase(), feet = p.y + p.h / 2;
-  // 올라온다: 멀어지면 따라붙고, 바로 밑이면 조금 봐준다
-  const gap = E.y - feet; let v = EEL.rise[ph]; if (gap > EEL.far) v += (gap - EEL.far) * 1.4; else if (gap < EEL.near) v *= .6;
-  E.y = Math.max(TILE * 8, E.y - v * dt);
-  // 튀어오르기: 붉은 경고(warn) → 솟구침(up) → 잠깐 머묾 → 내려감
-  if (!E.warn && !E.lunge) { E.lungeT -= dt; if (E.lungeT <= 0) { const fast = Math.random() < [.25, .5, .65][ph], K = fast ? EEL.fast : EEL.slow; E.warn = { t: 0, K, fast }; sfx.roar(); g.shake = Math.max(g.shake, 5); } }
+  const ph = E.phase = eelPhase(), feet = p.y + p.h / 2, ST = EEL.stab, third = (WORLD_W - 2 * TILE) / 3;
+  // 올라온다: 늘 같은 속도(단계가 오르면 빨라진다). 화면도 이 속도로 올라간다
+  E.y -= EEL.rise[ph] * dt;
+  if (E.y < EEL.extend * TILE) eelExtend();
+  if (!E.broke && E.y < (g.floorRow + 1) * TILE + 30) { E.broke = true; for (let c = 1; c < COLS - 1; c++) { lvl.set(c, g.floorRow, EMPTY); inkBurst((c + .5) * TILE, g.floorRow * TILE + 10, 5, '#6a5a6a', false); } g.shake = Math.max(g.shake, 10); sfx.boom(); }   // 처음 서 있던 바닥은 장어가 부수고 올라온다(탄이 바닥에 막히지 않게)
+  E.chompT -= dt; if (E.chompT <= 0) { E.chompT = .9 + Math.random() * .9; if (!E.lunge && !E.warn) E.biteT = Math.max(E.biteT, .12); }   // 평소에도 입을 뻐끔거린다
+  // 공격 고르기: 통째로 솟기(느리게 · 빠르게) / 얇게 치고 올라오기(한 번 · 두 번 · 훑기). 같은 공격이 두 번 이어지지 않는다
+  const busy = E.warn || E.lunge || E.stabs.length;
+  if (!busy) { E.lungeT -= dt; if (E.lungeT <= 0) {
+    const tbl = [[['slow', 45], ['stab', 55]], [['slow', 18], ['fast', 24], ['stab', 22], ['stab2', 36]], [['slow', 14], ['fast', 24], ['stab2', 26], ['sweep', 36]]][ph].filter(a => a[0] !== E.last);
+    let roll = Math.random() * tbl.reduce((a, b) => a + b[1], 0), kind = tbl[0][0]; for (const [k, w] of tbl) { if (roll < w) { kind = k; break; } roll -= w; }
+    E.last = kind; sfx.roar(); g.shake = Math.max(g.shake, 5);
+    const lane = x => clamp(TILE + (Math.floor((clamp(x, TILE + 1, WORLD_W - TILE - 1) - TILE) / third) + .5) * third, TILE + ST.w / 2, WORLD_W - TILE - ST.w / 2);
+    if (kind === 'slow' || kind === 'fast') { const K = EEL[kind]; E.warn = { t: 0, K, fast: kind === 'fast' }; }
+    else if (kind === 'stab') E.stabs.push({ x: lane(p.x), t: 0 });
+    else if (kind === 'stab2') { const a = lane(p.x), o = [0, 1, 2].map(i => TILE + (i + .5) * third).filter(x => Math.abs(x - a) > 10); E.stabs.push({ x: a, t: 0 }, { x: lane(o[Math.floor(Math.random() * o.length)]), t: -.4 }); }
+    else { const dir = p.x < WORLD_W / 2 ? -1 : 1; for (let i = 0; i < 3; i++) E.stabs.push({ x: lane(TILE + ((dir > 0 ? i : 2 - i) + .5) * third), t: -i * .5 }); }   // 훑기: 주인공이 있는 쪽이 마지막
+  } }
+  // 통째로 솟기: 붉은 경고(warn) → 솟구침(up) → 잠깐 머묾 → 내려감
   if (E.warn) { E.warn.t += dt; if (E.warn.t >= E.warn.K.warn) { E.lunge = { t: 0, K: E.warn.K }; E.warn = null; sfx.boom(); g.shake = Math.max(g.shake, 12); vibrate(40); } }
   if (E.lunge) {
     const L = E.lunge, K = L.K; L.t += dt; const a = K.up, b2 = a + EEL.hold, c = b2 + EEL.down;
     E.off = L.t < a ? K.h * (1 - Math.pow(1 - L.t / a, 2)) : L.t < b2 ? K.h : K.h * Math.max(0, 1 - (L.t - b2) / EEL.down);
     if (L.t >= a && L.t < a + .12) E.biteT = .16;
-    if (L.t >= c) { E.lunge = null; E.off = 0; E.lungeT = EEL.lunge[ph] * (.8 + Math.random() * .4); }
+    if (L.t >= c) { E.lunge = null; E.off = 0; E.lungeT = EEL.gapT[ph] * (.8 + Math.random() * .4); }
   }
-  // 물기: 발이 입 끝보다 아래면 크게 다치고 위로 튕겨 나온다
-  const line = eelLine();
-  if (feet > line + 8 && p.inv <= 0 && !g.god) { hurt(p.x, Math.round(EEL.bite * DIFF.dmg(g.wave))); if (g.state === 'dying') return; p.vy = -780; p.inv = Math.max(p.inv, 1.1); E.biteT = .2; g.shake = Math.max(g.shake, 14); }
+  // 얇게 치고 올라오기: 세로 띠 경고 → 그 띠로만 화면 위쪽까지 확 솟았다가 들어간다. off = 지금 솟은 높이
+  const stabH = view.worldH * ST.h;
+  for (const S of E.stabs) {
+    const t0 = S.t; S.t += dt; const t = S.t - ST.warn;
+    if (t0 < ST.warn && S.t >= ST.warn) { sfx.boom(); g.shake = Math.max(g.shake, 9); vibrate(25); }
+    S.off = t < 0 ? 0 : t < ST.up ? stabH * (1 - Math.pow(1 - t / ST.up, 2)) : t < ST.up + ST.hold ? stabH : stabH * Math.max(0, 1 - (t - ST.up - ST.hold) / ST.down);
+    S.done = t >= ST.up + ST.hold + ST.down;
+  }
+  if (E.stabs.length && E.stabs.every(S => S.done)) { E.stabs = []; E.lungeT = EEL.gapT[ph] * (.8 + Math.random() * .4); }
+  // 물기: 발이 입 끝보다 아래면 크게 다치고 위로 튕겨 나온다(얇은 공격은 그 띠 안에서만)
+  const line = eelLine(), inStab = S => S.off > 0 && Math.abs(p.x - S.x) < ST.w / 2 + p.w * .3 && feet > E.y - S.off + 8, hitS = E.stabs.find(inStab);
+  if ((feet > line + 8 || hitS) && p.inv <= 0 && !g.god) { hurt(p.x, Math.round(EEL.bite * DIFF.dmg(g.wave))); if (g.state === 'dying') return; if (feet > line + 8) p.vy = -780; else { p.vy = Math.min(p.vy, -420); p.vx = (p.x < hitS.x ? -1 : 1) * 260; } p.inv = Math.max(p.inv, 1.1); E.biteT = .2; g.shake = Math.max(g.shake, 14); }
   else if (feet > line + 8 && (g.god || p.inv > 0) && p.vy > -200) p.vy = -640;
-  // 내 탄: 입에 닿으면 피해
-  for (const b of g.bullets) if (!b.dead && b.y >= line - 4 && b.y < line + 120) {
-    b.dead = true; E.hp -= b.dmg; E.flash = 1; dmgNum(b.x, line - 6, b.dmg, b.crit); g.fx.push({ type: 'hit', x: b.x, y: line, r: 12, t: 0, life: .08, rot: 0 }); if (Math.random() < .3) sfx.hit();
+  // 내 탄: 입(통째 · 얇은 머리)에 닿으면 피해
+  for (const b of g.bullets) { if (b.dead) continue; const S = E.stabs.find(S => S.off > 0 && Math.abs(b.x - S.x) < ST.w / 2 && b.y >= E.y - S.off - 4), top = S ? E.y - S.off : line;
+    if (!S && !(b.y >= line - 4 && b.y < line + 120)) continue;
+    b.dead = true; E.hp -= b.dmg; E.flash = 1; dmgNum(b.x, top - 6, b.dmg, b.crit); g.fx.push({ type: 'hit', x: b.x, y: top, r: 12, t: 0, life: .08, rot: 0 }); if (Math.random() < .3) sfx.hit();
   }
-  if (E.hp <= 0) { E.hp = 0; E.dead = .01; E.warn = E.lunge = null; g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false); g.whiteout = .6; g.shake = 18; sfx.bigBoom(); vibrate(80); popup(p.x, p.y - 60, '장어를 쓰러뜨렸다!', '#ffe27a', true); return; }
+  if (E.hp <= 0) { E.hp = 0; E.dead = .01; E.warn = E.lunge = null; E.stabs = []; E.off = 0; g.ebul = []; for (const e of g.enemies) if (e.alive) killEnemy(e, false); g.whiteout = .6; g.shake = 18; sfx.bigBoom(); vibrate(80); popup(p.x, p.y - 60, '장어를 쓰러뜨렸다!', '#ffe27a', true); return; }
   const dealt = 1 - E.hp / E.maxHp;
   if (E.cards < MODES.eel.cards && dealt >= (E.cards + 1) * MODES.eel.cardEvery) { E.cards++; modeCard('장어가 움찔했다!', '능력 하나를 고르세요'); return; }
   // 2단계부터 탄을 뱉는다(주인공 쪽으로 세 갈래)
-  if (ph >= 1) { E.spitT -= dt; if (E.spitT <= 0 && !E.lunge) { E.spitT = EEL.spit * (ph === 2 ? .8 : 1); const d = Math.round(18 * DIFF.dmg(g.wave)); for (const k of [-1, 0, 1]) { const tx = p.x + k * 70, x0 = clamp(p.x + k * 40, TILE + 20, WORLD_W - TILE - 20); g.ebul.push({ x: x0, y: line - 10, vx: (tx - x0) * .6, vy: -300, g: 150, r: 7, dmg: d, t: 0, col: '#ff7a9a', ghost: true }); } sfx.spit(); } }
+  if (ph >= 1) { E.spitT -= dt; if (E.spitT <= 0 && !E.lunge) { E.spitT = EEL.spit * (ph === 2 ? .8 : 1); const d = Math.round(18 * DIFF.dmg(g.wave)); for (const k of [-1, 0, 1]) { const tx = p.x + k * 70, x0 = clamp(p.x + k * 40, TILE + 20, WORLD_W - TILE - 20); g.ebul.push({ x: x0, y: line - 10, vx: (tx - x0) * .6, vy: -340, g: 150, r: 7, dmg: d, t: 0, col: '#ff7a9a', ghost: true }); } sfx.spit(); E.biteT = .2; } }
   // 3단계: 기둥 광선(붉은 경고 뒤) + 졸개
   if (ph >= 2) {
     E.laserT -= dt;
@@ -112,9 +151,8 @@ function modeTick(dt) {
       if (Z.t > 1.1) E.lz = null; }
     E.sumT -= dt; if (E.sumT <= 0) { E.sumT = EEL.summon; if (g.enemies.filter(e => e.alive).length < 5) for (let i = 0; i < 2; i++) { const x = TILE + 30 + Math.random() * (WORLD_W - 2 * TILE - 60), y = g.cam + 60 + Math.random() * 80; g.enemies.push(mkEnemy('bat', x, y, { sleep: false, ph: Math.random() * 6 })); inkBurst(x, y, 10, ENEMY.bat.col, false); } }
   }
-  // 카메라: 주인공을 화면 아래쪽(58%)에 두어 위가 넓게 보이게. 장어 입은 화면 밖으로 너무 내려가지 않게
-  const maxCam = Math.max(0, g.levelH + TILE - view.worldH);
-  g.cam = approachSnap(g.cam, clamp(Math.min(p.y - view.worldH * .58, line - view.worldH * .72), 0, maxCam), 8, dt, .05);
+  // 카메라: 장어에 묶인다. 평소 입 끝이 화면 높이의 EEL.view 지점에 오도록 장어 속도로 올라간다(주인공이 올라가도 장어가 화면 밖으로 내려가지 않는다)
+  g.cam = clamp(E.y - view.worldH * EEL.view, 0, Math.max(0, g.levelH + TILE - view.worldH));
 }
 /* 모드가 끝났을 때(finishRun에서): 점수 → 보상 → 결과 창 */
 function modeFinish() {
@@ -130,7 +168,7 @@ function modeFinish() {
 /* 그리기(월드 좌표, 주인공보다 앞) */
 function drawModeFront() {
   const g = game, s = view.s; if (g.mode !== 'eel' || !g.eel) return;
-  const E = g.eel, line = eelLine(), yL = wy(line), W = view.W, H = view.H;
+  const E = g.eel, line = eelLine(), yL = wy(line), W = view.W, H = view.H, ST = EEL.stab;
   // 붉은 경고: 물릴 높이까지의 띠 + 빗금 + 느낌표
   if (E.warn) { const K = E.warn.K, k = E.warn.t / K.warn, y0 = wy(E.y - K.h), bl = .5 + .5 * Math.sin(E.warn.t * (E.warn.fast ? 34 : 20));
     ctx.fillStyle = `rgba(255,40,60,${.16 + .2 * bl})`; ctx.fillRect(0, y0, W, yL - y0);
@@ -139,10 +177,28 @@ function drawModeFront() {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${(E.warn.fast ? 30 : 24) * s}px ${FONT}`; textOut(E.warn.fast ? '!!' : '!', W / 2, y0 + (yL - y0) * .45, bl > .5 ? '#ffd24a' : '#ff5068', 4);
     ctx.fillStyle = `rgba(255,255,255,${.25 * (1 - k)})`; ctx.fillRect(0, y0 + (yL - y0) * (1 - k), W, 2 * s);
   }
-  // 몸통: 화면 아래까지 어두운 살, 그 위에 머리 그림(입 끝 = line)
-  const im = E.biteT > 0 ? IMG.eel_bite : IMG.eel_open, iw = (WORLD_W - 2 * TILE) * EEL.imgW * s, ih = ok(im) ? iw * im.naturalHeight / im.naturalWidth : 160 * s, top = yL - ih * (E.biteT > 0 ? .06 : .1), bob = Math.sin(g.t * 3) * 3 * s;
+  const im0 = E.biteT > 0 ? IMG.eel_bite : IMG.eel_open;
+  // 얇게 치고 올라오기: 세로 띠 경고(아래에서 위로 차오르는 빛) → 그 띠 폭의 머리가 확 솟는다
+  for (const S of E.stabs) {
+    const x0 = wx(S.x - ST.w / 2), w = ST.w * s, yTop = wy(E.y - view.worldH * ST.h), yB = wy(E.y);
+    if (S.t >= 0 && S.t < ST.warn) { const k = S.t / ST.warn, bl = .5 + .5 * Math.sin(S.t * 30);
+      ctx.fillStyle = `rgba(255,40,60,${.14 + .2 * bl})`; ctx.fillRect(x0, yTop, w, yB - yTop);
+      ctx.fillStyle = `rgba(255,90,110,${.55 + .35 * bl})`; ctx.fillRect(x0, yTop, 2.4 * s, yB - yTop); ctx.fillRect(x0 + w - 2.4 * s, yTop, 2.4 * s, yB - yTop); ctx.fillRect(x0, yTop, w, 3 * s);
+      ctx.fillStyle = `rgba(255,255,255,${.3 * (1 - k)})`; ctx.fillRect(x0, yB - (yB - yTop) * k, w, 2 * s);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${24 * s}px ${FONT}`; textOut('!', x0 + w / 2, yTop + (yB - yTop) * .4, bl > .5 ? '#ffd24a' : '#ff5068', 4);
+    }
+    if (S.off > 0) { const im = S.t - ST.warn < ST.up + .1 ? IMG.eel_bite : IMG.eel_open, tip = wy(E.y - S.off), iw = w * 1.5, ih = ok(im) ? iw * im.naturalHeight / im.naturalWidth : 60 * s;
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, -H, w, H * 3); ctx.clip();
+      ctx.fillStyle = '#1c0d1e'; ctx.fillRect(x0, tip + ih * .5, w, H);
+      ctx.fillStyle = 'rgba(255,90,120,.22)'; ctx.fillRect(x0, tip + ih * .5, 3 * s, H); ctx.fillRect(x0 + w - 3 * s, tip + ih * .5, 3 * s, H);
+      if (ok(im)) ctx.drawImage(im, x0 + w / 2 - iw / 2, tip - ih * .08, iw, ih);
+      ctx.restore();
+    }
+  }
+  // 몸통: 화면 아래까지 어두운 살, 그 위에 머리 그림(입 끝 = line). 평소에도 빠르게 들썩이고 뻐끔거린다
+  const im = im0, iw = (WORLD_W - 2 * TILE) * EEL.imgW * s, ih = ok(im) ? iw * im.naturalHeight / im.naturalWidth : 160 * s, top = yL - ih * (E.biteT > 0 ? .06 : .1), bob = Math.sin(g.t * 6.5) * 4 * s, sway = Math.sin(g.t * 2.3) * 5 * s;
   ctx.fillStyle = '#1c0d1e'; ctx.fillRect(wx(TILE), top + ih * .55 + bob, (WORLD_W - 2 * TILE) * s, H - (top + ih * .55) + 40 * s);
-  if (ok(im)) { const sq = E.biteT > 0 ? 1.06 : 1 + .03 * Math.sin(g.t * 5); ctx.save(); ctx.beginPath(); ctx.rect(wx(TILE), -H, (WORLD_W - 2 * TILE) * s, H * 3); ctx.clip(); ctx.drawImage(im, W / 2 - iw * sq / 2, top + bob, iw * sq, ih); if (E.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = E.flash * .5; ctx.drawImage(im, W / 2 - iw * sq / 2, top + bob, iw * sq, ih); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; } /* 맞으면 그림 자체가 밝아진다(네모 섬광 대신) */ ctx.restore(); }
+  if (ok(im)) { const sq = E.biteT > 0 ? 1.07 : 1 + .04 * Math.sin(g.t * 9); ctx.save(); ctx.beginPath(); ctx.rect(wx(TILE), -H, (WORLD_W - 2 * TILE) * s, H * 3); ctx.clip(); ctx.drawImage(im, W / 2 - iw * sq / 2 + sway, top + bob, iw * sq, ih); if (E.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = E.flash * .5; ctx.drawImage(im, W / 2 - iw * sq / 2 + sway, top + bob, iw * sq, ih); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; } ctx.restore(); }
   const gl = ctx.createLinearGradient(0, yL - 90 * s, 0, yL); gl.addColorStop(0, 'rgba(255,60,90,0)'); gl.addColorStop(1, `rgba(255,60,90,${.16 + .08 * Math.sin(g.t * 4)})`); ctx.fillStyle = gl; ctx.fillRect(wx(TILE), yL - 90 * s, (WORLD_W - 2 * TILE) * s, 90 * s);
 }
 /* HUD: 봉인전 = 남은 시간 · 피해, 장어 = 체력 막대 */

@@ -606,7 +606,7 @@ function tick(dt) {
   }
   const hit = moveY(p, p.vy * dt);
   // v31 보이지 않는 천장: 보스·중간 보스·연습 방은 위를 벽돌로 막지 않고 화면 위 끝에서 멈춘다
-  if (g.room || (g.isBossWave && g.camLock) || g.tut) { const top = g.cam + 6; if (p.y - p.h / 2 < top) { p.y = top + p.h / 2; if (p.vy < 0) p.vy = 0; } }
+  if (g.room || (g.isBossWave && g.camLock) || g.tut || g.mode === 'eel') { const top = g.cam + 6; if (p.y - p.h / 2 < top) { p.y = top + p.h / 2; if (p.vy < 0) p.vy = 0; } }
   if (hit !== null && p.vy >= 0) {
     // 무적 시간에는 가시를 바닥처럼 밟는다. 좁은 틈에서 계속 튕기며 맞는 일을 막는다
     if (hit === SPIKE && p.inv <= 0 && !g.god) { hurt(p.x + (p.x % TILE < TILE / 2 ? 30 : -30), Math.round(25 * DIFF.dmg(g.wave))); p.vy = -400; if (g.state === 'dying') return; }
