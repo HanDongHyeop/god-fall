@@ -85,6 +85,8 @@ const UI = {
     const qb = document.querySelector('.nb[data-tab=quest]'), gb = document.querySelector('.nb[data-tab=gear]');
     const setB = (el, on) => { if (!el) return; let d = el.querySelector('.badge'); if (on && !d) { d = document.createElement('i'); d.className = 'badge'; d.textContent = '!'; el.appendChild(d); d.style.right = '12%'; d.style.top = '6%'; } else if (!on && d) d.remove(); };
     setB(qb, Meta.questBadge()); setB(gb, Meta.anyUpgrade() || Meta.godReady() || s.inv.some(i => i.isNew));
+    // v59 알림 점 통일(Y08): 받을 것 · 할 것이 있는 탭에는 같은 빨간 점
+    setB(document.querySelector('.nb[data-tab=shop]'), Meta.freeChestReady()); setB(document.querySelector('.nb[data-tab=talent]'), Meta.talentReady());
     this.topFx(s);
   },
   /* v52 재화 연출(Y02): 위쪽 칸의 에너지 · 골드 · 보석이 바뀌면 —

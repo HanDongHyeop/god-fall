@@ -278,6 +278,9 @@ const Meta = {
   buyGold() { const s = this.s, d = this.shardDay(); if (this.goldLeft() <= 0 || s.gem < GOLD_SHOP.gem) return 0; const n = GOLD_SHOP.gold(this.clearedN()); s.gem -= GOLD_SHOP.gem; s.gold += n; d.gold = (d.gold || 0) + 1; this.save(); return n; },
   ftueReward() { const s = this.s, R = FTUE.reward; s.gold += R.gold; s.gem += R.gem; for (const S of SLOTS) s.scrolls[S.id] += R.scroll; this.save(); },
   selectGod(id) { const s = this.s; if (!this.godInfo(id).own) return; s.weapons[s.god] = s.equip.weapon; s.weaponLv[s.god] = s.slotLv.weapon; s.god = id; s.equip.weapon = s.weapons[id] || null; s.slotLv.weapon = s.weaponLv[id] || 1; this.save(); },
+  /* v59 알림 점: 지금 무료로 열 수 있는 상자가 있나 / 가진 골드로 올릴 수 있는 재능이 있나 */
+  freeChestReady() { const now = Date.now(); return CHESTS.some(C => C.free && ((this.s.chest[C.id] || {}).freeAt || 0) <= now); },
+  talentReady() { return TALENTS.some(T => { const l = this.s.talent[T.id] || 0; return l < T.max && this.s.gold >= T.cost(l); }); },
   talentUp(id) {
     const T_ = TALENTS.find(t => t.id === id), l = this.s.talent[id] || 0;
     if (l >= T_.max) return false; const c = T_.cost(l); if (this.s.gold < c) return false;
