@@ -64,7 +64,7 @@
       <h5>맵 바로 시작 (에너지 안 씀)</h5>
       ${Array.from({ length: CHAPTERS }, (_, c) => `<div class="dr"><span>챕터 ${c + 1} · ${chapterInfo(c).name}</span>${b(`go:${c}:${1 + c * STAGES}`, '1판')}${b(`go:${c}:${3 + c * STAGES}`, '휴식')}${b(`go:${c}:${5 + c * STAGES}`, '5판')}${b(`go:${c}:${6 + c * STAGES}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
       <div class="dr">${b('chOpen', '챕터 전부 열기')}${b('chLock', '챕터 잠그기')}</div>
-      ${typeof Theme !== 'undefined' ? `<h5>UI 풍 시안 (지금: ${theme ? THEMES[theme] : '현재 UI'})</h5><div class="dr">${b('theme:', '현재', theme ? '' : 'on')}${Object.keys(THEMES).map((k, i) => b('theme:' + k, (i + 1) + ' ' + THEMES[k], theme === k ? 'on' : '')).join('')}</div>` : ''}
+      ${typeof Theme !== 'undefined' ? `<h5>UI 풍 시안 · 어두운 양피지 (지금: ${theme ? theme.toUpperCase() + ' ' + THEMES[theme] : '현재 UI'})</h5><div class="dr">${b('theme:', '현재', theme ? '' : 'on')}${Object.keys(THEMES).map(k => b('theme:' + k, k.toUpperCase() + ' ' + THEMES[k], theme === k ? 'on' : '')).join('')}</div>` : ''}
       <h5>도전 모드</h5><div class="dr"><span>뱀장어(심연의 장어) · ${eel ? '디버그로 열림(횟수 제한 없음)' : Meta.clearedN() >= MODES.eel.open ? '원래 조건으로 열려 있음' : `잠김(챕터 ${MODES.eel.open} 클리어 필요)`}</span>${eel ? b('eel:0', '뱀장어 모드 잠그기', 'no') : b('eel:1', '뱀장어 모드 열기', 'on')}</div>
       <h5>재화</h5><div class="dr">${b('gold+', '골드 +10만')}${b('gem+', '보석 +1만')}${b('en', '에너지 채우기')}${b('sc+', '스크롤 전부 +100')}${b('cur0', '재화 전부 0', 'no')}</div>
       <h5>캐릭터</h5>${gods}

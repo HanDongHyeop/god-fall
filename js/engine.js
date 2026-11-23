@@ -41,7 +41,13 @@ const HAND_X = 6;   // 던지는 손의 가로 위치(세계 단위)
 // v31: 점프 횟수 = 1(날개 신발 +1). 게이지 한 칸 = 점프 1회
 const jumpMax = () => 1 + (typeof has === 'function' && has('wings') ? 1 : 0), gaugeCost = () => 100 / jumpMax();
 const COYOTE = .08, BUFFER = .11;
-const WORLD_W = 360, TILE = 40, COLS = 9;
+/* v50(2026-11-23 사용자 확정): 양쪽 벽면을 없앴다. 화면에 보이는 폭(VIEW_W 360)이 전부 플레이 영역이다(예전에는 양옆 40씩이 벽이라 280).
+   벽 칸(맨 왼쪽 · 맨 오른쪽 칸)은 지우지 않고 화면 바로 바깥으로 밀어냈다: 칸 수 9 → 11, 세계 폭 440, 화면은 x 40~400을 비춘다(VIEW_X).
+   그래서 '벽 안쪽'을 기준으로 쓰던 식(TILE + n, WORLD_W - TILE - n, 벽 턱, 벽 튕김, 벽 타는 괴물, 샛길 문)은 그대로 '화면 끝' 기준으로 동작한다 */
+const VIEW_W = 360, TILE = 40, COLS = 11, WORLD_W = COLS * TILE, VIEW_X = TILE;
+const RX = x => TILE + (x - 40) * (WORLD_W - 2 * TILE) / 280;   // 예전 폭(벽 안쪽 280) 기준으로 적어 둔 가로 좌표를 지금 폭에 맞게 편다
+const MINI_DX = (COLS - 9) >> 1;
+const FIELD_DENSE = .85;   // 플레이 영역이 29% 넓어진 만큼 괴물 사이 간격을 0.85배로(마릿수 약 +18%). 넓어진 몫을 다 채우지는 않아 조금 여유롭다   // 7칸 폭으로 짜 둔 방 배치(중간 보스 방)를 가운데로 옮기는 칸 수
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const approachSnap = (v, target, rate, dt, eps = .004) => {
   const n = v + (target - v) * (1 - Math.exp(-rate * dt));
@@ -244,7 +250,7 @@ var layout = function () {
   const m = getComputedStyle($('measure'));
   view.safeT = parseFloat(m.paddingTop) || 0; view.safeB = parseFloat(m.paddingBottom) || 0;
   view.W = W; view.H = H; view.dpr = Math.min(devicePixelRatio || 1, 2.5);
-  view.s = W / WORLD_W; view.worldH = H / view.s;
+  view.s = W / VIEW_W; view.worldH = H / view.s;
   cv.width = Math.round(W * view.dpr); cv.height = Math.round(H * view.dpr);
   const u = view.u = W / PPT.phoneW;
   ui.knobR = PPT.stick.knobR * u; ui.baseR = ui.knobR * STICK_RADIUS_RATIO; ui.travel = ui.baseR - ui.knobR;
@@ -473,7 +479,7 @@ function fxUpdate(dt) {
 }
 
 /* ───── 그리기: 세계 ───── */
-const wx = x => x * view.s, wy = y => (y - game.cam) * view.s;
+const wx = x => (x - VIEW_X) * view.s, wy = y => (y - game.cam) * view.s;
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 // 칸 경계를 기기 픽셀에 맞춘다
 // 탄 = 날개 편지. 날갯짓(펼침·접힘)과 작은 흔들림, 위로 남는 바람 줄기

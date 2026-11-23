@@ -13,7 +13,7 @@ const MODES = {
 const EEL = {
   rows: 420, hpK: 2.8, rise: [62, 78, 96], view: .8, gapT: [3.2, 2.6, 2],
   slow: { h: 290, warn: .95, up: .4 }, fast: { h: 190, warn: .55, up: .13 }, hold: .22, down: .5,
-  stab: { w: 100, h: .64, warn: .6, up: .12, hold: .26, down: .32 },
+  stab: { w: (WORLD_W - 2 * TILE) / 3 - 6, h: .64, warn: .6, up: .12, hold: .26, down: .32 },   // v50 벽이 없어져 화면이 넓어졌다: 띠 폭 = 화면의 1/3(틈 3px씩)
   bite: 30, spit: 3.2, laser: 4.6, summon: 6, imgW: 1.3, extend: 110, shift: 200,
 };
 for (const k of ['eel_open', 'eel_bite']) loadImg(k, `assets/mon/${k}.webp`);

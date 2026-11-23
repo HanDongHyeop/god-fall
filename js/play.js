@@ -133,7 +133,7 @@ function buildWave() {
   const landings = [], breakLands = [];   // v39 breakLands = 부서지는 돌 뭉치 위(땅 괴물을 놓을 자리)
   let r = 11 + sh;
   // 안착 발판: 맵과 상관없이 같은 자리, 양옆은 내려가는 길
-  if (sh) for (let c = 3; c <= 5; c++) lvl.set(c, sh, HARD);
+  if (sh) { const cm = (COLS - 1) >> 1; for (let c = cm - 1; c <= cm + 1; c++) lvl.set(c, sh, HARD); }
   if (g.zone === 'spike') { zoneSpikeLevel(R, put, r, lastRow); r = lastRow; }   // v41 림보: 발판 없이 가시 턱 · 가시 바닥만
   while (r < lastRow - 2) {
     const roll = R(), side = R() < .5 ? 0 : 1;
@@ -174,7 +174,7 @@ function buildWave() {
     g.jars = g.jars.filter(j => Math.abs(j.y - rowD * TILE) > 90);
   }
   // 끝까지 내려갈 길 보장
-  const seen = new Uint8Array(rows * COLS), q = [[4, 0]]; seen[4] = 1; let reach = 0;
+  const seen = new Uint8Array(rows * COLS), q = [[(COLS - 1) >> 1, 0]]; seen[(COLS - 1) >> 1] = 1; let reach = 0;
   while (q.length) {
     const [c, rr] = q.pop(); reach = Math.max(reach, rr);
     for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -185,7 +185,7 @@ function buildWave() {
       seen[i] = 1; q.push([nc, nr]);
     }
   }
-  if (reach < F - 1) for (let rr = reach; rr < F; rr++) lvl.set(4, rr, EMPTY);
+  if (reach < F - 1) for (let rr = reach; rr < F; rr++) lvl.set((COLS - 1) >> 1, rr, EMPTY);
   for (let rr = F; rr < rows; rr++) for (let c = 0; c < COLS; c++) lvl.set(c, rr, HARD);
   g.portal = null;
   if (boss) { g.arenaTop = F + 1 - arenaRows; buildArena(F, g.arenaTop); }
@@ -194,7 +194,7 @@ function buildWave() {
   // 황금 낙하: 발판마다 항아리, 공중에는 파편 덩어리(통과 발판 위)
   if (restKind === 'gold') for (const [c0, c1, rr] of landings) for (let c = c0; c <= c1; c += 2) if (!lvl.at(c, rr - 1)) g.jars.push({ x: (c + .5) * TILE, y: rr * TILE - 14, r: 13, alive: true });
   // 공중 적: 다운웰처럼 촘촘하게
-  const spacing = DIFF.spacing(w) * (g.zone === 'spike' ? ZONE.spike.spacing : 1) * (g.deep ? HARDM.spacing : 1), endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
+  const spacing = DIFF.spacing(w) * (g.zone === 'spike' ? ZONE.spike.spacing : 1) * (g.deep ? HARDM.spacing : 1) * FIELD_DENSE, endY = rest ? 0 : (boss ? g.arenaTop * TILE - 240 : F * TILE - 180);
   const free = (x, y) => lvl.at(Math.floor(x / TILE), Math.floor(y / TILE)) === EMPTY;
   for (let y = 380 + sh * TILE; y < endY; y += spacing * (.55 + R() * .9)) {
     const roll = R();

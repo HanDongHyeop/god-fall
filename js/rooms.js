@@ -35,7 +35,7 @@ function enterRoom(d) {
   const room = g.room = { kind: d.kind, floorY, side, items: [], t: 0, exit: { x: side ? WORLD_W - TILE : TILE, y: floorY - 40, side, used: false }, crystal: null, title: ROOM_TITLE[d.fake || d.kind], bg: d.kind === 'mini' ? (d.fake || 'shop') : d.kind, bg2: null, bgK: 0 };
   const kind = d.kind === 'mini' ? (d.fake || 'shop') : d.kind;   // v40 함정은 가짜 방의 물건을 미끼로 차려 놓는다(살 수는 없다)
   // 값은 이번 판에 내려온 깊이로 오른다. 파편은 판마다 새로 모으기 때문
-  const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .7 : 1, spots = side ? [90, 170, 250] : [110, 190, 270];
+  const sec = Math.floor((g.wave - g.startWave) / 3) + 1, disc = has('member') ? .7 : 1, spots = (side ? [90, 170, 250] : [110, 190, 270]).map(RX);
   const price = n => Math.round(n * disc);
   if (kind === 'shop') {
     const stock = [
@@ -158,7 +158,7 @@ function makeMiniLayout(top = 9) {
 }
 function buildMiniRoom(F) {
   const L = makeMiniLayout(Math.max(9, F - 2)), hp = Math.round(20 * DIFF.hp(game.wave));
-  for (const k in L.cells) { const [h, c] = k.split(':').map(Number), r = F - h; lvl.set(c, r, L.cells[k]); if (L.cells[k] === BREAK) lvl.hp[r * COLS + c] = hp; }
+  for (const k in L.cells) { const [h, c0] = k.split(':').map(Number), c = c0 + MINI_DX, r = F - h; lvl.set(c, r, L.cells[k]); if (L.cells[k] === BREAK) lvl.hp[r * COLS + c] = hp; }
   game.miniLayout = L;
 }
 /* 공격 사이에도 진짜 보스 빠르기로 돌아다닌다. 공격 횟수는 그대로이고, 몸에 부딪혀도 피해는 약하다 */
@@ -186,7 +186,7 @@ function startMini(room) {
   const g = game, p = g.p, base = BOSSES[g.biome.boss], cfg = MINI.byBoss[g.biome.boss % MINI.byBoss.length];
   room.locked = true; room.exit.used = true;
   const def = { ...base, name: '작은 ' + base.name, weights: cfg.weights, w0: base.w }, total = Math.max(DIFF.bossHp(g.wave) * base.hpMul * MINI.hp, p.atk * MINI.minShots), floorY = room.floorY;
-  const w = base.w * cfg.scale, h = base.h * cfg.scale, spots = cfg.n === 1 ? [200] : cfg.n === 2 ? [170, 250] : [140, 200, 260];
+  const w = base.w * cfg.scale, h = base.h * cfg.scale, spots = (cfg.n === 1 ? [200] : cfg.n === 2 ? [170, 250] : [140, 200, 260]).map(x => x + (WORLD_W - 360) / 2 - 20);
   g.minis = spots.map((x0, i) => ({ def, idx: g.biome.boss, mini: true, slot: i - (cfg.n - 1) / 2, alive: true, x: room.side ? WORLD_W - x0 : x0, y: floorY + h + 20, w, h, floorY, hp: total / cfg.n, maxHp: total / cfg.n, state: 'idle', t: 0, flash: 0, pop: 0, open: 0, barK: 0, cool: 1.2, phase: 1, vy: 0, vx: 0, sx: 1, sy: 1, dir: 1, step: 0, hitC: 0 }));
   g.boss = g.minis[0]; g.state = 'intro'; room.introT = 0; input.clearAll();
 }
@@ -207,7 +207,7 @@ function miniTick(dt, r) {
       if (r.baitCrystal) { puff(r.baitCrystal.x, r.baitCrystal.y, 7, 22, 10); chunks(r.baitCrystal.x, r.baitCrystal.y, 10, ['#ff6c7b', '#2a0f12', '#ffffff'], 300, 5); }
       r.bait = null; r.baitCrystal = null;
       buildMiniRoom(g.floorRow);   // 발판이 이때 생긴다(구조가 바뀐다)
-      for (const k in g.miniLayout.cells) { const [h, c] = k.split(':').map(Number); puff((c + .5) * TILE, (g.floorRow - h + .5) * TILE, 2, 10, 7); }
+      for (const k in g.miniLayout.cells) { const [h, c0] = k.split(':').map(Number), c = c0 + MINI_DX; puff((c + .5) * TILE, (g.floorRow - h + .5) * TILE, 2, 10, 7); }
     }
     // 다 올라온 뒤 포효하며 잠시 보여 준다. 무엇이 나왔는지 알아본 다음에 카드를 고른다
     if (t > RV + .75 && !r.shown) { r.shown = true; g.shake = Math.max(g.shake, 9); sfx.roar(); for (const m of g.minis) { m.sy = 1.14; m.sx = .9; } }
