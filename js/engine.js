@@ -133,21 +133,28 @@ const sfx = {
   drum(i) { this.tone('triangle', 90 + i * 14, 60 + i * 10, .12, .3); this.noise(.06, .18, 900 + i * 260); },
   // 등급이 오를 때: 단계가 높을수록 높고 길고 화려하다
   cardUp(s) { this.tone('triangle', 420 + s * 180, 900 + s * 320, .16 + s * .05, .22); this.tone('sine', 840 + s * 360, 1700 + s * 500, .1 + s * .06, .12); this.noise(.12 + s * .05, .1 + s * .04, 4200 + s * 900); if (s === 3) this.tone('square', 1320, 2640, .35, .08); },
-  setMute(m) { this.muted = m; if (typeof Meta !== 'undefined') { Meta.s.opt.mute = m; Meta.save(); } if (this.bgmGain) this.bgmGain.gain.value = m ? 0 : .34; if (this.bgmEl) this.bgmEl.volume = m ? 0 : .34; },
+  setMute(m) { this.muted = m; if (typeof Meta !== 'undefined') { Meta.s.opt.mute = m; Meta.save(); } if (this.bgmGain) { const g = this.bgmGain.gain; if (this.ctx && g.cancelScheduledValues) g.cancelScheduledValues(this.ctx.currentTime); g.value = this.bgmLevel(); } if (this.bgmEl) this.bgmEl.volume = this.bgmLevel(); },
+  /* v57 배경음 크기: 평소 .34, 카드 · 결과 · 일시정지 창이 떠 있는 동안(duck) 절반, 소리 끄기면 0 */
+  bgmLevel() { return this.muted ? 0 : this._duck ? .17 : .34; },
+  duck(on) {
+    on = !!on; if (on === !!this._duck) return; this._duck = on; const v = this.bgmLevel();
+    if (this.bgmGain && this.ctx) { const g = this.bgmGain.gain, t = this.ctx.currentTime; try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(v, t + .3); } catch (e) { g.value = v; } }
+    if (this.bgmEl) this.bgmEl.volume = v;
+  },
   /* 배경음: 앞뒤를 겹쳐 만든 파일을 버퍼로 반복한다(인코더 공백을 건너뛴다). 곡이 바뀌면 교차로 줄인다 */
   bgmCache: {}, bgmNow: null, bgmSrc: null, bgmGain: null, bgmWant: null,
   async bgmFor(kind, biome) {
     const name = kind === 'lobby' ? 'lobby' : kind === 'boss' ? 'boss' : biome;
     this.bgmWant = name;
     if (!this.ctx || this.bgmNow === name) return;
-    if (!this.bgmGain) { this.bgmGain = this.ctx.createGain(); this.bgmGain.gain.value = this.muted ? 0 : .34; this.bgmGain.connect(this.ctx.destination); }
+    if (!this.bgmGain) { this.bgmGain = this.ctx.createGain(); this.bgmGain.gain.value = this.bgmLevel(); this.bgmGain.connect(this.ctx.destination); }
     let buf = this.bgmCache[name];
     if (!buf) {
       try { const r = await fetch(`assets/bgm/${name}.mp3`), ab = await r.arrayBuffer(); buf = this.bgmCache[name] = await this.ctx.decodeAudioData(ab); }
       catch (e) {
         // 파일을 직접 못 읽는 환경: audio 태그로 반복한다
         if (this.bgmEl) this.bgmEl.pause();
-        try { const el = new Audio(`assets/bgm/${name}.mp3`); el.loop = true; el.volume = this.muted ? 0 : .34; el.play().catch(() => {}); this.bgmEl = el; this.bgmNow = name; } catch (e2) {}
+        try { const el = new Audio(`assets/bgm/${name}.mp3`); el.loop = true; el.volume = this.bgmLevel(); el.play().catch(() => {}); this.bgmEl = el; this.bgmNow = name; } catch (e2) {}
         return;
       }
     }
@@ -209,6 +216,8 @@ Object.assign(sfx, {
   },
 });
 // 이름: [파일, 크기, 재생 속도(인자 → 값), 같은 소리 최소 간격 ms]. 콤보 · 연쇄로 아주 조금씩만 높아진다(최대 +12% — '튀고 오락실 같다' 피드백).
+/* v57: 창이 떠 있는지 0.2초마다 보고 배경음을 낮춘다/되돌린다(창을 여닫는 길이 여러 갈래라 한곳에서 본다) */
+setInterval(() => { try { sfx.duck(!!document.querySelector('#mCard.on, #mResult.on, #mPause.on')); } catch (e) {} }, 200);
 const SFX_FILE = {
   shot: ['shot_letter', .8],
   boom: ['boom', .9, null, 50], pop: ['pop', .45, r => .94 + Math.min(Math.max((90 - (r || 60)) / 60, -.5), .5) * .12, 80],   // v38.1 pop = 탄 · 밟기 충격파가 터지는 소리(작게, 반지름이 클수록 조금 낮게)
