@@ -27,7 +27,7 @@ const modeChapter = () => clamp(Meta.clearedN() - 1, 0, CHAPTERS - 1);   // 가�
 function startMode(id) {
   if (!modeOpen(id)) return false;
   if (modeLeft(id) <= 0 && !window.__modesOpen) return false;
-  const c = modeChapter(); if (!modeDbg(id)) modeState(id).n++; Meta.save(); sfx.init(); sfx.start();
+  const c = modeChapter(); if (!modeDbg(id)) modeState(id).n++; Meta.save(); sfx.init(); sfx.start(); UI.cover();
   if (id === 'seal') startRun({ chapter: c, wave: c * STAGES + STAGES, mode: 'seal', noIntro: true });   // 가장 최근에 깬 챕터의 보스(첫 실행에서 주마다 바뀌는 보스는 내 공격력에 비해 너무 약했다)
   else startRun({ chapter: c, wave: c * STAGES + 1, mode: 'eel', noIntro: true });
   return true;

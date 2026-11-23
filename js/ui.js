@@ -44,7 +44,7 @@ const UI = {
     $('bLearned').onclick = () => this.popup(`<div class="card-pop" style="--c:#3478e6;--d:#1b3f8a"><div class="hd">얻은 능력</div><button class="x" data-close>✕</button>${learnedHTML()}</div>`);
     setInterval(() => { if ($('lobby').classList.contains('on')) { Meta.tick(); this.refreshTop(); } }, 5000);
     // 타이틀: 첫 터치에서 오디오를 깨우고 로비로
-    const enter = () => { $('mTitle').classList.remove('on'); $('lobby').classList.add('on'); sfx.bgmFor && sfx.bgmFor('lobby'); GODS.forEach(g => { if (Meta.godLv(g.id)) loadGod(g.id); }); loadChapterMon(); };
+    const enter = () => { UI.cover(); $('mTitle').classList.remove('on'); $('lobby').classList.add('on'); sfx.bgmFor && sfx.bgmFor('lobby'); GODS.forEach(g => { if (Meta.godLv(g.id)) loadGod(g.id); }); loadChapterMon(); };
     // 타이틀(로고)을 누르면 매번 인트로(js/intro.js)부터 시작한다(핍의 젤리광산처럼, 건너뛰기 있음). 한 번도 판을 안 한 사람은 인트로의 다이브가 그대로 챕터 1 낙하로 이어진다
     // 자동 시험에서 로비로 바로 가려면 window.__skipIntro 또는 localStorage gf_skipIntro=1
     const noIntro = () => { try { return !!window.__skipIntro || localStorage.getItem('gf_skipIntro') === '1'; } catch (e) { return !!window.__skipIntro; } };
@@ -192,7 +192,7 @@ const UI = {
     if (!s.equip.weapon) { this.toast('무기를 장착해야 출발할 수 있습니다'); this.sub = 'gear'; this.go('gear'); return; }
     if (s.energy < 5) { this.toast('에너지가 모자랍니다. 상점에서 채울 수 있습니다'); return; }
     Meta.spendEnergy(); s.chapter = this.chapterView; Meta.save(); sfx.start();
-    startRun({ chapter: this.chapterView });
+    this.cover(); startRun({ chapter: this.chapterView });
   },
   /* v38 새 계정 로비 안내(첫 판을 마치고 돌아왔을 때 한 번): 보상 → 상자 열기 → 일괄 장착 → 강화 → 전투력 → 다시 도전.
      궁수의 전설 2 초반처럼 한 걸음씩 '여기를 누르세요'(딤 · 포커스 · 강제 터치). 건너뛰어도 보상은 받는다 */
@@ -223,7 +223,7 @@ const UI = {
     ], end);
   },
   enterGame() { $('lobby').classList.remove('on'); $('pause').classList.add('on'); $('mResult').classList.remove('on'); },
-  backToLobby() { verCheck(); game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); if (Meta.s.ftue && Meta.s.ftue.stage === 1) setTimeout(() => this.ftueLobby(), 450); },
+  backToLobby() { verCheck(); this.cover(); game.state = 'title'; game.p = null; $('pause').classList.remove('on'); $('mResult').classList.remove('on'); $('mPause').classList.remove('on'); $('lobby').classList.add('on'); this.go('battle'); sfx.bgmFor && sfx.bgmFor('lobby'); ctx.clearRect(0, 0, view.W, view.H); if (Meta.s.ftue && Meta.s.ftue.stage === 1) setTimeout(() => this.ftueLobby(), 450); },
   pause() {
     const g = game; if (g.state !== 'play') return;
     g.state = 'pause'; input.clearAll(); sfx.tap();
@@ -365,8 +365,11 @@ const UI = {
     if (t.closest('#gBuy')) { const id = this.godView, p0 = Meta.power(); if (Meta.buyGod(id)) { sfx.reward(); loadGod(id); this.toast(GOD_BY[id].name + ' 합류!'); this._swap = true; this.render(); powerPill(p0, Meta.power()); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
     if (t.closest('#gUp')) { const id = this.godView || Meta.s.god, p0 = Meta.power(); if (Meta.godUp(id)) { setTimeout(() => powerPill(p0, Meta.power()), 0); sfx.reward(); this.toast(Meta.godLv(id) > 1 ? `Lv.${Meta.godLv(id)}이 되었습니다` : '해금했습니다'); this._swap = true; this.render(); } return; }
   },
-  popup(html) { const el = $('pop'); el.innerHTML = html; el.classList.add('on'); el.onclick = e => { if (e.target === el || e.target.closest('[data-close]')) { sfx.tap(); el.classList.remove('on'); } }; },
-  closePop() { $('pop').classList.remove('on'); },
+  /* v53 화면 전환 덮개(Y03): 화면이 바뀐 직후 어두운 안개가 0.42초에 걸쳐 걷힌다. 화면을 바꾸는 일 자체는 늦추지 않는다(조작 · 시험 흐름 그대로) */
+  cover() { let c = $('cover'); if (!c) { c = document.createElement('div'); c.id = 'cover'; $('stage').appendChild(c); } c.classList.remove('go'); void c.offsetWidth; c.classList.add('go'); },
+  /* v53 팝업을 사람이 닫을 때(✕ · 바깥 누름)는 0.12초 줄어들며 사라진다. 코드가 닫는 closePop()은 예전처럼 바로 닫는다 */
+  popup(html) { const el = $('pop'), k = el._k = (el._k || 0) + 1; el.innerHTML = html; el.classList.remove('out'); el.classList.add('on'); el.onclick = e => { if (e.target === el || e.target.closest('[data-close]')) { if (el.classList.contains('out')) return; sfx.tap(); el.classList.add('out'); setTimeout(() => { if (el._k === k && el.classList.contains('out')) el.classList.remove('on', 'out'); }, 120); } }; },
+  closePop() { const el = $('pop'); el._k = (el._k || 0) + 1; el.classList.remove('on', 'out'); },
   itemBody(it, lvBonus) {
     const S = SLOT_BY[GEAR[it.d].slot], G = GEAR[it.d], stat = Meta.itemStat(it), lab = stat.stat === 'atk' ? '공격력' : '체력';
     const owner = S.id === 'weapon' ? it.god : null, name = owner ? `${Meta.weaponName(it)} · ${G.name}` : G.name;
