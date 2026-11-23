@@ -57,7 +57,8 @@ const UI = {
     };
     if (typeof Intro !== 'undefined' && !noIntro()) Intro.preload();
     // 요청이 끝나지 않아도 15초 뒤에는 넘어갈 수 있다. 늦은 그림은 도착하는 대로 나타난다
-    const wait0 = performance.now(), wait = setInterval(() => { const keys = Object.keys(IMG), done = keys.filter(k => IMG[k].complete).length, ready = done >= keys.length * .85 || performance.now() - wait0 > 15000; $('tgo').textContent = ready ? '화면을 터치하세요' : `불러오는 중 ${Math.round(done / keys.length * 100)}%`; if (ready) { clearInterval(wait); $('mTitle').onclick = go; } }, 120);
+    const wait0 = performance.now(), wait = setInterval(() => { const keys = Object.keys(IMG), done = keys.filter(k => IMG[k].complete).length, ready = done >= keys.length * .85 || performance.now() - wait0 > 15000; $('tgo').textContent = ready ? '화면을 터치하세요' : `불러오는 중 ${Math.round(done / keys.length * 100)}%`; const tb = $('tbar'); if (tb) { tb.firstElementChild.style.width = (ready ? 100 : Math.round(done / keys.length / .85 * 100)) + '%'; if (ready) tb.classList.add('done'); }   /* v55 진행 막대: 받은 그림 수만큼 차고(85%면 준비 끝), 준비되면 사라진다 */
+      if (ready) { clearInterval(wait); $('mTitle').onclick = go; } }, 120);
     addEventListener('beforeunload', () => Meta.save());
   },
   toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(this._tt); this._tt = setTimeout(() => el.classList.remove('on'), 1500); },
