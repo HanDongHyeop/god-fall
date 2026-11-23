@@ -3,12 +3,14 @@
 'use strict';
 (() => {
   const KEY = 'gf_debug', stage = document.getElementById('stage');
-  let god = false, again = 0, eel = false, theme = '';
-  try { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); god = !!d.god; eel = !!d.eel; theme = d.theme || ''; } catch (e) {}
-  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ god, eel, theme })); } catch (e) {} };
+  let god = false, again = 0, eel = false, theme = '', combo = '';
+  try { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); god = !!d.god; eel = !!d.eel; theme = d.theme || ''; combo = d.combo === 'endless' ? 'endless' : ''; } catch (e) {}
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify({ god, eel, theme, combo })); } catch (e) {} };
   const setGod = v => { god = v; game.god = v; keep(); btn.classList.toggle('god', v); btn.textContent = v ? '무적 ON' : '디버그'; };
   /* v43 뱀장어(심연의 장어) 모드 열기 · 잠그기: 조건(챕터 3 클리어) 없이 [도전]에서 바로 해 볼 수 있게. 저장은 건드리지 않고 이 기기의 디버그 기억에만 둔다 → 잠그면 원래 조건대로 */
   const setEel = v => { eel = v; window.__dbgMode = { eel: v }; keep(); };
+  // v56 콤보 규칙 A/B: '' = 지금 규칙(5콤보에서 신성 폭주, 폭주 중엔 안 셈), 'endless' = 끝없는 콤보(skills.js comboEndless). 이 기기의 디버그 기억에만 남는다
+  const setCombo = v => { combo = v === 'endless' ? 'endless' : ''; window.__comboRule = combo; keep(); };
   // UI 풍 시안(js/theme.js · themes.css): 배치는 그대로, 색 · 질감만. 고른 시안은 이 기기의 디버그 기억에만 남는다. '현재'로 돌리면 기본 UI
   const setTheme = v => { if (typeof Theme === 'undefined') return; Theme.set(v); theme = Theme.id; keep(); };
 
@@ -65,6 +67,7 @@
       ${Array.from({ length: CHAPTERS }, (_, c) => `<div class="dr"><span>챕터 ${c + 1} · ${chapterInfo(c).name}</span>${b(`go:${c}:${1 + c * STAGES}`, '1판')}${b(`go:${c}:${3 + c * STAGES}`, '휴식')}${b(`go:${c}:${5 + c * STAGES}`, '5판')}${b(`go:${c}:${6 + c * STAGES}`, '보스')}${b(`mini:${c}`, '중간 보스')}</div>`).join('')}
       <div class="dr">${b('chOpen', '챕터 전부 열기')}${b('chLock', '챕터 잠그기')}</div>
       ${typeof Theme !== 'undefined' ? `<h5>UI 풍 시안 · 그을린 양피지 색상 (지금: ${theme ? THEME_INFO[theme].tag + ' ' + THEMES[theme] : '현재 UI'})</h5><div class="dr">${b('theme:', '현재', theme ? '' : 'on')}${Object.keys(THEMES).map(k => b('theme:' + k, THEME_INFO[k].tag + ' ' + THEMES[k], theme === k ? 'on' : '')).join('')}</div><div class="thNote" style="font-size:.82em;line-height:1.5;opacity:.85">현재 = 지금 UI 그대로${Object.keys(THEMES).map(k => `<br>${THEME_INFO[k].tag} ${THEMES[k]} = ${THEME_INFO[k].note}`).join('')}<br>배경(하늘 · 구름 · 섬)은 모두 지금 그대로</div>` : ''}
+      <h5>콤보 규칙 비교(A/B) · 지금: ${combo ? '끝없이' : '지금 규칙'}</h5><div class="dr">${b('combo:', '지금 규칙', combo ? '' : 'on')}${b('combo:endless', '끝없이', combo ? 'on' : '')}</div><div style="font-size:.82em;line-height:1.5;opacity:.85">지금 규칙 = 5번 밟으면 신성 폭주, 폭주 중에는 세지 않음<br>끝없이 = 땅에 닿을 때까지 계속 셈 · 5콤보를 더 채울 때마다 폭주 시간 다시 가득 · 착지하면 콤보만큼 파편(15콤보부터 체력도)</div>
       <h5>도전 모드</h5><div class="dr"><span>뱀장어(심연의 장어) · ${eel ? '디버그로 열림(횟수 제한 없음)' : Meta.clearedN() >= MODES.eel.open ? '원래 조건으로 열려 있음' : `잠김(챕터 ${MODES.eel.open} 클리어 필요)`}</span>${eel ? b('eel:0', '뱀장어 모드 잠그기', 'no') : b('eel:1', '뱀장어 모드 열기', 'on')}</div>
       <h5>재화</h5><div class="dr">${b('gold+', '골드 +10만')}${b('gem+', '보석 +1만')}${b('en', '에너지 채우기')}${b('sc+', '스크롤 전부 +100')}${b('cur0', '재화 전부 0', 'no')}</div>
       <h5>캐릭터</h5>${gods}
@@ -84,6 +87,7 @@
     if (k === 'tutOff') { delete s.ftue; Guide.stop(); }
     if (k === 'god') setGod(!god);
     else if (k === 'theme') { setTheme(x || ''); say(theme ? `UI 풍 시안: ${THEMES[theme]}` : '현재 UI로 돌아왔습니다'); }
+    else if (k === 'combo') { setCombo(x || ''); say(combo ? '콤보 규칙: 끝없이(땅에 닿을 때까지 계속 셈)' : '콤보 규칙: 지금 규칙으로 돌아왔습니다'); }
     else if (k === 'eel') { setEel(x === '1'); say(eel ? '뱀장어 모드를 열었습니다: 전투 탭의 [도전]에서 시작' : '뱀장어 모드를 원래 조건으로 되돌렸습니다'); }
     else if (k === 'next') { if (game.isBossWave && game.boss) game.boss = null; game.room = null; game.saved = null; game.minis = null; document.getElementById('mPause').classList.remove('on'); resume = null; panel.classList.remove('on'); nextWave(); return; }
     else if (k === 'kill') { setGod(false); panel.classList.remove('on'); resume = null; game.state = 'play'; game.hitStop = 0; game.p.hp = 0; gameOver(); return; }
@@ -113,6 +117,6 @@
   }
   btn.onclick = () => { sfx.tap(); open(); };
   panel.onclick = e => { const t = e.target.closest('[data-a]'); if (t && !t.disabled) { sfx.tap(); act(t.dataset.a); } };
-  setGod(god); setEel(eel); if (theme) setTheme(theme);
-  window.GF.debug = { open, close, act, setGod, setEel, setTheme };
+  setGod(god); setEel(eel); setCombo(combo); if (theme) setTheme(theme);
+  window.GF.debug = { open, close, act, setGod, setEel, setTheme, setCombo };
 })();

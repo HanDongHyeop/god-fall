@@ -615,7 +615,7 @@ function tick(dt) {
       p.vy = 0; p.onGround = true;
     }
   }
-  if (p.onGround) { refill(p); p.jumpState = false; if (!ftueEasyHigh()) p.combo = 0; }   // v33: 콤보(밟은 횟수)는 땅에 닿아야만 끊긴다
+  if (p.onGround) { refill(p); p.jumpState = false; if (!ftueEasyHigh()) { if (p.combo && comboEndless()) comboLand(p); p.combo = 0; p.comboNext = 0; } }   // v33: 콤보(밟은 횟수)는 땅에 닿아야만 끊긴다
   p.squash = approachSnap(p.squash, 0, 14, dt);
   p.hurtT = Math.max(0, p.hurtT - dt); p.landT = Math.max(0, p.landT - dt); p.hitFlash = Math.max(0, (p.hitFlash || 0) - dt);
   p.flip = approachSnap(p.flip, p.face > 0 ? 1 : -1, 60, dt);

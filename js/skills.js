@@ -212,14 +212,36 @@ const highDur = () => HIGH.dur * (1 + (game.st.highPct || 0) + (has('overload') 
 /* v38 새 계정은 신성 폭주를 쉽게 배운다: 튜토리얼 판과 그 뒤 처음 3번(FTUE.highEasy)은 2번만 밟아도 켜지고, 땅에 닿아도 콤보가 이어진다 */
 const ftueEasyHigh = () => { const f = Meta.s.ftue; return !!game.tut || !!(f && (f.high || 0) < FTUE.highEasy.n); };
 const highNeed = () => ftueEasyHigh() ? FTUE.highEasy.combo : HIGH.combo;
+/* v56 A/B '끝없는 콤보'(디버그 전환, 기본은 꺼짐): 땅에 닿을 때까지 콤보를 계속 센다.
+   - 신성 폭주 중에도 세고, 5콤보를 더 채울 때마다 폭주 시간이 다시 가득 찬다(단계 p.highTier = 지금까지 채운 5콤보 묶음 수)
+   - 폭주가 끝나도 콤보는 그대로. 땅에 닿으면 0이 되고, 5콤보 이상이었으면 착지 보상(COMBO_LAND)
+   지금 규칙(v34.1 · v34.2: 폭주 중엔 안 셈 · 5까지만)은 사용자가 정한 것이라 기본값으로 둔다. 둘을 폰에서 바꿔 가며 비교하기 위한 전환 */
+const comboEndless = () => window.__comboRule === 'endless' && !game.tut;
+const COMBO_LAND = { shard: 14, heal: .04, healFrom: 3 };   // 착지 보상: 단계마다 파편 14, 3단계(15콤보)부터 단계마다 체력 4%
+function comboLand(p) {
+  const g = game, tier = Math.floor(p.combo / HIGH.combo); if (tier < 1) return;
+  spawnShards(p.x, p.y - 12, Math.round(COMBO_LAND.shard * tier * p.gemMul));
+  let txt = `착지! ${p.combo} 콤보`;
+  if (tier >= COMBO_LAND.healFrom && p.hp < p.maxHp) { const h = Math.round(p.maxHp * COMBO_LAND.heal * (tier - COMBO_LAND.healFrom + 1)); p.hp = Math.min(p.maxHp, p.hp + h); txt += ` · 체력 +${h}`; }
+  popup(p.x, p.y - 52, txt, '#ffe27a', true); g.fx.push({ type: 'ring', x: p.x, y: p.y - 6, r: 60 + tier * 14, col: 'rgba(255,226,120,.9)', t: 0, life: .4 }); sfx.reward(); vibrate(25);
+  g.comboLandN = (g.comboLandN || 0) + 1;
+}
 function addCombo() {
   const g = game, p = g.p; if (!p) return;
   if (g.tut && g.tutS) g.tutS.stomps++;
-  if (p.high && !has('avatar')) return;   // v34.1 신성 폭주 중에는 콤보를 세지 않는다(사용자). v34.2: 콤보는 5까지만, 폭주가 끝나면 0부터. 신의 현현(판 내내 폭주)은 1~5를 돌며 센다
+  if (p.high && !has('avatar') && !comboEndless()) return;   // v34.1 신성 폭주 중에는 콤보를 세지 않는다(사용자). v34.2: 콤보는 5까지만, 폭주가 끝나면 0부터. 신의 현현(판 내내 폭주)은 1~5를 돌며 센다
   p.combo++; g.maxCombo = Math.max(g.maxCombo, p.combo);
   if (g.st.comboStrike && p.combo >= HIGH.combo) smite();   // 제우스: 콤보 5(HIGH.combo)마다 낙뢰
   const list = g.cfx || (g.cfx = []);
   for (const f of list) if (f.kind === 'n') f.dead = true;   // 작은 글자는 하나만
+  if (comboEndless() && !has('avatar')) {   // v56 끝없는 콤보: 다음 문턱(처음 = highNeed, 그 뒤 5콤보마다)을 넘을 때마다 켜거나 다시 채운다
+    if (p.combo >= (p.comboNext || highNeed())) {
+      p.comboNext = p.combo + HIGH.combo; p.highTier = Math.max(1, Math.floor(p.combo / HIGH.combo));
+      list.push({ kind: 'max', text: p.combo + ' 콤보!', t: 0, life: 1.05 }); g.highN = (g.highN || 0) + 1;
+      startHigh(p.high ? 'refresh' : 'on');
+    } else list.push({ kind: 'n', n: p.combo, text: p.combo + ' 콤보', t: 0, life: .8 });
+    g.cfx = list.filter(f => !f.dead); return;
+  }
   if (p.combo >= highNeed()) {
     { const f = Meta.s.ftue; if (!g.tut && f && (f.high || 0) < FTUE.highEasy.n && !has('avatar')) { f.high = (f.high || 0) + 1; if (f.high >= FTUE.highEasy.n) g.ftueHighTip = true; } }
     list.push({ kind: 'max', text: p.combo + ' 콤보!', t: 0, life: 1.05 }); g.highN = (g.highN || 0) + 1;   // v34.2 임무·결과 화면의 '신성 폭주 n번'
@@ -263,7 +285,7 @@ function highTick(dt) {
     const fi = p.highT <= HIGH.blink ? highFlickAt(p.highT) : -1;   // 전등이 끊기는 순간 지직 소리
     if (fi >= 0 && fi !== p.highFlick) sfx.highFlick();
     p.highFlick = fi;
-    if (p.highT <= 0) { p.high = false; p.highT = 0; p.combo = 0;   /* v34.2 콤보는 5까지만: 폭주가 끝나면 0부터 */ p.highEnd = .35; sparks(p.x, p.y - 8, 12, '#ffe59a', 160, .45, 2); sfx.highOff(); if (g.ftueHighTip) { g.ftueHighTip = false; ftueHighTip(); } }
+    if (p.highT <= 0) { p.high = false; p.highT = 0; if (!comboEndless()) p.combo = 0; else p.comboNext = p.combo + HIGH.combo;   /* v34.2 콤보는 5까지만: 폭주가 끝나면 0부터 */ p.highEnd = .35; sparks(p.x, p.y - 8, 12, '#ffe59a', 160, .45, 2); sfx.highOff(); if (g.ftueHighTip) { g.ftueHighTip = false; ftueHighTip(); } }
   }
   if (p.highEnd > 0) p.highEnd = Math.max(0, p.highEnd - dt);
   if (g.cfx) { for (const f of g.cfx) f.t += dt; g.cfx = g.cfx.filter(f => f.t < f.life); }
