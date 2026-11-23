@@ -297,7 +297,7 @@ const UI = {
   /* ───── 장비 ───── */
   heroHTML() {
     const s = Meta.s, wi = Meta.equipped('weapon'), show = this.sub === 'gods' && this.godView ? this.godView : s.god, sw = Meta.godLv(show) && Meta.equipped('weapon', show), src = `assets/god/${show}/${sw ? (sw.g >= GRADE_S ? 'big_armed_s' : 'big_armed') : 'big_bare'}.webp`;
-    return `<div class="aura" style="--ac:${wi ? GRADES[wi.g].glow : 'transparent'}"></div><div class="hero ${this._swap ? 'swap' : ''}"><img src="${src}" alt=""></div>`;
+    return `<div class="aura" style="--ac:${wi ? GRADES[wi.g].glow : 'transparent'}"></div><div class="hero ${this._swap ? (this._swap === 'drop' ? 'swap drop' : 'swap') : ''}"><img src="${src}" alt=""></div>`;
   },
   slotHTML(S) {
     const it = Meta.equipped(S.id), lv = Meta.s.slotLv[S.id], up = Meta.canUpgrade(S.id);
@@ -360,11 +360,13 @@ const UI = {
     if (t.closest('#bForge')) { sfx.tap(); this.openForge(); return; }
     if (t.closest('#bBest')) { this.equipAll(); return; }
     if (t.closest('#bInfo')) { sfx.tap(); this.statPop(); return; }
-    if (gc) { sfx.tap(); this.godView = gc.dataset.god; this._swap = true; this.r_gear(); return; }
-    if (t.closest('#gSel')) { sfx.tap(); loadGod(this.godView); Meta.selectGod(this.godView); this._swap = true; this.render(); this.toast(GOD_BY[this.godView].name + ' 출전'); return; }
-    if (t.closest('#gBuy')) { const id = this.godView, p0 = Meta.power(); if (Meta.buyGod(id)) { sfx.reward(); loadGod(id); this.toast(GOD_BY[id].name + ' 합류!'); this._swap = true; this.render(); powerPill(p0, Meta.power()); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
+    if (gc) { sfx.tap(); if (gc.dataset.god !== this.godView) this.heroDrop(); this.godView = gc.dataset.god; this.r_gear(); return; }
+    if (t.closest('#gSel')) { sfx.tap(); loadGod(this.godView); Meta.selectGod(this.godView); this.heroDrop(GOD_BY[this.godView].shot); this.render(); this.toast(GOD_BY[this.godView].name + ' 출전'); return; }
+    if (t.closest('#gBuy')) { const id = this.godView, p0 = Meta.power(); if (Meta.buyGod(id)) { sfx.reward(); loadGod(id); this.toast(GOD_BY[id].name + ' 합류!'); this.heroDrop(GOD_BY[id].shot); this.render(); powerPill(p0, Meta.power()); } else { sfx.empty(); this.toast('보석이 모자랍니다'); } return; }
     if (t.closest('#gUp')) { const id = this.godView || Meta.s.god, p0 = Meta.power(); if (Meta.godUp(id)) { setTimeout(() => powerPill(p0, Meta.power()), 0); sfx.reward(); this.toast(Meta.godLv(id) > 1 ? `Lv.${Meta.godLv(id)}이 되었습니다` : '해금했습니다'); this._swap = true; this.render(); } return; }
   },
+  /* v54 캐릭터 등장(Y06): 다음에 그릴 때 캐릭터가 위에서 떨어져 착지한다(0.55초). 착지 순간 발 소리, 출전 · 합류면 그 신의 발사음 한 번 */
+  heroDrop(shot) { this._swap = 'drop'; const k = this._dropK = (this._dropK || 0) + 1; setTimeout(() => { if (this._dropK !== k || !$('lobby').classList.contains('on')) return; sfx.land(); if (shot) setTimeout(() => { if (this._dropK === k && $('lobby').classList.contains('on')) sfx.shotOf(shot); }, 160); }, 300); },
   /* v53 화면 전환 덮개(Y03): 화면이 바뀐 직후 어두운 안개가 0.42초에 걸쳐 걷힌다. 화면을 바꾸는 일 자체는 늦추지 않는다(조작 · 시험 흐름 그대로) */
   cover() { let c = $('cover'); if (!c) { c = document.createElement('div'); c.id = 'cover'; $('stage').appendChild(c); } c.classList.remove('go'); void c.offsetWidth; c.classList.add('go'); },
   /* v53 팝업을 사람이 닫을 때(✕ · 바깥 누름)는 0.12초 줄어들며 사라진다. 코드가 닫는 closePop()은 예전처럼 바로 닫는다 */
