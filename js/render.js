@@ -416,11 +416,11 @@ function drawFx2() {
 
 /* ───── HUD: 궁수의 전설 2처럼 위쪽 띠에 모은다 ───── */
 function textOut(t, x, y, col = '#fff', lw = 3) { const s = view.s; ctx.lineWidth = lw * s; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(8,8,20,.92)'; ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y); }
-/* HUD 색: 기본값. UI 풍 시안(디버그 전용, js/theme.js)을 켜면 HUD_THEME의 값으로 바뀐다(자리 · 크기는 그대로) */
-const HUD_BASE = { bg: 'rgba(10,8,20,.85)', hp1: '#ff6a78', hp2: '#d42a44', xp1: '#3a86f0', xp2: '#7ff0ff', xpTx: '#bfefff', gold: '#ffd24a', idle: '#3c3650' };
+/* HUD 색: v60 그을린 갈색 양피지 UI(style.css 'UI 풍' 구간)와 맞춘 색 */
+const HUD_BASE = { bg: 'rgba(28,18,10,.9)', hp1: '#f0705a', hp2: '#b8322a', xp1: '#d99a2e', xp2: '#ffe2a0', xpTx: '#ffe2a0', gold: '#f0b84a', idle: '#5a4226' };
 function drawHUD() {
   const g = game, p = g.p; if (!p) return;
-  const s = view.s, top = view.safeT + 8 * s, W = view.W, TH = (window.__theme && typeof HUD_THEME !== 'undefined' && HUD_THEME[window.__theme]) || HUD_BASE;
+  const s = view.s, top = view.safeT + 8 * s, W = view.W, TH = HUD_BASE;
   // 카드를 고르는 동안에는 체력 막대 움직임도 멈춘다
   const hudLive = g.state !== 'card';
   if (hudLive) g.hudHp = approachSnap(g.hudHp === undefined ? p.hp : g.hudHp, p.hp, 5, 1 / 60, .3);
@@ -464,7 +464,7 @@ function drawHUD() {
   if (g.boss && g.boss.barK > 0) {
     const b = g.boss, by = top + 26 * s, bw2 = W - 28 * s, x0 = 14 * s, F = (g.minis ? clamp(g.minis.reduce((a, m) => a + Math.max(0, m.hp), 0) / g.minis.reduce((a, m) => a + m.maxHp, 0), 0, 1) : clamp(b.hp / b.maxHp, 0, 1)) * b.barK;
     ctx.font = `${12.5 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(10,8,20,.9)'; rr(x0, by + 12 * s, bw2, 12 * s, 5 * s); ctx.fill();
+    ctx.fillStyle = TH.bg; rr(x0, by + 12 * s, bw2, 12 * s, 5 * s); ctx.fill();
     b.barGhost = approachSnap(b.barGhost === undefined ? F : b.barGhost, F, 4, 1 / 60, .001);
     ctx.fillStyle = '#ffe9c0'; ctx.fillRect(x0 + 2 * s, by + 14 * s, (bw2 - 4 * s) * b.barGhost, 8 * s);
     const bg = ctx.createLinearGradient(0, by + 14 * s, 0, by + 22 * s); bg.addColorStop(0, '#ff5b7a'); bg.addColorStop(1, '#a01040');
@@ -478,8 +478,10 @@ function drawBanner() {
   const g = game, b = g.banner; if (!b || (g.state !== 'play' && g.state !== 'descend')) return;
   const s = view.s, W = view.W, y = view.H * .26, k = b.t, inA = clamp(k / .22, 0, 1), outA = clamp((b.life - k) / .25, 0, 1), ease = 1 - Math.pow(1 - inA, 3), h = 58 * s;
   ctx.globalAlpha = outA;
-  ctx.fillStyle = b.gold ? 'rgba(70,40,0,.86)' : b.hard ? 'rgba(64,6,16,.88)' : 'rgba(8,6,18,.78)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
-  ctx.fillStyle = b.hard ? '#ff5a6a' : '#ffd24a'; ctx.fillRect(W * (1 - ease), y - h / 2, W, 2 * s); ctx.fillRect(W * (ease - 1), y + h / 2 - 2 * s, W, 2 * s);
+  ctx.fillStyle = b.gold ? 'rgba(70,40,0,.86)' : b.hard ? 'rgba(64,6,16,.88)' : 'rgba(28,18,10,.84)'; ctx.fillRect(W * (1 - ease), y - h / 2, W, h);
+  ctx.fillStyle = b.hard ? '#ff5a6a' : '#f2bb4e'; ctx.fillRect(W * (1 - ease), y - h / 2, W, 2 * s); ctx.fillRect(W * (ease - 1), y + h / 2 - 2 * s, W, 2 * s);
+  // v60 양피지 UI: 띠 안쪽에 점선 바늘땀
+  ctx.strokeStyle = b.hard ? 'rgba(255,90,106,.45)' : 'rgba(242,187,78,.45)'; ctx.lineWidth = 1.2 * s; ctx.setLineDash([5 * s, 4 * s]); ctx.beginPath(); ctx.moveTo(W * (1 - ease), y - h / 2 + 6 * s); ctx.lineTo(W * (2 - ease), y - h / 2 + 6 * s); ctx.moveTo(W * (ease - 1), y + h / 2 - 6 * s); ctx.lineTo(W * ease, y + h / 2 - 6 * s); ctx.stroke(); ctx.setLineDash([]);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${13 * s}px ${FONT}`; textOut(b.a, W / 2 + (1 - ease) * 80 * s, y - 13 * s, '#ffe9b0', 2.6);
   ctx.font = `${22 * s}px ${FONT}`; textOut(b.b, W / 2 - (1 - ease) * 80 * s, y + 10 * s, '#fff', 3.4);
   ctx.globalAlpha = 1;
