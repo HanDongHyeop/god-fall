@@ -14,8 +14,12 @@ function loadBiomeArt(b) {
 }
 BIOMES.slice(0, 3).forEach(loadBiomeArt);
 function loadChapterMon() { BIOMES.forEach(loadBiomeArt); }
-const monImg = n => { const id = game.biome && game.biome.id, v = id && id !== 'b1' ? IMG[`m_${id}_${n}`] : null; return v && ok(v) ? v : IMG['m_' + n]; };
-const monWhite = n => { const id = game.biome && game.biome.id, v = id && OWN_SHAPE.includes(id) ? IMG[`m_${id}_${n}_w`] : null; return v && ok(v) ? v : IMG['m_' + n + '_w']; };
+/* v62 수중 구역 괴물 그림(오너: 수중 몬스터로): 박쥐 자리 = 빛 미끼 물고기, 눈알 자리 = 해파리. 수중 구역 판에서만 쓴다(챕터 2 · 어려움 9 · 11) */
+const WATER_MON = ['bat_a', 'bat_b', 'eye_a', 'eye_b'];
+for (const n of WATER_MON) { loadImg('m_water_' + n, `assets/mon/water/${n}.png`); loadImg('m_water_' + n + '_w', `assets/mon/water/${n}_w.png`); }
+const waterMon = (n, w) => { if (game.zone !== 'water' || game.room || !WATER_MON.includes(n)) return null; const v = IMG['m_water_' + n + (w ? '_w' : '')]; return v && ok(v) ? v : null; };
+const monImg = n => { const wv = waterMon(n); if (wv) return wv; const id = game.biome && game.biome.id, v = id && id !== 'b1' ? IMG[`m_${id}_${n}`] : null; return v && ok(v) ? v : IMG['m_' + n]; };
+const monWhite = n => { const wv = waterMon(n, true); if (wv) return wv; const id = game.biome && game.biome.id, v = id && OWN_SHAPE.includes(id) ? IMG[`m_${id}_${n}_w`] : null; return v && ok(v) ? v : IMG['m_' + n + '_w']; };
 loadImg('r_ruby', 'assets/ui/cur_shard.webp');
 for (const n of ['fx_letter_w', 'fx_letter', 'fx_feather1', 'fx_feather2', 'fx_scrap', 'fx_seal', 'o_gold', 'o_rose', 'o_portal_ring', 'o_portal_in']) loadImg(n, `assets/ui/${n}.png`);
 const HERO_FRAMES = ['idle', 'run_a', 'run_pass', 'run_b', 'jump', 'apex', 'tuck', 'fall_a', 'fall_b', 'throw_a', 'throw_b', 'land', 'hurt'];
@@ -218,7 +222,7 @@ function buildWave() {
     else g.enemies.push(mkEnemy(kind, x, y, { baseX: x, baseY: y, ph: R() * 6 }));
   }
   // 땅 위 적과 장식
-  const walkChance = rest ? -1 : Math.min(.82, .5 + L * .035);
+  const walkChance = rest ? -1 : Math.min(.82, .5 + L * .035) * (g.zone === 'water' ? ZONE.water.walk : 1);   // v62 수중: 바닥을 걷는 괴물은 적게
   const putWalker = (c, rr) => {
     const tb = g.biome.enemies, rollK = R(), W_ = tb.mound + tb.tick + tb.spit;
     let kind = rollK < tb.mound / W_ ? 'mound' : rollK < (tb.mound + tb.tick) / W_ ? 'tick' : 'spit';
@@ -247,7 +251,7 @@ function buildWave() {
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   zoneBuild(R, F, lastRow, sh);   // v41 구역 물건(횃불 · 봉인 바닥 · 조개)
   g.hearts = [];
-  if (!rest && g.enemies.length) g.xpNeed = Math.max(XP.min, Math.round(g.enemies.reduce((a, e) => a + xpOf(e), 0) * XP.k));   // v40 이번 판 괴물의 약 1/3을 잡을 때마다 레벨업
+  g.xp = 0; g.huntFull = false; g.xpNeed = !rest && !mid && g.enemies.length ? Math.max(XP.min, Math.round(g.enemies.reduce((a, e) => a + xpOf(e), 0) * XP.k)) : 0;   // v62 이번 판 괴물의 절반 남짓을 잡으면 판 끝 카드가 '빛나는 선물'
   const p = g.p;
   p.x = WORLD_W / 2; p.y = 120; p.vx = 0; p.vy = 0; p.onGround = false; p.ammo = p.maxAmmo; p.gauge = 100; p.jumps = 0; p.olive = has('olive');
   if (g.st.waveHeal) healBy(p.maxHp * g.st.waveHeal);
@@ -405,7 +409,21 @@ function finishRun(gaveUp) {
   UI.showResult(r, reward);
 }
 /* v33: 파편은 돈일 뿐이다(이어 먹어 신성 폭주가 켜지던 것은 없앴다). sndChain은 이어 먹을 때 소리가 올라가게만 쓴다 */
-/* v40 레벨업: 카드 창을 띄우고, 고르면 그 자리에서 이어서 싸운다(잠깐 무적) */
+/* v62 사냥 막대가 찼다: 이 판 끝 카드 창이 빛나는 선물이 된다(멈추지 않는다) */
+function huntFull() {
+  const g = game, p = g.p; g.huntFull = true;
+  g.fx.push({ type: 'ring', x: p.x, y: p.y - 8, r: 90, col: 'rgba(255,214,120,.95)', t: 0, life: .45 }); sparks(p.x, p.y - 10, 14, '#ffd98a', 260, .45);
+  popup(p.x, p.y - 50, '빛나는 선물!', '#ffd98a', true); sfx.reward && sfx.reward();
+}
+/* v62 판 끝 카드 창(다운웰처럼 판 사이에서 고른다). 고르면 다음 판으로(openCards 기본 동작) */
+function stageGift(mid) {
+  const g = game; g.runLv++;
+  if (mid) { openCards(true, { title: '중간 보스의 전리품', sub: '새로운 능력을 선택하세요!' }); return; }
+  if (!g.huntFull) { openCards(false, { title: '신의 선물', sub: '새로운 능력을 선택하세요!' }); return; }
+  // 빛나는 선물: 한 번 멈춘 김에 두 장(좋은 카드가 잘 나오는 사다리로). 멈추는 횟수는 늘리지 않고 한 번에 크게 세진다(시뮬레이터: 한 장씩이면 고수 챕터 1 클리어 6/11 → 3/12)
+  openCards(true, { title: '빛나는 선물 1/2', sub: '괴물을 많이 잡아 두 장을 고릅니다!', after: () => openCards(true, { title: '빛나는 선물 2/2', sub: '한 장 더 고르세요!' }) });
+}
+/* v40 레벨업(v62부터 쓰지 않음. 디버그 · 옛 시험용으로 남김): 카드 창을 띄우고, 고르면 그 자리에서 이어서 싸운다(잠깐 무적) */
 function levelUp() {
   const g = game, p = g.p; g.xp -= g.xpNeed; g.runLv++; g.lvPend = 0;
   g.fx.push({ type: 'ring', x: p.x, y: p.y - 8, r: 90, col: 'rgba(120,220,255,.95)', t: 0, life: .4 }); sparks(p.x, p.y - 10, 12, '#8fe6ff', 260, .4);
@@ -535,7 +553,7 @@ function tick(dt) {
   // 좌우
   const zw = g.zone === 'water' && !g.room && g.state === 'play' ? ZONE.water : null;   // 시작 낙하 연출(descend)은 물속이어도 평소 속도   // v41 수중: 천천히 움직이고 천천히 떨어진다
   const axis = locked ? 0 : input.axis, run = T.run * (1 + st.runPct) * (zw ? zw.run : 1);
-  const target = axis * run, acc = T.accel * dt;
+  const target = axis * run, acc = T.accel * dt * (zw ? zw.accel : 1);   // v62 수중: 관성(오너: 물속처럼 저항감이 있어야 한다)
   p.vx += clamp(target - p.vx, -acc, acc);
   if (Math.abs(axis) > .001) p.face = Math.sign(axis);
   // 점프 게이지(v31): 공중에서 차지 않는다. 남은 점프 칸 = (jumpMax - jumps)
@@ -598,6 +616,7 @@ function tick(dt) {
   if (has('atlas') && !p.onGround && p.ammo < p.maxAmmo) { p.atlasT = (p.atlasT || 0) + dt; if (p.atlasT >= .3) { p.atlasT = 0; p.ammo++; } } else p.atlasT = 0;
   if (p.ammoFlash) p.ammoFlash = Math.max(0, p.ammoFlash - dt);
   // 이동
+  if (zw && p.vy < 0) p.vy *= Math.exp(-zw.drag * dt);   // v62 수중: 위로 솟을 때 물이 잡아끈다
   p.vy = Math.min(p.vy + T.grav * (zw ? zw.grav : 1) * dt, T.maxFall * (zw ? zw.maxFall : 1) * (has('z_cloak') ? .85 : 1));
   const wasGround = p.onGround; p.onGround = false;
   moveX(p, p.vx * dt);
@@ -670,8 +689,8 @@ function tick(dt) {
   }
   g.shards = g.shards.filter(s => !s.dead);
   heartTick(dt); zoneTick(dt); trapTick(dt);
-  // v40 레벨업: 경험치가 차면 잠깐 뒤 카드 창(처치 연출을 먼저 보여 준다). 방 · 보스전 · 연습 중에는 미룬다
-  if (g.xpNeed > 0 && g.xp >= g.xpNeed && g.runLv < XP.cap && g.state === 'play' && !g.room && !(g.boss && g.camLock) && !g.tut && !g.mode) { g.lvPend += dt; if (g.lvPend > .28) levelUp(); } else g.lvPend = 0;
+  // v62 판 안 레벨업 없음(오너: 카드 창이 너무 잦아 방해). 사냥 막대가 차면 알려만 주고, 카드는 판 끝(포탈)에서 고른다
+  if (g.xpNeed > 0 && !g.huntFull && g.xp >= g.xpNeed && g.state === 'play' && !g.tut && !g.mode) huntFull();
   // 카메라
   if (g.bossCam !== undefined && g.isBossWave && g.camLock) g.cam = approachSnap(g.cam, g.bossCam, 7, dt, .05);
   else {
@@ -710,7 +729,8 @@ function updateEnemies(dt, jumpHeld) {
     } else if (k === 'eye') {
       const dx = p.x - e.x, dy = p.y - e.y, near = Math.hypot(dx, dy) < 280, sp = (56 + g.lvM * 5) * spd;
       if (near) { e.baseX += clamp(dx, -1, 1) * sp * dt; e.baseY += clamp(dy, -1, 1) * sp * .75 * dt; }
-      e.x = e.baseX; e.y = e.baseY + Math.sin(tt * 4) * 5; e.face = Math.sign(dx) || 1;
+      if (g.zone === 'water') { if (near && Math.sin(tt * 2.2) > .55) { e.baseX += clamp(dx, -1, 1) * sp * 1.6 * dt; e.baseY += clamp(dy, -1, 1) * sp * 1.2 * dt; } e.x = e.baseX; e.y = e.baseY + Math.sin(tt * 1.6) * ZONE.water.jelly; }   // v62 수중: 해파리처럼 둥실대다 한 번씩 밀고 다가온다
+      else { e.x = e.baseX; e.y = e.baseY + Math.sin(tt * 4) * 5; } e.face = Math.sign(dx) || 1;
     } else if (k === 'sac') {
       // 주머니: 몸을 숙이며 왈칵 쏠렸다가 돌아온다
       const sw = Math.sin(tt * 1.15), lurch = Math.sign(sw) * Math.pow(Math.abs(sw), .55);
@@ -727,7 +747,7 @@ function updateEnemies(dt, jumpHeld) {
       // 그림자는 벽을 지나 쫓아오지만 자기 자리에서 SHADE.leash 넘게는 따라오지 않고 돌아간다(무리가 되어 끝까지 따라붙던 문제, bot_v21.py 측정)
       if (e.homeY === undefined) { e.homeX = e.baseX; e.homeY = e.baseY; }
       const far = Math.hypot(e.baseX - e.homeX, e.baseY - e.homeY) > SHADE.leash;
-      if (d < SHADE.sight && !far) { const sp = Math.min(SHADE.maxSpd, (40 + g.lvM * 4) * spd); e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }
+      if (d < SHADE.sight && !far) { const sp = Math.min(SHADE.maxSpd, (40 + g.lvM * 4) * spd) * (g.zone === 'water' ? ZONE.water.shade : 1); e.baseX += dx / (d || 1) * sp * dt; e.baseY += dy / (d || 1) * sp * dt; }   // v62 수중 그림자: 물 저항을 안 받는다
       else if (far || d >= SHADE.sight) { const hx = e.homeX - e.baseX, hy = e.homeY - e.baseY, hd = Math.hypot(hx, hy); if (hd > 4) { e.baseX += hx / hd * 70 * dt; e.baseY += hy / hd * 70 * dt; } }
       e.x = e.baseX + Math.sin(tt * 2.4) * 8; e.y = e.baseY; e.face = Math.sign(dx) || 1;
     } else if (k === 'bat') {
@@ -735,6 +755,12 @@ function updateEnemies(dt, jumpHeld) {
       else if (e.sleep) {
         if (Math.hypot(p.x - e.x, p.y - e.y) < 190 + g.lvM * 6) { e.sleep = false; const dx = p.x - e.x, dy = p.y + 30 - e.y, d = Math.hypot(dx, dy) || 1, v = (170 + g.lvM * 9) * spd; e.vx = dx / d * v; e.vy = dy / d * v; if (e.sk === 'dash') batDashStart(e); }
       } else if (e.dashT > 0 && batDashTick(e, dt, spd)) { e.x += Math.sin(tt * 40) * .6; } else {
+        if (g.zone === 'water') {   // v62 수중 물고기: 헤엄 속도로 돌아오며 주인공 쪽으로 천천히 틀고, 몇 초마다 예고(붉은 줄) 뒤 돌진한다
+          const Z = ZONE.water, dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1, cv = (Z.cruise + g.lvM * 4) * spd, v = Math.hypot(e.vx, e.vy) || 1, nv = approachSnap(v, cv, 2.5, dt, 1), tx = e.vx / v + dx / d * 1.4 * dt, ty = e.vy / v + dy / d * 1.4 * dt, tl = Math.hypot(tx, ty) || 1;
+          e.vx = tx / tl * nv; e.vy = ty / tl * nv * .8;
+          e.swimT = (e.swimT === undefined ? Z.fish[0] + Math.random() * (Z.fish[1] - Z.fish[0]) : e.swimT) - dt;
+          if (e.swimT <= 0 && d < 420 && e.y > g.cam && e.y < g.cam + view.worldH) { e.swimT = Z.fish[0] + Math.random() * (Z.fish[1] - Z.fish[0]); batDashStart(e); }
+        }
         e.x += e.vx * dt + Math.sin(tt * 12) * 1.2; e.y += e.vy * dt;
         if (e.x < TILE + 8 || e.x > WORLD_W - TILE - 8) e.vx *= -1;
         e.x = clamp(e.x, TILE + 8, WORLD_W - TILE - 8); e.face = Math.sign(e.vx) || 1;
@@ -862,9 +888,11 @@ function waveClear() {
   if (has('interest')) { const n = Math.round(p.shards * .25); p.shards += n; popup(p.x, p.y - 30, `이자 +${n}`, '#ffe27a', true); }
   // 휴식 판은 카드 없이 다음 판으로, 보스 판은 챕터 클리어로 판이 끝난다
   if (isMidWave(g.wave) && !g.bossDone) return;
-  if (isRestWave(g.wave) || isMidWave(g.wave)) { nextWave(); return; }
+  if (isRestWave(g.wave)) { nextWave(); return; }
   if (isBossWave(g.wave)) { chapterClear(); return; }
-  sfx.reward(); nextWave();   // v40 카드는 판 끝이 아니라 싸우는 중간의 레벨업에서 고른다
+  if (g.mode) { sfx.reward(); nextWave(); return; }   // 도전 모드는 카드 없이
+  if (isMidWave(g.wave)) { stageGift(true); return; }
+  sfx.reward(); stageGift(false);   // v62 카드는 판 끝에서 고른다(다운웰 방식). v40~v61은 싸우는 중간 레벨업이었다
 }
 function chapterClear() {
   const g = game; g.clear = true; g.wave++; input.clearAll(); sfx.reward();

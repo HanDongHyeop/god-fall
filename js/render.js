@@ -133,7 +133,7 @@ function drawEnemy(e) {
   if (e.kind === 'bat' && e.sleep) fi = 0;
   const name = E.frames[fi], im = monImg(name), wim = monWhite(name); if (!ok(im)) return;
   // 가시로 늘어난 프레임은 그만큼 키워 몸 크기를 맞춘다
-  const sc = e.sc || 1, ext = (MON_EXT[g.biome.id] || {})[name] || 0, h = E.h * sc * s * im.naturalHeight / (im.naturalHeight - ext), w = h * im.naturalWidth / im.naturalHeight, extH = h - E.h * sc * s;
+  const sc = e.sc || 1, ext = waterMon(name) ? 0 : (MON_EXT[g.biome.id] || {})[name] || 0, h = E.h * sc * s * im.naturalHeight / (im.naturalHeight - ext), w = h * im.naturalWidth / im.naturalHeight, extH = h - E.h * sc * s;
   // 강화 개체의 붉은 기운(몸 뒤), 사라지는 그림자는 흐려진다
   drawMonAura(e, x, y + (e.kind === 'mound' || e.kind === 'tick' || e.kind === 'spit' ? -E.h * sc * s * .45 + e.r * s : 0));
   const fadeA = e.hidden ? clamp(e.blinkT / .3 - 1, 0, 1) : 1; if (fadeA <= 0) return;
@@ -435,13 +435,13 @@ function drawHUD() {
   if (flash > 0) { ctx.globalAlpha = flash * .55; ctx.fillStyle = '#7dffa8'; ctx.fillRect(left + 2 * s, top + 2 * s, (bw - 4 * s) * f, bh - 4 * s); ctx.globalAlpha = flash; ctx.strokeStyle = '#8dffb0'; ctx.lineWidth = 2.6 * s; rr(left - 1 * s, top - 1 * s, bw + 2 * s, bh + 2 * s, 7 * s); ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.font = `${12 * s}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   textOut(`${hpShown} / ${p.maxHp}`, left + bw / 2, top + bh / 2 + .5 * s, '#fff', 2.6);
-  // v40 경험치 막대(체력 막대 바로 아래) + 레벨. 가득 차면 레벨업 → 카드
+  // v40 경험치 막대(체력 막대 바로 아래). v62 = 사냥 막대 + '선물'(가득 차면 금색 = 이 판 끝 카드가 빛나는 선물)
   if (!g.tut && g.xpNeed > 0 && !(g.boss && g.boss.barK > 0)) {
-    const xy = top + bh + 2 * s, xh = 6 * s, max = g.runLv >= XP.cap, k = max ? 1 : clamp(g.xp / g.xpNeed, 0, 1);
+    const xy = top + bh + 2 * s, xh = 6 * s, max = !!g.huntFull, k = max ? 1 : clamp(g.xp / g.xpNeed, 0, 1);   // v62 사냥 막대: 차면 판 끝 카드가 빛나는 선물
     g.hudXp = hudLive ? approachSnap(g.hudXp === undefined ? k : g.hudXp, k, 8, 1 / 60, .002) : (g.hudXp || 0);
     ctx.fillStyle = TH.bg; rr(left, xy, bw, xh, 2.2 * s); ctx.fill();
     const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, TH.xp1); xg.addColorStop(1, TH.xp2); ctx.fillStyle = max ? TH.gold : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
-    ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut(max ? 'MAX' : `Lv.${g.runLv + 1}`, left + bw + 4 * s, xy + xh / 2, max ? TH.gold : TH.xpTx, 2.4); ctx.textAlign = 'center';
+    ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut('선물', left + bw + 4 * s, xy + xh / 2, max ? TH.gold : TH.xpTx, 2.4); ctx.textAlign = 'center';
   }
   drawZoneHud(left, top + bh + 10.5 * s, bw);   // v41 수중: 산소 막대
   drawModeHud();   // v42 도전 모드: 남은 시간 · 장어 체력

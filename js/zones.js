@@ -12,7 +12,7 @@ const ZONE_INFO = {
 };
 const ZONE = {
   dark: { sight: 118, torch: 170, every: [15, 19], gate: 2 },                                  // 시야 반지름 · 켠 횃불이 밝히는 반지름 · 봉인 바닥 간격(칸) · 열리는 틈(칸)
-  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5 },   // 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
+  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5, accel: .3, drag: 3, walk: .45, fish: [2.2, 3.4], cruise: 120, jelly: 16, shade: 1.3 },   // v62 walk = 바닥 괴물 배수(물속엔 헤엄치는 괴물이 주인), fish = 물고기(박쥐 자리) 돌진 간격 초, cruise = 헤엄 속도, jelly = 해파리(눈알 자리) 둥실 폭, shade = 그림자 속도 배수(물 저항을 안 받는다). accel = 좌우 가속 배수(물의 관성: 천천히 붙고 멈출 때 미끄러진다), drag = 솟아오를 때 물 저항(초당 감쇠). 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
   spike: { spacing: .55, net: [16, 20], gap: 3, wallDmg: 18 },                                  // 떠다니는 괴물 간격 배수 · 가시 바닥 간격(칸) · 틈(칸) · 벽 가시 피해(챕터 배수 전)
 };
 for (const [k, f] of [['z_torch', 'torch'], ['z_clam', 'clam_shut'], ['z_clam_open', 'clam_open']]) loadImg(k, `assets/map/zone/${f}.webp`);
@@ -134,8 +134,21 @@ function drawZoneObjs() {
 function drawZoneScreen() {
   const g = game, s = view.s, W = view.W, H = view.H, p = g.p; if (!g.zone || g.room || !p) return;
   if (g.zone === 'water') {
-    const wg = ctx.createLinearGradient(0, 0, 0, H); wg.addColorStop(0, 'rgba(40,150,210,.20)'); wg.addColorStop(1, 'rgba(10,60,140,.34)'); ctx.fillStyle = wg; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(190,240,255,.10)'; ctx.lineWidth = 2 * s;   // 흔들리는 물결 빛
+    // v62(오너: 수중인지 티가 안 난다) 물빛을 진하게 + 위에서 내려오는 빛줄기 · 떠다니는 부유물 · 올라가는 거품 · 가장자리 푸른 그늘. 모두 그때그때 계산(배열 · 오프스크린 캔버스 없음)
+    const wg = ctx.createLinearGradient(0, 0, 0, H); wg.addColorStop(0, 'rgba(40,160,220,.26)'); wg.addColorStop(1, 'rgba(8,50,135,.46)'); ctx.fillStyle = wg; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 4; i++) {   // 빛줄기: 위에서 비스듬히, 천천히 흔들린다
+      const cx = W * (.12 + i * .27) + Math.sin(g.t * .35 + i * 1.7) * 26 * s, w0 = (18 + (i % 2) * 14) * s, w1 = w0 * 3.2, sk = 70 * s, a = .07 + .035 * Math.sin(g.t * .8 + i * 2.1);
+      const rg = ctx.createLinearGradient(0, 0, 0, H * .85); rg.addColorStop(0, `rgba(190,245,255,${a})`); rg.addColorStop(1, 'rgba(190,245,255,0)'); ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.moveTo(cx - w0, 0); ctx.lineTo(cx + w0, 0); ctx.lineTo(cx + sk + w1, H * .85); ctx.lineTo(cx + sk - w1, H * .85); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = 'rgba(205,240,255,.32)';   // 부유물: 화면보다 느리게 흘러(시차) 깊이가 느껴진다
+    for (let i = 0; i < 34; i++) { const k = i * 7.31, x = ((i * 97.7 + Math.sin(g.t * .4 + k) * 14) * s) % W, y = (((i * 131.3) - g.cam * .45 - g.t * (6 + i % 5)) * s % H + H) % H; ctx.fillRect(x, y, (1 + i % 2) * s, (1 + i % 2) * s); }
+    ctx.strokeStyle = 'rgba(215,248,255,.55)'; ctx.lineWidth = 1.1 * s;   // 올라가는 거품(양쪽 벽 가까이 세 줄기씩)
+    for (let i = 0; i < 18; i++) { const col = i % 6, side = col < 3 ? 0 : 1, bx = side ? W - (26 + (col - 3) * 22) * s : (26 + col * 22) * s, sp = 34 + (i * 13) % 30, y = H - ((g.t * sp + i * 157) * s % (H + 60 * s)), r = (1.6 + (i % 3) * .9) * s; ctx.beginPath(); ctx.arc(bx + Math.sin(g.t * 2.2 + i) * 5 * s, y, r, 0, 7); ctx.stroke(); }
+    const eg = ctx.createRadialGradient(W / 2, H * .5, H * .32, W / 2, H * .5, H * .78); eg.addColorStop(0, 'rgba(6,30,90,0)'); eg.addColorStop(1, 'rgba(6,30,90,.34)'); ctx.fillStyle = eg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(190,240,255,.14)'; ctx.lineWidth = 2 * s;   // 흔들리는 물결 빛
     for (let i = 0; i < 4; i++) { const yy = ((g.t * 14 + i * 230) % (H + 120)) - 60; ctx.beginPath(); for (let x = 0; x <= W; x += 24 * s) { const y2 = yy + Math.sin(x * .012 + g.t * 1.3 + i) * 10 * s; x ? ctx.lineTo(x, y2) : ctx.moveTo(x, y2); } ctx.stroke(); }
     if (g.o2 < o2Max() * .25) { const a = (.18 + .16 * Math.sin(g.t * 9)) * (1 - g.o2 / (o2Max() * .25)); const vg = ctx.createRadialGradient(W / 2, H / 2, H * .25, W / 2, H / 2, H * .65); vg.addColorStop(0, 'rgba(20,40,120,0)'); vg.addColorStop(1, `rgba(10,20,90,${a + .2})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H); }
   }
