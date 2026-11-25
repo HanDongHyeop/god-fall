@@ -14,8 +14,8 @@ function loadBiomeArt(b) {
 }
 BIOMES.slice(0, 3).forEach(loadBiomeArt);
 function loadChapterMon() { BIOMES.forEach(loadBiomeArt); }
-/* v62 수중 구역 괴물 그림(오너: 수중 몬스터로): 박쥐 자리 = 빛 미끼 물고기, 눈알 자리 = 해파리, v64 주머니 자리 = 복어 · 그림자 자리 = 유령 오징어. 수중 구역 판에서만 쓴다(챕터 2 · 어려움 9 · 11) */
-const WATER_MON = ['bat_a', 'bat_b', 'eye_a', 'eye_b', 'sac_a', 'shade_a', 'shade_b'];
+/* v62 수중 구역 괴물 그림(오너: 수중 몬스터로): 박쥐 자리 = 빛 미끼 물고기, 눈알 자리 = 해파리, v64 주머니 자리 = 복어 · 그림자 자리 = 유령 오징어, v65 거머리 자리 = 곰치 · 무덤 자리 = 게. 수중 구역 판에서만 쓴다(챕터 2 · 어려움 9 · 11) */
+const WATER_MON = ['bat_a', 'bat_b', 'eye_a', 'eye_b', 'sac_a', 'shade_a', 'shade_b', 'leech_a', 'leech_b', 'mound_a', 'mound_b'];   // v65 거머리 자리 = 곰치, 무덤 자리 = 게
 for (const n of WATER_MON) { loadImg('m_water_' + n, `assets/mon/water/${n}.png`); loadImg('m_water_' + n + '_w', `assets/mon/water/${n}_w.png`); }
 const waterMon = (n, w) => { if (game.zone !== 'water' || game.room || !WATER_MON.includes(n)) return null; const v = IMG['m_water_' + n + (w ? '_w' : '')]; return v && ok(v) ? v : null; };
 const monImg = n => { const wv = waterMon(n); if (wv) return wv; const id = game.biome && game.biome.id, v = id && id !== 'b1' ? IMG[`m_${id}_${n}`] : null; return v && ok(v) ? v : IMG['m_' + n]; };
