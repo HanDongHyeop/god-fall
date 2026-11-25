@@ -264,11 +264,17 @@ const MINI = { power: .4, tempo: .55, hp: .55, minShots: 24,
   ] };
 
 /* ───── 판 구성(2026-11-06 v21) ─────
-   챕터 = 6판: 전투 → 전투 → 휴식 → 전투 → 전투 → 보스. 보스를 잡으면 챕터 클리어로 판이 끝난다(궁수의 전설 2처럼 챕터 단위).
+   v61 챕터 = 9판: 전투 → 전투 → 휴식 → 전투 → 전투 → 중간 보스 → 휴식 → 전투 → 보스. 보스를 잡으면 챕터 클리어로 판이 끝난다(궁수의 전설 2처럼 챕터 단위).
    예전에는 3판마다 보스였다(사용자: 보스가 너무 빨리 나온다). 휴식 판 = 행운의 룰렛·님프의 샘·황금 낙하(rest.js).
    챕터 12개: 1~6은 맵 6종, 7~12는 같은 맵의 '심층'(더 어둡고, 능력·강화 몬스터가 많고, 더 단단하다).
-   g.wave = 통산 판 번호(챕터 c의 s번째 판 = c*6 + s). 난이도는 판 번호가 아니라 난이도 단계 dlv로 잰다 */
-const STAGES = 6, STAGE_PLAN = ['fight', 'fight', 'rest', 'fight', 'fight', 'boss'];
+   g.wave = 통산 판 번호(챕터 c의 s번째 판 = c*STAGES + s). 난이도는 판 번호가 아니라 난이도 단계 dlv로 잰다 */
+const STAGES = 9, STAGE_PLAN = ['fight', 'fight', 'rest', 'fight', 'fight', 'mid', 'rest', 'fight', 'boss'];
+/* 챕터는 0부터, 같은 종류의 판 순서는 1부터. 시험·디버그도 이 표를 따른다. */
+function W(c, kind = 'fight', n = 1) {
+  const stages = STAGE_PLAN.map((k, i) => k === kind ? i + 1 : 0).filter(Boolean);
+  if (!Number.isInteger(c) || c < 0 || !stages[n - 1]) throw new RangeError('없는 챕터/판 종류');
+  return c * STAGES + stages[n - 1];
+}
 /* v41 구역 규칙(zones.js): 챕터마다 하나. 테마에 맞췄다 — 2 스틱스 강 = 수중, 4 코키토스(얼음) = 가시 림보, 6 에레보스(어둠) = 지하묘지. 1 · 3 · 5는 기본 규칙(쉬어 가는 챕터).
    심연(7~12챕터)은 기본 없이 세 규칙이 돌아간다. 보스 판 · 휴식 판에는 규칙이 없다 */
 const ZONE_PLAN = [null, 'water', null, 'spike', null, 'dark', 'spike', 'dark', 'water', 'dark', 'water', 'spike'];
@@ -317,7 +323,9 @@ const DIFF_STEP = { ch: 3.4, deep: .6 };
 const MOVE_L_CAP = 16;
 const FIRST_BOSS = { hp: .75, tempo: .85 };   // 챕터 1 보스만
 const SHADE = { sight: 300, leash: 360, maxSpd: 140 };   // 그림자: 알아채는 거리, 자기 자리에서 따라오는 한계, 최고 속도(주인공 235)
-const dlv = w => { const c = chapterOf(w), s = stageOf(w) - 1, k = c < 6 ? 1 : HARDM.lvK, base = c < 6 ? c * DIFF_STEP.ch : DIFF_STEP.ch * (HARDM.lvFrom + (c - 6) * k); return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };   // v46 어려움은 보통 6 뒤가 아니라 보통 4쯤에서 다시 시작한다
+/* 옛 6판 좌표로 환산: 첫 판=1, 마지막=6을 정확히 유지한다. */
+const wEq = w => chapterOf(w) * 6 + 1 + (stageOf(w) - 1) * 5 / (STAGES - 1);
+const dlv = w => { const c = chapterOf(w), s = wEq(w) - c * 6 - 1, k = c < 6 ? 1 : HARDM.lvK, base = c < 6 ? c * DIFF_STEP.ch : DIFF_STEP.ch * (HARDM.lvFrom + (c - 6) * k); return base + 1 + s * DIFF_STEP.ch / 7.5 * k; };   // v46 어려움은 보통 6 뒤가 아니라 보통 4쯤에서 다시 시작한다
 /* ───── 난이도 곡선: 단계 L이 오를수록 적과 보스가 강해진다. DIFF는 판 번호를 받아 단계로 바꿔 쓴다 ───── */
 const DIFF_L = {
   hp: L => (1 + .24 * (L - 1)) * Math.pow(1.045, L - 1),
@@ -325,7 +333,7 @@ const DIFF_L = {
   dmg: L => (L < 6 ? .6 + .08 * (L - 1) : 1) * (1 + .11 * (L - 1)),
   speed: L => 1 + Math.min(.6, .05 * (L - 1)),
   spacing: L => Math.max(70, 148 - L * 8 + Math.max(0, 6 - L) * 6 + Math.max(0, 3 - L) * 30),     // 적 사이 세로 간격(다운웰 수준으로 촘촘하게). v38: 챕터 1 앞쪽(단계 3 전)은 더 듬성듬성(괴물 수 약 -25%)
-  rows: L => Math.round(Math.min(225, 120 + L * 7.5)),   // v49 판 길이 1.5배(예전 min(150, 80 + 5L)): 챕터 하나가 너무 빨리 끝난다는 의견. 판 수(6)는 그대로                     // 한 판의 길이(칸 수, 정수여야 한다): 6판이 되면서 판 하나는 조금 짧게
+  rows: L => Math.round(Math.min(157.5, 126 + L * 1.25)),   // v61 9판 호흡 측정(호흡보고_2026-11-25)으로 정함: 챕터 1 약 5.5분 · 챕터 3 8분 아래가 되게 기울기를 눕혔다(칸 수는 정수). 수중 구역은 zones.js ZONE.water.rows 배수를 더 곱한다
   bossHp: L => 900 * DIFF_L.hp(L) * (L <= 3 ? .7 : L <= 6 ? .85 : 1),
   spike: L => L < 6 ? .08 + L * .05 : Math.min(.5, .18 + L * .04),
 };
@@ -334,7 +342,7 @@ for (const k in DIFF_L) DIFF[k] = w => DIFF_L[k](dlv(w));
 /* 판 보상은 '이번 판에 통과한 판·처치·보스'로만 계산한다. 시작 판 번호만으로는 아무것도 받지 못한다.
    깊은 판일수록 한 칸의 값이 크고, 높은 챕터일수록 스크롤이 많다(높은 챕터를 깨는 편이 이득). 값은 난이도 단계 L 기준 */
 const REWARD = {
-  waveGold: w => 16 + 3 * dlv(w), bossGold: w => 100 + 5 * dlv(w), killGold: 1.5,
+  waveGold: w => (16 + 3 * dlv(w)) * 6 / STAGES, bossGold: w => 100 + 5 * dlv(w), killGold: 1.5,
   scrollPerWave: 1, scrollPerBoss: 3, scrollChapter: .25, scrollMax: 16,
   // 2026-11-06 econ_v21 시뮬레이션: 판마다 장비가 최대 5개라 합성으로 에픽이 쏟아졌다 → 궁전2처럼 판당 1~2개, 보스 처치 시 +1
   gearEveryWaves: 3, gearMax: 3, gearEpicBoss: .03, gearRare: .15, gearRareBoss: .08, gearFine: .85,   // v36 나머지는 고급 85% · 일반 15%(econ_v21: 예전 진행 속도 유지)

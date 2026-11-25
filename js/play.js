@@ -30,6 +30,7 @@ const biomeOf = w => BIOMES[chapterOf(w) % BIOMES.length];
 const sectorOf = w => chapterOf(w) + 1;
 const isBossWave = w => STAGE_PLAN[stageOf(w) - 1] === 'boss';
 const isRestWave = w => STAGE_PLAN[stageOf(w) - 1] === 'rest';
+const isMidWave = w => STAGE_PLAN[stageOf(w) - 1] === 'mid';
 const vibrate = n => { try { if (navigator.vibrate) navigator.vibrate(n); } catch (e) {} };
 
 function runStats() {
@@ -115,15 +116,15 @@ function tickDescent(dt) {
   }
 }
 function buildWave() {
-  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), boss = isBossWave(w), rest = isRestWave(w), L = g.lv = dlv(w); g.lvM = Math.min(L, MOVE_L_CAP);
-  g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
+  const g = game, w = g.wave, R = g.rand = rng(g.seed + w * 7919), mid = isMidWave(w), boss = isBossWave(w) || mid, rest = isRestWave(w), L = g.lv = dlv(w); g.lvM = Math.min(L, MOVE_L_CAP);
+  g.biome = biomeOf(w); loadBiomeArt(g.biome); g.isBossWave = boss; g.isMidWave = mid; g.midStage = null; g.boss = null; g.minis = null; g.bossDone = false; g.rest = null; g.deep = chapterOf(w) >= BIOMES.length;
   g.zone = boss || rest || g.mode ? null : window.__zone !== undefined ? window.__zone : ZONE_PLAN[chapterOf(w) % ZONE_PLAN.length];   // v41 구역 규칙(zones.js). 시험에서는 window.__zone으로 고정한다(null = 규칙 없음)
   const restKind = rest ? pickRestKind(R) : null;
   const sh = g.introRows || 0;   // 시작 낙하 수직굴 높이(칸)
   g.enemies = []; g.jars = []; g.shards = []; g.bullets = []; g.fx = []; g.popups = []; g.decor = []; g.doors = []; g.ebul = []; g.decals = []; g.haz = []; g.later = []; g.cfx = []; g.dark = 0; g.darkT = 0;
   // 맨 아래 바닥은 조작 버튼에 가리지 않게 화면 위쪽으로 올린다(아래 pad칸은 땅)
   // 휴식 판은 짧다(황금 낙하만 길다). 바닥은 휴식 물건이 화면 안에 보이도록 보스방처럼 넓게 비운다
-  const pad = 3, arenaRows = boss || rest ? Math.ceil(view.worldH / TILE) - pad : 0, rows = (rest ? (restKind === 'gold' ? 64 : 26) : DIFF.rows(w)) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
+  const pad = 3, arenaRows = boss || rest ? Math.ceil(view.worldH / TILE) - pad : 0, rows = (mid ? 12 : rest ? (restKind === 'gold' ? 64 : 26) : Math.round(DIFF.rows(w) * (g.zone === 'water' ? ZONE.water.rows : 1))) + arenaRows + pad + sh, F = rows - 1 - pad; g.floorRow = F;
   lvl.rows = rows; lvl.grid = new Uint8Array(rows * COLS); lvl.hp = new Float32Array(rows * COLS);
   g.levelH = (rows - 1) * TILE;
   const tileHp = Math.round(20 * DIFF.hp(w));
@@ -242,6 +243,7 @@ function buildWave() {
     if (lvl.at(c, rr) !== BREAK || lvl.at(c, rr - 1) !== EMPTY) continue;
     putWalker(c, rr);
   }
+  if (mid) { g.xpNeed = 0; g.enemies = []; g.doors = []; g.jars = []; }
   decorateWave(R);   // 챕터별 능력·강화 개체(monskill.js)
   zoneBuild(R, F, lastRow, sh);   // v41 구역 물건(횃불 · 봉인 바닥 · 조개)
   g.hearts = [];
@@ -252,7 +254,7 @@ function buildWave() {
   g.cam = 0; g.dust = [];
   for (let i = 0; i < 28; i++) g.dust.push({ x: R() * WORLD_W, y: R() * view.worldH, z: .35 + R() * .6, r: .8 + R() * 1.6 });
   const ci = chapterInfo(chapterOf(w)), st = stageOf(w);
-  g.banner = { t: 0, life: 1.9, hard: g.deep, a: g.deep ? `어려움 ${ci.no} · ${ci.B.name}` : `챕터 ${chapterOf(w) + 1} · ${ci.name}`, b: boss ? `${st} / ${STAGES} · 보스` : rest ? `${st} / ${STAGES} · 휴식 · ${REST_TITLE[restKind]}` : `${st} / ${STAGES} 판` };
+  g.banner = { t: 0, life: 1.9, hard: g.deep, a: g.deep ? `어려움 ${ci.no} · ${ci.B.name}` : `챕터 ${chapterOf(w) + 1} · ${ci.name}`, b: mid ? `${st} / ${STAGES} · 중간 보스` : boss ? `${st} / ${STAGES} · 보스` : rest ? `${st} / ${STAGES} · 휴식 · ${REST_TITLE[restKind]}` : `${st} / ${STAGES} 판` };
   waveBgm();
   g.traps = new Map();   // v46 가시 함정 턱 상태(zones.js)
   if (g.deep && w === g.startWave && !g.mode) { g.hardWarnAt = performance.now(); sfx.alarm && sfx.alarm(); }   // v46 어려움 판 시작 경고
@@ -640,7 +642,8 @@ function tick(dt) {
   const edt = has('kronos') ? dt * .6 : dt;
   if (g.room) { roomTick(g.room.kind === 'mini' ? edt : dt); if (!g.room || g.state === 'dying') return; }
   // 보스
-  if (g.isBossWave && !g.boss && !g.bossDone && !g.room && g.state === 'play' && p.y > (g.arenaTop + 1) * TILE) startBossIntro();
+  if (g.isBossWave && !g.boss && !g.bossDone && !g.room && g.state === 'play' && p.y > (g.arenaTop + 1) * TILE) { if (g.isMidWave) startMidStage(); else startBossIntro(); }
+  if (g.midStage && g.minis) midStageTick(edt);
   if (g.boss && !g.minis) bossTick(edt);
   else if (g.dark) { g.dark = Math.max(0, g.dark - dt * 2); g.darkT = 0; }
   if (g.state === 'descend') tickDescent(dt); else updateEnemies(edt, jumpHeld);
@@ -858,7 +861,8 @@ function waveClear() {
   const g = game, p = g.p;
   if (has('interest')) { const n = Math.round(p.shards * .25); p.shards += n; popup(p.x, p.y - 30, `이자 +${n}`, '#ffe27a', true); }
   // 휴식 판은 카드 없이 다음 판으로, 보스 판은 챕터 클리어로 판이 끝난다
-  if (isRestWave(g.wave)) { nextWave(); return; }
+  if (isMidWave(g.wave) && !g.bossDone) return;
+  if (isRestWave(g.wave) || isMidWave(g.wave)) { nextWave(); return; }
   if (isBossWave(g.wave)) { chapterClear(); return; }
   sfx.reward(); nextWave();   // v40 카드는 판 끝이 아니라 싸우는 중간의 레벨업에서 고른다
 }

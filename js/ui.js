@@ -132,7 +132,7 @@ const UI = {
     const dtab = `<div class="dtab"><button class="dt oL ${hard ? '' : 'on'}" data-h="0">보통</button><button class="dt hd oL ${hard ? 'on' : ''} ${hardOn ? '' : 'lock'}" data-h="1">${hardOn ? '' : `<img src="${uiIcon('ico_lock')}" alt="">`}어려움${hardNew && !hard ? '<i class="dot"></i>' : ''}</button></div>`;
     const hardInfo = hard ? `<div class="ch-hard oL"><span><b>규칙</b> 분노한 괴물 · 가시 함정 턱 · 하트 절반</span><span><b>보상</b> 골드 · 두루마리 · 보석 3배 + <img src="${uiIcon('cur_abyss')}" alt="">${ABYSS.name}</span></div>` : '';
     el.className = 'screen on battle';
-    // 판 6칸 미리보기: 전투 ● · 휴식 잎 · 보스 해골. 넘은 판은 금색
+    // 판 9칸 미리보기: 전투 ● · 휴식 잎 · 중간 보스 ◆ · 보스. 넘은 판은 금색
     const rec = typeof REC_POWER !== 'undefined' ? REC_POWER[v] : 0;   // v38 권장 전투력(성장 시뮬레이션에서 뽑은 값)
     const pips = STAGE_PLAN.map((k, i) => `<i class="sp ${k} ${i < best ? 'done' : ''}"></i>`).join('');
     // v45 섬 슬라이드: 같은 난이도의 섬 6개를 옆으로 늘어놓는다(가운데 = 보는 챕터, 좌우 2개까지만 보인다). 손가락으로 끌거나 화살표로 넘긴다
@@ -141,7 +141,7 @@ const UI = {
     const tgt = BIOMES.findIndex((B, i) => !s.cleared[base + i]), jump = tgt >= 0 && tgt !== n ? `<button class="jump ${tgt > n ? 'r' : 'l'}" data-jump="${tgt}"><small>깰 차례</small><b>${tgt > n ? '' : '‹‹ '}${tgt + 1}${tgt > n ? ' ››' : ''}</b></button>` : '';
     setHTML(el, `${dtab}<div class="ch-title oL"><span class="ch-no ${hard ? 'hd' : ''}">${CI.no}</span>${CI.B.name}</div><div class="ch-sub oL">${CI.sub}</div><div class="ch-best oL">${s.cleared[v] ? '클리어' : `최고 기록: ${best} / ${STAGES}판`}</div><div class="ch-pips">${pips}</div>${rec ? `<div class="ch-rec ${Meta.power() >= rec ? 'ok' : 'low'} oL"><img src="${uiIcon('cur_power')}" alt="">권장 전투력 <b>${fmt(rec)}</b></div>` : ''}
       <div class="isle-wrap"><div class="isles">${isles}</div><button class="arrow l oL" data-d="-1" ${n === 0 ? 'disabled' : ''}>‹</button><button class="arrow r oL" data-d="1" ${n === N - 1 ? 'disabled' : ''}>›</button>${jump}${open ? '' : `<div class="lockmsg oL">${Meta.chapterLockMsg(v)}</div>`}${hardInfo}</div>
-      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 4판 · 휴식 1판 · 마지막 판에 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
+      <div class="startbar"><button class="btn gold start" id="bStart" ${open ? '' : 'disabled'}><span>시작</span><small><img src="${uiIcon('cur_energy')}" alt="">×5</small></button><div class="bsub">전투 ${STAGE_PLAN.filter(k => k === 'fight').length}판 · 휴식 ${STAGE_PLAN.filter(k => k === 'rest').length}판 · 중간 보스 · 최종 보스</div><button class="btn blue modesbtn ${modeOpen('seal') || modeOpen('eel') ? '' : 'lock'}" id="bModes">도전${modeOpen('seal') && (modeLeft('seal') + (modeOpen('eel') ? modeLeft('eel') : 0)) > 0 ? '<i class="dot"></i>' : ''}</button></div>`);
     el.onclick = e => {
       const a = e.target.closest('.arrow'); if (a && !a.disabled) { sfx.tap(); this.slideTo(base + clamp(n + +a.dataset.d, 0, N - 1), 260); return; }
       const jp = e.target.closest('.jump'); if (jp) { sfx.tap(); this.slideTo(base + +jp.dataset.jump, 420); return; }
@@ -611,5 +611,5 @@ layout = function () { _layout0(); stage.style.setProperty('--u', (view.W / 100)
 layout();
 requestAnimationFrame(frame);
 UI.boot();
-window.GF = { game, input, ui, view, PPT, CARDS, startRun, T, lvl, TILE, COLS, step, sfx, IMG, heroFrame, Meta, UI, DIFF, ENEMY, buildWave, mkEnemy, nextWave, revive, finishRun, openCards, startBossIntro, enterRoom, exitRoom, killEnemy, hurt, applyCard, CARD_BY, famLv, cardPool, interactNear, ORB, SEEK };
+window.GF = { W, game, input, ui, view, PPT, CARDS, startRun, T, lvl, TILE, COLS, step, sfx, IMG, heroFrame, Meta, UI, DIFF, ENEMY, buildWave, mkEnemy, nextWave, revive, finishRun, openCards, startBossIntro, enterRoom, exitRoom, killEnemy, hurt, applyCard, CARD_BY, famLv, cardPool, interactNear, ORB, SEEK };
 if (/[?&]debug=1/.test(location.search)) { $('optZone').checked = true; $('optHit').checked = true; }

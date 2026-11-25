@@ -12,7 +12,7 @@ const ZONE_INFO = {
 };
 const ZONE = {
   dark: { sight: 118, torch: 170, every: [15, 19], gate: 2 },                                  // 시야 반지름 · 켠 횃불이 밝히는 반지름 · 봉인 바닥 간격(칸) · 열리는 틈(칸)
-  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13 },   // 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%
+  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5 },   // 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
   spike: { spacing: .55, net: [16, 20], gap: 3, wallDmg: 18 },                                  // 떠다니는 괴물 간격 배수 · 가시 바닥 간격(칸) · 틈(칸) · 벽 가시 피해(챕터 배수 전)
 };
 for (const [k, f] of [['z_torch', 'torch'], ['z_clam', 'clam_shut'], ['z_clam_open', 'clam_open']]) loadImg(k, `assets/map/zone/${f}.webp`);

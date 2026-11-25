@@ -182,13 +182,38 @@ function miniRoam(b, dt, k) {
   }
 }
 /* 중간 보스: 문이 함정이었다. 그 챕터 보스의 작은 판이 땅에서 올라오고, 잡기 전에는 나갈 수 없다 */
-function startMini(room) {
+function makeMiniGroup(room) {
   const g = game, p = g.p, base = BOSSES[g.biome.boss], cfg = MINI.byBoss[g.biome.boss % MINI.byBoss.length];
-  room.locked = true; room.exit.used = true;
   const def = { ...base, name: '작은 ' + base.name, weights: cfg.weights, w0: base.w }, total = Math.max(DIFF.bossHp(g.wave) * base.hpMul * MINI.hp, p.atk * MINI.minShots), floorY = room.floorY;
   const w = base.w * cfg.scale, h = base.h * cfg.scale, spots = (cfg.n === 1 ? [200] : cfg.n === 2 ? [170, 250] : [140, 200, 260]).map(x => x + (WORLD_W - 360) / 2 - 20);
   g.minis = spots.map((x0, i) => ({ def, idx: g.biome.boss, mini: true, slot: i - (cfg.n - 1) / 2, alive: true, x: room.side ? WORLD_W - x0 : x0, y: floorY + h + 20, w, h, floorY, hp: total / cfg.n, maxHp: total / cfg.n, state: 'idle', t: 0, flash: 0, pop: 0, open: 0, barK: 0, cool: 1.2, phase: 1, vy: 0, vx: 0, sx: 1, sy: 1, dir: 1, step: 0, hitC: 0 }));
-  g.boss = g.minis[0]; g.state = 'intro'; room.introT = 0; input.clearAll();
+  g.boss = g.minis[0];
+}
+function startMini(room) {
+  room.locked = true; room.exit.used = true; makeMiniGroup(room);
+  const g = game; g.state = 'intro'; room.introT = 0; input.clearAll();
+}
+/* 6번째 판: 샛길과 같은 무리를 독립된 닫힌 싸움터에 소환한다.
+   함정 방의 카드/회복 보너스와 출구 복원은 쓰지 않고, 전멸해야 다음 판 포탈이 열린다. */
+function startMidStage() {
+  const g = game; g.midStage = { floorY: g.floorRow * TILE, side: 0, t: 0 };
+  makeMiniGroup(g.midStage); g.state = 'intro'; g.camLock = true;
+  g.bossCam = Math.max(0, g.levelH + TILE - view.worldH); g.portal = null;
+  g.enemies = []; g.ebul = []; g.bullets = []; input.clearAll(); g.p.inv = 2;
+  sfx.roar(); sfx.bgmFor && sfx.bgmFor('boss');
+  g.banner = { t: 0, life: 2, a: '중간 보스', b: g.boss.def.name };
+}
+function midStageTick(dt) {
+  const g = game, r = g.midStage; if (!r || !g.minis) return;
+  if (g.state === 'intro') {
+    r.t += has('kronos') ? dt / .6 : dt;
+    const k = clamp(r.t / 1.2, 0, 1), rise = 1 - Math.pow(1 - k, 3);
+    for (const m of g.minis) { m.y = r.floorY + (m.h + 20) * (1 - rise); m.barK = k; }
+    if (r.t >= 1.6) miniFight();
+    return;
+  }
+  for (const m of g.minis) { if (!m.alive) continue; g.boss = m; bossTick(dt); if (!g.minis || g.state === 'dying') return; }
+  g.boss = g.minis.find(m => m.alive) || g.boss;
 }
 const MINI_CARD_T = MINI_T.reveal + 1.95;   // 문을 연 뒤 카드 창이 뜰 때까지(경고 .9 → 전환 2.0 → 등장 끝 2.7 → 보여 주기)
 function miniTick(dt, r) {
@@ -257,6 +282,10 @@ function miniWin() {
   const g = game, r = g.room, p = g.p; g.whiteout = .6; g.shake = 18; sfx.bigBoom(); sfx.reward(); vibrate(80);
   g.boss = null; g.minis = null; g.ebul = []; g.fx = g.fx.filter(f => !f.wave); for (const e of g.enemies) if (e.alive) killEnemy(e, false);
   // 섬광이 걷힌 뒤 회복한다. 회복 전에는 문이 잠겨 있어 놓칠 일이 없다
+  if (g.midStage) {
+    g.bossDone = true; g.portal = { x: WORLD_W / 2, y: g.floorRow * TILE - 34, r: 34, k: 1 };
+    g.state = 'play'; g.midStage = null; p.inv = 1.5; waveBgm(); return;
+  }
   r.winT = .35; p.inv = 1.5; r.title = ['함정을 부쉈다!', '체력이 모두 회복되었습니다'];
   waveBgm();
 }

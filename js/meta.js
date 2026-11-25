@@ -10,7 +10,7 @@ const Meta = {
     add('weapon_a', 1); add('armor_a', 1); add('boots_a', 1); add('amulet_a', 1); add('ring_a', 1); add('helm_a', 1);
     add('armor_a', 1); add('armor_a', 1); add('ring_b', 1);
     return {
-      v: 1, gradeV: 2, name: '올림포스 생존자', gold: REWARD.startGold, gem: REWARD.startGem, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
+      v: 1, gradeV: 2, bestV: 3, name: '올림포스 생존자', gold: REWARD.startGold, gem: REWARD.startGem, energy: 30, energyAt: Date.now(), lastDay: '', inv, nextUid: 100,
       equip: { weapon: 'u1', amulet: null, ring: null, helm: null, armor: null, boots: null },
       // 무기는 신마다 따로다. equip.weapon과 slotLv.weapon은 지금 출전한 신의 값이다
       weapons: { hermes: 'u1' }, weaponLv: { hermes: 1 },
@@ -24,7 +24,7 @@ const Meta = {
     };
   },
   load() {
-    try { const t = localStorage.getItem(SAVE_KEY); if (t) { const o = JSON.parse(t); if (o && o.v === 1) { const old = !o.weapons, oldG = o.gradeV !== 2; this.s = Object.assign(this.fresh(), o); this.migrate(old, oldG); this.tick(); return; } } } catch (e) {}
+    try { const t = localStorage.getItem(SAVE_KEY); if (t) { const o = JSON.parse(t); if (o && o.v === 1) { const old = !o.weapons, oldG = o.gradeV !== 2; this.s = Object.assign(this.fresh(), o, { bestV: o.bestV || 0 }); this.migrate(old, oldG); this.tick(); return; } } } catch (e) {}
     this.s = this.fresh(); this.isNew = true;   // v38 저장이 없던 새 계정(첫 플레이 흐름을 켤지 ui.js가 정한다)
   },
   /* 예전 저장(별 0~8)을 레벨 1~4로 옮긴다. 참고 영상의 2·5·8성 = 능력 Lv.2·3·4 */
@@ -38,9 +38,9 @@ const Meta = {
       for (const it of s.inv) if (GEAR[it.d].slot === 'weapon') it.god = it.uid === s.equip.weapon ? s.god : 'hermes';
       for (const g of GODS) if (s.gods[g.id] && s.gods[g.id].own) this.grantWeapon(g.id);
     }
-    // 챕터가 6 → 12개로 늘었다. best는 예전엔 통산 웨이브, 지금은 그 챕터에서 넘은 판 수(0~6)
-    for (let i = 0; i < CHAPTERS; i++) { s.cleared[i] = !!s.cleared[i]; s.best[i] = s.cleared[i] ? STAGES : s.bestV === 2 ? Math.min(STAGES, s.best[i] || 0) : 0; }
-    s.bestV = 2;
+    // v61 bestV 2(0~6판)를 bestV 3(0~9판)로 한 번만 올림 변환한다. 버전 없는 통산 기록은 초기화.
+    for (let i = 0; i < CHAPTERS; i++) { s.cleared[i] = !!s.cleared[i]; s.best[i] = s.cleared[i] ? STAGES : s.bestV === 3 ? Math.min(STAGES, Math.max(0, s.best[i] || 0)) : s.bestV === 2 ? Math.min(STAGES, Math.ceil(Math.max(0, s.best[i] || 0) * STAGES / 6)) : 0; }
+    s.bestV = 3;
     s.chest.god = s.chest.god || { freeAt: 0, pity: 0 };
     for (const g of Object.values(s.gods)) if (g.level === undefined) { const a = g.star || 0; g.level = 1 + (a >= 2) + (a >= 5) + (a >= 8); delete g.star; }
     for (const k of Object.keys(s.slotLv)) s.slotLv[k] = Math.min(LV_MAX, s.slotLv[k]);
@@ -319,16 +319,16 @@ const Meta = {
   /* 판 결과 반영. r = {wave, kills, bosses, combo, chapter} */
   /* 정산 없이 보상 크기만 계산한다. 무작위 없음. startWave가 없으면 그 챕터의 첫 웨이브로 본다 */
   runReward(r) {
-    const c = r.chapter || 0, start = r.startWave !== undefined ? r.startWave : 1 + c * STAGES, cleared = Math.max(0, r.wave - start), R_ = REWARD;
+    const c = r.chapter || 0, start = r.startWave !== undefined ? r.startWave : 1 + c * STAGES, cleared = Math.max(0, r.wave - start), progress = cleared * 6 / STAGES, R_ = REWARD;
     // v46 어려움 보상 = 같은 섬 보통(골드는 줄이기 전 값)의 HARDM 배수. 그래서 판 번호를 보통 섬의 것으로 바꿔 계산한다
     const hard = isHard(c), n = c % BIOMES.length, back = hard ? BIOMES.length * STAGES : 0, mul = hard ? HARDM.gold : R_.normalGold;
     let gold = r.kills * R_.killGold, left = r.bosses;
     for (let w = start; w < r.wave; w++) gold += R_.waveGold(w - back);
     for (let w = start; left > 0; w++) if (isBossWave(w)) { gold += R_.bossGold(w - back); left--; }
     gold *= mul;
-    const nScroll = Math.min(R_.scrollMax * (hard ? HARDM.scroll : 1), Math.round((cleared * R_.scrollPerWave + r.bosses * R_.scrollPerBoss) * (1 + R_.scrollChapter * n) * (hard ? HARDM.scroll : 1)));
-    const nGear = Math.min(R_.gearMax, Math.floor(cleared / R_.gearEveryWaves) + r.bosses);
-    const abyss = hard ? Math.floor(cleared * ABYSS.wave) + r.bosses * (ABYSS.boss + n) : 0;   // 심연석: 어려움에서만
+    const nScroll = Math.min(R_.scrollMax * (hard ? HARDM.scroll : 1), Math.round((progress * R_.scrollPerWave + r.bosses * R_.scrollPerBoss) * (1 + R_.scrollChapter * n) * (hard ? HARDM.scroll : 1)));
+    const nGear = Math.min(R_.gearMax, Math.floor(progress / R_.gearEveryWaves) + r.bosses);
+    const abyss = hard ? Math.floor(progress * ABYSS.wave) + r.bosses * (ABYSS.boss + n) : 0;   // 심연석: 어려움에서만
     return { cleared, gold, nScroll, nGear, gem: r.bosses * R_.gemPerBoss * (hard ? HARDM.gem : 1), abyss };
   },
   settle(r) {
