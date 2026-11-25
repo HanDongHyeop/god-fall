@@ -12,7 +12,7 @@ const ZONE_INFO = {
 };
 const ZONE = {
   dark: { sight: 118, torch: 170, every: [15, 19], gate: 2 },                                  // 시야 반지름 · 켠 횃불이 밝히는 반지름 · 봉인 바닥 간격(칸) · 열리는 틈(칸)
-  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5, accel: .3, drag: 3, walk: .45, fish: [2.2, 3.4], cruise: 120, jelly: 16, shade: 1.3 },   // v62 walk = 바닥 괴물 배수(물속엔 헤엄치는 괴물이 주인), fish = 물고기(박쥐 자리) 돌진 간격 초, cruise = 헤엄 속도, jelly = 해파리(눈알 자리) 둥실 폭, shade = 그림자 속도 배수(물 저항을 안 받는다). accel = 좌우 가속 배수(물의 관성: 천천히 붙고 멈출 때 미끄러진다), drag = 솟아오를 때 물 저항(초당 감쇠). 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
+  water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5, accel: .3, drag: 3, walk: .45, fish: [2.2, 3.4], cruise: 120, jelly: 16, shade: 1.15 },   // v62 walk = 바닥 괴물 배수(물속엔 헤엄치는 괴물이 주인), fish = 물고기(박쥐 자리) 돌진 간격 초, cruise = 헤엄 속도, jelly = 해파리(눈알 자리) 둥실 폭, shade = 그림자 속도 배수(물 저항을 안 받는다). accel = 좌우 가속 배수(물의 관성: 천천히 붙고 멈출 때 미끄러진다), drag = 솟아오를 때 물 저항(초당 감쇠). 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
   spike: { spacing: .55, net: [16, 20], gap: 3, wallDmg: 18 },                                  // 떠다니는 괴물 간격 배수 · 가시 바닥 간격(칸) · 틈(칸) · 벽 가시 피해(챕터 배수 전)
 };
 for (const [k, f] of [['z_torch', 'torch'], ['z_clam', 'clam_shut'], ['z_clam_open', 'clam_open']]) loadImg(k, `assets/map/zone/${f}.webp`);

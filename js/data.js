@@ -210,6 +210,11 @@ const MON_SKILL = {
   b5: { spit: 'lob', mound: 'split', sac: 'ring', leech: 'drip', eye: 'shot', bat: 'dash' },
   b6: { shade: 'blink', eye: 'laser', urchin: 'spike', bat: 'dash', spit: 'fan', mound: 'burn' },
 };
+/* v63(2026-11-26 밤) 챕터 1 → 2 난이도 계단(호흡보고: 챕터 2 첫 판 받는 피해가 분당 약 490 = 챕터 1 끝의 6배, 원인 1위 그림자).
+   shade2 = 챕터 2에서 그림자 비율 배수(판 1 · 2 / 4 · 5 / 그 뒤), shadeTaste = 챕터 1 마지막 전투 판에 미리 섞는 그림자 무게, wi2 = 챕터 2 판별 능력 · 강화 단계(원래 [0,1,1,2,2,...]), skill2 = 챕터 2 첫 두 판 능력 개체 비율 배수 */
+const CLIFF = { shade2: [.3, .6, 1], shadeTaste: 1, wi2: [0, 0, 0, 1, 1, 1, 1, 2, 2], skill2: .6, dmg: [.65, .8] };   // dmg = 보통 챕터 2~6에서 판 1 · 2 / 4 · 5의 괴물 피해 배수(그 뒤 1)
+const cliffDmg = w => { const c = chapterOf(w), s = stageOf(w); return c < 1 || c > 5 ? 1 : s <= 2 ? CLIFF.dmg[0] : s <= 5 ? CLIFF.dmg[1] : 1; };
+const shadeRamp = w => chapterOf(w) !== 1 ? 1 : stageOf(w) <= 2 ? CLIFF.shade2[0] : stageOf(w) <= 5 ? CLIFF.shade2[1] : CLIFF.shade2[2];
 const MON_SKILL_RATE = [.3, .6, .9];          // 챕터 안 웨이브 1·2·3에서 능력을 가진 개체 비율. 챕터 1은 기본 행동만 익히는 챕터라 능력이 없다(MON_SKILL.b1은 심층 챕터 7에서 쓴다)
 const ELITE = { rate: [0, .08, .16], hp: 2.4, size: 1.3, gem: 3 };
 /* 재사용 대기(초)와 강화 개체일 때 바뀌는 값 */
@@ -339,6 +344,7 @@ const DIFF_L = {
 };
 const DIFF = {};
 for (const k in DIFF_L) DIFF[k] = w => DIFF_L[k](dlv(w));
+{ const d0 = DIFF.dmg; DIFF.dmg = w => d0(w) * cliffDmg(w); }   // v63 챕터 안 계단: 보통 챕터 2~6의 앞쪽 판은 괴물 피해를 낮췄다가 6판(중간 보스)부터 원래대로
 /* 판 보상은 '이번 판에 통과한 판·처치·보스'로만 계산한다. 시작 판 번호만으로는 아무것도 받지 못한다.
    깊은 판일수록 한 칸의 값이 크고, 높은 챕터일수록 스크롤이 많다(높은 챕터를 깨는 편이 이득). 값은 난이도 단계 L 기준 */
 const REWARD = {

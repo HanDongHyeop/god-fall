@@ -90,8 +90,10 @@ function pickKind(R, w) {
     if ((k === 'tick' || k === 'leech') && w < 2 && game.chapter === 0) continue;
     if ((k === 'spit' || k === 'shade') && w < 3 && game.chapter === 0) continue;
     if (k === 'tick' || k === 'spit' || k === 'mound') continue;   // 땅 위 괴물은 발판에 따로 놓는다
-    for (let i = 0; i < tbl[k]; i++) pool.push(k);
+    const n = k === 'shade' ? Math.round(tbl[k] * shadeRamp(w)) : tbl[k];   // v63 그림자는 계단처럼(챕터 1 → 2 난이도 절벽의 첫째 원인)
+    for (let i = 0; i < n; i++) pool.push(k);
   }
+  if (CLIFF.shadeTaste && chapterOf(w) === 0 && stageOf(w) === STAGE_PLAN.lastIndexOf('fight') + 1) for (let i = 0; i < CLIFF.shadeTaste; i++) pool.push('shade');   // v63 챕터 1 마지막 전투 판에서 그림자를 미리 맛본다
   return pool[Math.floor(R() * pool.length)];
 }
 /* 시작 낙하: 모든 맵 공통. 빈 수직굴을 조작 없이 떨어져 발판에 안착한 뒤에야 판이 시작된다.

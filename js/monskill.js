@@ -5,8 +5,9 @@
 /* 웨이브를 만든 뒤: 이 챕터에서 능력을 갖는 종에게 능력을 붙이고, 일부는 강화 개체로 만든다 */
 function decorateWave(R) {
   // 챕터 안 판 1·2 → 웨이브 1·2 값, 판 4·5 → 웨이브 3 값. 심층(챕터 7~12)은 능력 개체가 더 많고 강화 개체가 1.8배
-  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = [0, 1, 1, 2, 2, 2, 2, 2, 2][stageOf(g.wave) - 1], easy = chapterOf(g.wave) === 0 ? 0 : 1;
-  const rate = Math.min(.95, MON_SKILL_RATE[wi] * easy * (g.deep ? 1.25 : 1)), er = ELITE.rate[wi] * easy * (g.deep ? 1.8 : 1);
+  const g = game, tbl = MON_SKILL[g.biome.id] || {}, wi = (chapterOf(g.wave) === 1 ? CLIFF.wi2 : [0, 1, 1, 2, 2, 2, 2, 2, 2])[stageOf(g.wave) - 1],   // v63 챕터 2는 능력 · 강화 개체를 한 칸씩 늦게(절벽 → 계단)
+    easy = chapterOf(g.wave) === 0 ? 0 : 1;
+  const rate = Math.min(.95, MON_SKILL_RATE[wi] * easy * (chapterOf(g.wave) === 1 && stageOf(g.wave) <= 2 ? CLIFF.skill2 : 1) * (g.deep ? 1.25 : 1)), er = ELITE.rate[wi] * easy * (g.deep ? 1.8 : 1);
   for (const e of g.enemies) {
     if (g.deep && !e.still && R() < HARDM.rage) { e.rage = true; e.dmg = Math.round(e.dmg * HARDM.rageDmg); if (e.spd) e.spd *= HARDM.rageSpd; }   // v46 어려움: 분노 개체(붉은 불길, 더 빠르고 아프다)
     const sk = tbl[e.kind]; if (!sk || e.still) continue;   // 가시 장벽(멈춘 성게)은 그대로 둔다
