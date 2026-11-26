@@ -350,6 +350,7 @@ function drawHero() {
       ctx.fillStyle = on ? '#bff3ff' : fl ? '#ff5068' : 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.arc(x, y0, r, 0, 7); ctx.fill();
     }
   }
+  if (g.zone === 'water' && !g.room) drawBreathGauge();
   drawPets();   // v39 동료 신수(올빼미 포함, pets.js)
   drawAuraFront();   // v33 신성 폭주 아우라(몸 앞 불씨·테두리). 예전의 금빛 원 하나는 없앴다
 }
@@ -443,7 +444,6 @@ function drawHUD() {
     const xg = ctx.createLinearGradient(left, 0, left + bw, 0); xg.addColorStop(0, TH.xp1); xg.addColorStop(1, TH.xp2); ctx.fillStyle = max ? TH.gold : xg; rr(left + 1 * s, xy + 1 * s, Math.max(0, (bw - 2 * s) * g.hudXp), xh - 2 * s, 1.4 * s); ctx.fill();
     ctx.font = `${11 * s}px ${FONT}`; ctx.textAlign = 'left'; textOut('선물', left + bw + 4 * s, xy + xh / 2, max ? TH.gold : TH.xpTx, 2.4); ctx.textAlign = 'center';
   }
-  drawZoneHud(left, top + bh + 10.5 * s, bw);   // v41 수중: 산소 막대
   drawModeHud();   // v42 도전 모드: 남은 시간 · 장어 체력
   // 판 표시: 챕터 안의 9칸(전투·휴식·중간 보스·보스). 휴식 칸은 초록 잎, 마지막은 보스 해골
   const pip = hudPipLayout(W, s), wv = stageOf(g.wave) - 1, pipX = pip.x, pipY = top + 8 * s, gap = pip.gap, pr = pip.r;

@@ -35,7 +35,7 @@ function startMode(id) {
 /* 판을 지은 뒤(beginWave) 모드에 맞게 고친다 */
 function modeBuild() {
   const g = game, p = g.p;
-  g.enemies = []; g.jars = []; g.doors = []; g.hearts = []; g.xpNeed = 0; g.zone = null; g.torches = []; g.clams = []; g.banner = null;   // 챕터 · 판 알림 띠는 띄우지 않는다
+  g.enemies = []; g.jars = []; g.doors = []; g.hearts = []; g.xpNeed = 0; g.zone = null; g.torches = []; g.banner = null;   // 챕터 · 판 알림 띠는 띄우지 않는다
   if (g.mode === 'seal') {
     g.seal = { t: MODES.seal.time, dmg: 0, on: false, cards: 0, first: false, max: 0 };
     p.x = WORLD_W / 2; p.y = (g.arenaTop + 1) * TILE + 20; p.vy = 0;   // 바로 보스방으로

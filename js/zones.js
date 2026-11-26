@@ -7,7 +7,7 @@
 const ZONE_NAME = { dark: '지하묘지', water: '수중', spike: '가시 림보' };
 const ZONE_INFO = {
   dark: { title: '지하묘지', rule: '횃불을 밟아 길을 여세요', col: '#ffb45a' },
-  water: { title: '수중', rule: '조개를 밟아 숨을 채우세요', col: '#7fe0ff' },
+  water: { title: '수중', rule: '신성 폭주로 숨을 되찾으세요', col: '#7fe0ff' },
   spike: { title: '가시 림보', rule: '괴물을 밟으며 내려가세요', col: '#ff6c8a' },
 };
 const ZONE = {
@@ -15,13 +15,13 @@ const ZONE = {
   water: { grav: .6, maxFall: .6, run: .86, o2: 100, drain: 4.5, clam: 40, hurt: .06, every: 1, gap: 13, rows: .5, accel: .3, drag: 3, walk: .45, fish: [2.2, 3.4], cruise: 120, jelly: 16, shade: 1.15 },   // v62 walk = 바닥 괴물 배수(물속엔 헤엄치는 괴물이 주인), fish = 물고기(박쥐 자리) 돌진 간격 초, cruise = 헤엄 속도, jelly = 해파리(눈알 자리) 둥실 폭, shade = 그림자 속도 배수(물 저항을 안 받는다). accel = 좌우 가속 배수(물의 관성: 천천히 붙고 멈출 때 미끄러진다), drag = 솟아오를 때 물 저항(초당 감쇠). 산소 100이 약 22초. 0이면 1초마다 최대 체력의 6%. v61 rows = 판 길이 배수(천천히 떨어지고 조개를 찾느라 같은 길이에서 전투 판이 약 3배 걸려서)
   spike: { spacing: .55, net: [16, 20], gap: 3, wallDmg: 18 },                                  // 떠다니는 괴물 간격 배수 · 가시 바닥 간격(칸) · 틈(칸) · 벽 가시 피해(챕터 배수 전)
 };
-for (const [k, f] of [['z_torch', 'torch'], ['z_clam', 'clam_shut'], ['z_clam_open', 'clam_open']]) loadImg(k, `assets/map/zone/${f}.webp`);
+loadImg('z_torch', 'assets/map/zone/torch.webp');
 const zoneOn = k => game.zone === k;
 const zoneSight = () => ZONE.dark.sight * (has('z_lamp') ? 1.4 : 1);
 const o2Max = () => ZONE.water.o2 + (has('z_lung') ? 40 : 0);
 /* 판을 다 지은 뒤(buildWave 끝) 구역 물건을 놓는다. R = 판의 난수 */
 function zoneBuild(R, F, lastRow, sh) {
-  const g = game; g.torches = []; g.clams = []; g.o2 = o2Max(); g.o2T = 0; g.zoneT = 0;
+  const g = game; g.torches = []; g.o2 = o2Max(); g.o2T = 0; g.zoneT = 0;
   if (!g.zone) return;
   const clearRows = (r0, r1) => { for (let r = r0; r <= r1; r++) for (let c = 1; c < COLS - 1; c++) lvl.set(c, r, EMPTY); };
   const doorNear = r => g.doors.some(d => Math.abs(d.row - r) < 5);
@@ -39,17 +39,7 @@ function zoneBuild(R, F, lastRow, sh) {
       }
       r += ZONE.dark.every[0] + Math.floor(R() * (ZONE.dark.every[1] - ZONE.dark.every[0] + 1));
     }
-  } else if (g.zone === 'water') {
-    // 조개: 발판 위(항아리 자리 + 따로 찾은 자리)에 약 10칸마다 하나
-    let last = -99;
-    for (let r = 14 + sh; r < lastRow - 2; r++) {
-      if (r - last < ZONE.water.gap) continue;
-      const cs = []; for (let c = 1; c < COLS - 1; c++) { const t = lvl.at(c, r); if ((t === HARD || t === ONEWAY) && lvl.at(c, r - 1) === EMPTY && lvl.at(c, r - 2) === EMPTY) cs.push(c); }
-      if (!cs.length) continue;
-      const c = cs[Math.floor(R() * cs.length)], x = (c + .5) * TILE, y = r * TILE;
-      g.clams.push({ x, y, open: false, t: 0 }); last = r;
-      g.jars = g.jars.filter(j => Math.hypot(j.x - x, j.y - y) > 30); g.enemies = g.enemies.filter(e => !(Math.abs(e.x - x) < 26 && e.y > y - 50 && e.y <= y));
-    }
+
   }
 }
 /* 림보의 판 짜기: 발판 대신 벽에서 나온 가시 턱과, 틈이 하나 난 가시 바닥. buildWave의 발판 고리 대신 부른다 */
@@ -82,17 +72,9 @@ function zoneTick(dt) {
       g.later.push({ t: .35, fn: () => { for (const c of t.gate) if (lvl.at(c, t.row)) breakTile(c, t.row); g.shake = Math.max(g.shake, 9); } });
     }
   } else if (g.zone === 'water') {
-    const Z = ZONE.water, max = o2Max();
-    for (const c of g.clams) {
-      c.t += dt; if (!c.open && Math.random() < dt * 1.6 && Math.abs(c.y - p.y) < 500) g.fx.push({ type: 'dot', x: c.x + (Math.random() - .5) * 10, y: c.y - 20, vx: 0, vy: -40, t: 0, life: .9, r: 2, col: 'rgba(200,245,255,.8)', g: 0 });   // 닫힌 조개의 공기 방울(그리기가 아니라 여기서 만든다: 카드 창이 떠 있는 동안 쌓이지 않게)
-      if (c.open || !stompOn(c, 16, 20)) continue;
-      c.open = true; c.t = 0; p.vy = -T.stompV * .9; p.squash = -.22; refill(p); g.o2 = Math.min(max, g.o2 + Z.clam + (has('z_lung') ? 15 : 0)); sfx.ping(); vibrate(20);
-      g.fx.push({ type: 'ring', x: c.x, y: c.y - 16, r: 70, col: 'rgba(140,230,255,.95)', t: 0, life: .35 }); popup(c.x, c.y - 50, '숨 +', '#9feaff', true);
-      for (let i = 0; i < 10; i++) g.fx.push({ type: 'dot', x: c.x + (Math.random() - .5) * 24, y: c.y - 14, vx: (Math.random() - .5) * 40, vy: -60 - Math.random() * 90, t: 0, life: .9, r: 2 + Math.random() * 3, col: 'rgba(200,245,255,.9)', g: 0 });
-      if (has('z_pearl')) { healBy(p.maxHp * .04); g.hpFrom = p.hp; g.hudHp = p.hp; g.hpFlash = 1; }
-    }
-    g.o2 = Math.max(0, g.o2 - Z.drain * (has('z_gill') ? .7 : 1) * dt);
-    if (g.o2 <= 0 && !g.god) { g.o2T += dt; if (g.o2T >= Z.every) { g.o2T = 0; const d = Math.max(1, Math.round(p.maxHp * Z.hurt)); p.hp -= d; p.hitFlash = .12; g.vign = 1; g.shake = Math.max(g.shake, 6); popup(p.x, p.y - 34, '숨이 막힌다 -' + d, '#8fd8ff', true); sfx.hurt(); if (p.hp <= 0) { p.hp = 0; gameOver(); return; } } } else g.o2T = 0;
+    const Z = ZONE.water;
+    if (!p.high) g.o2 = Math.max(0, g.o2 - Z.drain * 1.15 * (has('z_gill') ? .7 : 1) * dt);
+    if (g.o2 <= 0 && !g.god) { g.o2T += dt; if (g.o2T >= Z.every) { g.o2T = 0; const d = Math.max(1, Math.round(p.maxHp * Z.hurt)); p.hp -= d; p.hitFlash = .12; g.vign = 1; g.shake = Math.max(g.shake, 6); popup(p.x, p.y - 34, '?? ??? -' + d, '#8fd8ff', true); sfx.hurt(); if (p.hp <= 0) { p.hp = 0; gameOver(); return; } } } else g.o2T = 0;
     if (Math.random() < dt * 5) g.fx.push({ type: 'dot', x: p.x + (Math.random() - .5) * 14, y: p.y - 22, vx: (Math.random() - .5) * 14, vy: -50 - Math.random() * 40, t: 0, life: 1, r: 1.5 + Math.random() * 2, col: 'rgba(200,245,255,.7)', g: 0 });
   } else if (g.zone === 'spike') {
     // 벽 가시: 양쪽 벽에 몸이 닿으면 찔린다
@@ -116,11 +98,6 @@ function drawZoneObjs() {
       // 열릴 틈: 바닥에 금빛 문양
       for (const c of t.gate) { ctx.fillStyle = `rgba(255,190,90,${.28 + .16 * Math.sin(g.t * 3 + c)})`; ctx.fillRect(wx(c * TILE) + 3 * s, y + 3 * s, (TILE - 6) * s, 5 * s); }
     }
-  }
-  if (g.zone === 'water') for (const c of g.clams) {
-    const x = wx(c.x), y = wy(c.y); if (y < -80 || y > view.H + 80) continue;
-    const im = c.open ? IMG.z_clam_open : IMG.z_clam, h = (c.open ? 44 : 30) * s * (c.open ? Math.min(1, .7 + c.t * 3) : 1 + .04 * Math.sin(g.t * 3 + c.x));
-    if (ok(im)) { const w = h * im.naturalWidth / im.naturalHeight; ctx.globalAlpha = c.open ? .8 : 1; ctx.drawImage(im, x - w / 2, y - h + 2 * s, w, h); ctx.globalAlpha = 1; }
   }
   if (g.zone === 'spike') {   // 양쪽 벽의 가시 띠(화면에 보이는 만큼)
     const top = Math.floor(g.cam / 14) * 14, n = Math.ceil(view.worldH / 14) + 2;
@@ -173,14 +150,12 @@ function drawZoneScreen() {
   }
 }
 /* HUD: 구역 이름 표시 + 수중이면 산소 막대(경험치 막대 아래) */
-function drawZoneHud(left, y, bw) {
-  const g = game, s = view.s; if (!g.zone || g.room) return;
-  if (g.zone === 'water') {
-    const max = o2Max(), k = clamp(g.o2 / max, 0, 1), h = 7 * s, low = k < .25;
-    ctx.fillStyle = 'rgba(10,8,20,.85)'; rr(left, y, bw, h, 3 * s); ctx.fill();
-    ctx.fillStyle = low ? (Math.sin(g.t * 12) > 0 ? '#ff6a8a' : '#ffd0dc') : '#6fe0ff'; rr(left + 1 * s, y + 1 * s, Math.max(0, (bw - 2 * s) * k), h - 2 * s, 2 * s); ctx.fill();
-    ctx.font = `${10 * s}px ${FONT}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; textOut('숨', left + bw + 4 * s, y + h / 2, low ? '#ff9db0' : '#bfefff', 2.4); ctx.textAlign = 'center';
-  }
+function drawBreathGauge() {
+ const g=game,p=g.p,s=view.s;if(!p||g.zone!=='water'||g.room)return;
+ const x=wx(p.x),y=wy(p.y)-57*s,r=9.5*s,k=clamp(g.o2/o2Max(),0,1),low=k<=.3,glow=g.o2Glow||0;
+ if(glow>0){ctx.globalAlpha=glow*.55;ctx.strokeStyle='#8ff0ff';ctx.lineWidth=5*s;ctx.beginPath();ctx.arc(x,y,r+2*s+(1-glow)*5*s,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+ ctx.lineCap='round';ctx.lineWidth=3.2*s;ctx.strokeStyle='rgba(255,255,255,.95)';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.stroke();
+ if(k>0){ctx.strokeStyle=low?(Math.sin(g.t*12)>0?'#ff526f':'#ffb5c2'):'#76e5ff';ctx.beginPath();ctx.arc(x,y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*k);ctx.stroke();}ctx.lineCap='butt';
 }
 /* 판 시작 알림: 구역 이름과 규칙 한 줄(2.6초) */
 function drawZoneBanner() {

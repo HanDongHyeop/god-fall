@@ -67,7 +67,7 @@ function startRun(opt = {}) {
   g.seed = window.__seed || ((Date.now() % 100000) | 0);
   g.contN = 0; g.timeScale = 1; g.overT = 0; g.fade = 0; g.room = null; g.saved = null; g.boss = null; g.decals = []; g.ebul = []; g.vign = 0; g.whiteout = 0; g.orbits = 0; g.cine = 0; g.banner = null;
   g.hudHp = p.hp;
-  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null; g.zone = null; g.torches = []; g.clams = []; g.mode = opt.mode || null; g.eel = null; g.seal = null; g.runLv = 0;   // v42 도전 모드(modes.js)
+  g.minis = null; g.hpFlash = 0; g.tut = false; g.pity = { hero: 0, legend: 0 }; g.petS = null; g.zone = null; g.torches = []; g.mode = opt.mode || null; g.eel = null; g.seal = null; g.runLv = 0;   // v42 도전 모드(modes.js)
   g.xp = 0; g.xpNeed = 0; g.lvPend = 0; g.hearts = []; g.themeLast = false;
   g.firstRun = !!Meta.s.ftue && !(Meta.s.total.runs > 0) && !opt.debug; g.firstLegend = false;   // v39 첫 판 = 튜토리얼을 거친 새 계정이 처음 하는 판(한 판이라도 끝냈으면 아님)
   beginWave(opt.noIntro ? 0 : DESCENT.first); g.hintT = Meta.s.seenTip ? 0 : 4;

@@ -51,7 +51,6 @@ const CARDS = [
   { id: 'member', name: '떠돌이 회원권', tier: '희귀', desc: '웨이브마다 좌판이 나오고 30% 할인됩니다.', noMini: true },
   { id: 'pet_ice', name: '눈송이 정령', tier: '희귀', pet: true, desc: '눈송이 정령이 따라다니며 얼음 조각을 쏩니다(피해 80%). 맞은 적은 잠깐 업니다.', note: '보스와 중간 보스는 얼지 않습니다' },
   { id: 'z_gill', name: '아가미 부적', tier: '희귀', zone: 'water', noMini: true, desc: '산소가 30% 느리게 줄어듭니다.' },
-  { id: 'z_pearl', name: '진주 조개잡이', tier: '희귀', zone: 'water', noMini: true, desc: '조개를 밟을 때마다 체력 4% 회복.' },
   { id: 'z_ember', name: '불씨 주머니', tier: '희귀', zone: 'dark', noMini: true, desc: '횃불을 켤 때마다 체력 5% 회복.' },
   { id: 'z_thorn', name: '굳은살', tier: '희귀', zone: 'spike', desc: '다친 뒤 무적 시간이 2배가 됩니다.' },
   { id: 'pet_up', name: '신수 조련', tier: '희귀', need: () => hasPet(), desc: '따라다니는 동료의 피해 +40%.' },

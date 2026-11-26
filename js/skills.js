@@ -253,7 +253,8 @@ function addCombo() {
 /* 신성 폭주 켜기. mode: 'on' = 처음 켜짐(빠빰), 'refresh' = 켜진 채로 5콤보를 또 채움(시간을 다시 가득), 'free' = 보물 동굴 수정 */
 function startHigh(mode = 'on') {
   const g = game, p = g.p; if (!p) return;
-  const was = p.high; p.high = true; p.highT = highDur(); p.highEnd = 0;
+  const was = p.high; p.high = true; p.highT = highDur() * (g.zone === 'water' ? .8 : 1); p.highEnd = 0;
+  if (g.zone === 'water') { g.o2=o2Max(); g.o2T=0; g.o2Glow=.75; g.fx.push({type:'ring',x:p.x,y:p.y-34,r:58,col:'rgba(118,229,255,.95)',t:0,life:.5}); for(let i=0;i<12;i++)g.fx.push({type:'dot',x:p.x+(Math.random()-.5)*22,y:p.y-24,vx:(Math.random()-.5)*44,vy:-70-Math.random()*85,t:0,life:.8,r:2+Math.random()*2.5,col:'rgba(200,248,255,.95)',g:0}); }
   if (mode === 'refresh' && was) {
     p.highFlare = 1; g.fx.push({ type: 'ring', x: p.x, y: p.y - 8, r: 74, col: 'rgba(255,226,120,.95)', t: 0, life: .35 });
     sparks(p.x, p.y - 8, 14, '#ffe59a', 260, .4, 2.6); (g.cfx || (g.cfx = [])).push({ kind: 'sub', text: '신성 폭주 연장', t: 0, life: 1 }); sfx.highUp(); vibrate(20);
